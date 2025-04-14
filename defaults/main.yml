@@ -1,0 +1,6 @@
+---
+_gluster_package_default:
+  default:
+    - gluster
+
+gluster_state: present

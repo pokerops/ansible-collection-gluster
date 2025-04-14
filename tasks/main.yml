@@ -1,0 +1,19 @@
+---
+- name: Include variable overrides
+  ansible.builtin.set_fact:
+    _gluster_package: "{{ gluster_package | default(_gluster_package_default | sorted_get(overrides)) }}"
+  vars:
+    overrides:
+      - "{{ ansible_distribution | lower }}-{{ ansible_distribution_release | lower }}"
+      - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}"
+      - "{{ ansible_distribution | lower }}"
+      - "{{ ansible_os_family | lower }}"
+      - "default"
+  tags:
+    - always
+
+- name: Install gluster package
+  ansible.builtin.package:
+    name: "{{ _gluster_package }}"
+    state: "{{ gluster_state }}"
+  become: yes
