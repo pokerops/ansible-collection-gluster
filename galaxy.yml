@@ -11,7 +11,7 @@ license:
 tags:
   - gluster
 dependencies:
-  "pokerops.plugins": "*"
+  "nephelaiio.plugins": "*"
 repository: http://github.com/pokerops/ansible-collection-gluster
 documentation: http://github.com/pokerops/ansible-collection-gluster
 homepage: http://github.com/pokerops/ansible-collection-gluster
