@@ -1,0 +1,40 @@
+---
+name: molecule
+
+env:
+  DEVBOX_VERSION: ${{ vars.DEVBOX_VERSION }}
+
+on:
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: "0 5 * * 5"
+
+defaults:
+  run:
+    working-directory: "pokerops.gluster"
+
+jobs:
+  molecule:
+    name: libvirt
+    runs-on: libvirt
+    steps:
+      - name: Check out the codebase
+        uses: actions/checkout@v4
+
+      - name: Generate devbox locale
+        run: sudo locale-gen C.UTF-8
+
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.12.0
+
+      - name: Debug test environment
+        run: devbox run -- make debug
+
+      - name: Run molecule tests.
+        run: devbox run make test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          PY_COLORS: "1"
+          ANSIBLE_FORCE_COLOR: "1"

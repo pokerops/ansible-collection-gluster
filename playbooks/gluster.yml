@@ -1,0 +1,16 @@
+---
+- name: Install gluster
+  hosts: "{{ _gluster_group_name }}"
+  become: true
+  vars_files:
+    - main.yml
+  tasks:
+    - name: Install gluster server
+      ansible.builtin.package:
+        name: "{{ gluster_package_name }}"
+
+    - name: Manage gluster service
+      ansible.builtin.systemd:
+        name: "{{ gluster_service_name }}"
+        state: started
+        enabled: true

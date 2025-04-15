@@ -1,0 +1,6 @@
+---
+- name: Prepare Gluster nodes
+  ansible.builtin.import_playbook: pokerops.gluster.prepare
+
+- name: Deploy Gluster
+  ansible.builtin.import_playbook: pokerops.gluster.gluster
