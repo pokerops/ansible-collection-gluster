@@ -12,7 +12,7 @@
     "LC_ALL": "C.UTF-8"
   },
   "shell": {
-    "init_hook": [". .venv/bin/activate", "poetry install 2>/dev/null"],
+    "init_hook": [],
     "scripts": {}
   }
 }
