@@ -1,6 +1,6 @@
 ---
 - name: Prepare gluster members
-  hosts: "{{ _gluster_group_name }}"
+  hosts: "{{ gluster_group_name }}"
   become: true
   vars_files:
     - main.yml
