@@ -4,4 +4,5 @@ gluster_package_name: "glusterfs-server"
 gluster_service_name: "glusterd"
 
 # Overridable values
+_gluster_hostgroup_name: "{{ gluster_hostgroup_name | default('gluster') }}"
 _gluster_volumes: "{{ gluster_volumes | default([]) }}"

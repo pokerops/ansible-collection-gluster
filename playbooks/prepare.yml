@@ -1,9 +1,9 @@
 ---
 - name: Prepare gluster members
-  hosts: "{{ gluster_hostgroup_name | default('gluster') }}"
+  hosts: "{{ _gluster_hostgroup_name }}"
   become: true
   vars_files:
-    - main.yml
+    - ../vars/main.yml
   tasks:
     - name: Gather service facts
       ansible.builtin.service_facts:

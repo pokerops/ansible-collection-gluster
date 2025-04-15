@@ -1,9 +1,9 @@
 ---
 - name: Install gluster
-  hosts: "{{ gluster_hostgroup_name | default('gluster') }}"
+  hosts: "{{ _gluster_hostgroup_name }}"
   become: true
   vars_files:
-    - main.yml
+    - ../vars/main.yml
   tasks:
     - name: Install gluster server
       ansible.builtin.package:
