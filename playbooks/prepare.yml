@@ -5,6 +5,15 @@
   vars_files:
     - ../vars/main.yml
   tasks:
+    - name: Set gluster hosts fact
+      ansible.builtin.set_fact:
+        gluster_members: "{{ _gluster_members }}"
+      vars:
+        _map_format: "nephelaiio.plugins.map_format"
+        _gluster_hosts: "{{ groups[_gluster_hostgroup_name] }}"
+        _gluster_addrs: "{{ _gluster_hosts | map('extract', hostvars, gluster_address_attrs) }}"
+        _gluster_members: "{{ _gluster_hosts if _gluster_hosts_manage else _gluster_addrs }}"
+
     - name: Gather service facts
       ansible.builtin.service_facts:
 
@@ -23,18 +32,23 @@
         _member_address: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
         _fqdn: "{{ hostvars[item]['ansible_fqdn'] }}"
         _hostname: "{{ hostvars[item]['ansible_hostname'] }}"
-      loop: "{{ ansible_play_hosts }}"
+      loop: "{{ gluster_members }}"
 
-    - name: Query node membership
-      ansible.builtin.command:
-        cmd: "gluster pool list"
-      ignore_errors: true
-      register: _member_query
+    - name: Query gluster node membership
+      when: gluster_service_name in services
+      block:
+        - name: Query pool list
+          ansible.builtin.command: "gluster pool list"
+          args:
+            chdir: "/usr/sbin/"
+          register: _member_query
+          changed_when: false
 
-    - name: Create brick paths
-      ansible.builtin.file:
-        path: "{{ item.brick }}"
-        state: directory
-      loop_control:
-        label: "{{ item.brick }}"
-      loop: "{{ _gluster_volumes }}"
+        - name: Set existing node membership fact
+          ansible.builtin.set_fact:
+            _gluster_existing_nodes: "{{ (_existing | select('in', _hosts)) + [inventory_hostname] }}"
+          vars:
+            _hosts: "{{ ansible_play_hosts }}"
+            _existing: "{{ _member_query.stdout_lines | map('split', '\t') | flatten }}"
+          delegate_to: localhost
+          delegate_facts: true

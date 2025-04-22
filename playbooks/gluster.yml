@@ -5,6 +5,20 @@
   vars_files:
     - ../vars/main.yml
   tasks:
+    - name: Set existing gluster members
+      ansible.builtin.set_fact:
+        _gluster_existing_members: "{{ _existing }}"
+      vars:
+        _existing: "{{ hostvars['localhost']['_gluster_existing_members'] | default([]) }}"
+
+    - name: Create brick paths
+      ansible.builtin.file:
+        path: "{{ item.brick }}"
+        state: directory
+      loop_control:
+        label: "{{ item.brick }}"
+      loop: "{{ _gluster_volumes }}"
+
     - name: Install gluster server
       ansible.builtin.package:
         name: "{{ gluster_package_name }}"
@@ -14,3 +28,21 @@
         name: "{{ gluster_service_name }}"
         state: started
         enabled: true
+
+    - name: Run gluster probe for new members
+      ansible.builtin.command: "gluster peer probe {{ item }}"
+      args:
+        chdir: "/usr/sbin/"
+      vars:
+        _ipaddr: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+        _ipaddr_members: "{{ gluster_members | reject('in', _ipaddr) }}"
+        _host_members: "{{ gluster_members | reject('in', inventory_hostname) }}"
+        _new_members: "{{ _host_members if _gluster_hosts_manage else _ipaddr_members }}"
+      loop: "{{ _new_members }}"
+      register: _member_query
+      changed_when: false
+      run_once: true
+
+    - debug:
+        msg: "{{ _member_query }}"
+      run_once: true
