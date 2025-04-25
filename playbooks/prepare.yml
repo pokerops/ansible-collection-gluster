@@ -75,8 +75,8 @@
 
     - name: Set gluster member facts
       ansible.builtin.set_fact:
-        _gluster_aliens: "{{ groups[_alien_group] }}"
-        _gluster_existing_members: "{{ groups[_member_group] }}"
+        _gluster_aliens: "{{ groups[_alien_group] | default([]) }}"
+        _gluster_existing_members: "{{ groups[_member_group] | default([]) }}"
       vars:
         _suffix: "gluster_group"
         _alien_group: "{{ _suffix }}_alien"
