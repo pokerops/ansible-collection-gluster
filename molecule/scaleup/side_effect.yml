@@ -9,7 +9,7 @@
   become: true
   tasks:
     - name: Query pool list
-      ansible.builtin.command: "gluster pool list"
+      ansible.builtin.command: gluster pool list | awk '{print $2}'
       args:
         chdir: "/usr/sbin/"
       register: _member_query
