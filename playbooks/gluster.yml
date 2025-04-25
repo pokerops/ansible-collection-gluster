@@ -76,12 +76,11 @@
           loop: "{{ _volumes }}"
 
         - name: Prune stale gluster peer members
-          gluster.gluster.gluster_peer:
-            state: absent
-            nodes: "{{ _gluster_member_del }}"
-            force: true
+          ansible.builtin.shell: gluster peer detach {{ item }}
+          args:
+            chdir: "/usr/sbin/"
           changed_when: false
-          when: _gluster_member_del | length > 0
+          loop: "{{ _gluster_member_del }}"
 
     - name: Create mount directory
       ansible.builtin.file:
