@@ -12,12 +12,12 @@
 
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
-        gluster_members: "{{ _gluster_members }}"
+        gluster_target_members: "{{ _gluster_target_members }}"
       vars:
         _map_format: "nephelaiio.plugins.map_format"
         _gluster_hosts: "{{ groups[_gluster_hostgroup_name] }}"
         _gluster_addrs: "{{ _gluster_hosts | map('extract', hostvars, gluster_address_attrs) }}"
-        _gluster_members: "{{ _gluster_hosts if _gluster_hosts_manage else _gluster_addrs }}"
+        _gluster_target_members: "{{ _gluster_hosts if _gluster_hosts_manage else _gluster_addrs }}"
 
     - name: Gather service facts
       ansible.builtin.service_facts:
@@ -37,37 +37,54 @@
         _member_address: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
         _fqdn: "{{ hostvars[item]['ansible_fqdn'] }}"
         _hostname: "{{ hostvars[item]['ansible_hostname'] }}"
-      loop: "{{ gluster_members }}"
+      loop: "{{ gluster_target_members }}"
 
-    - name: Query gluster node membership
-      when: gluster_service_name in services
-      block:
-        - name: Query pool list
-          ansible.builtin.shell: gluster pool list | awk '{print $2}'
-          args:
-            chdir: "/usr/sbin/"
-          register: _member_query
-          changed_when: false
-
-        - name: Set existing node membership fact
-          ansible.builtin.set_fact:
-            _gluster_existing_members: "{{ _existing_members }}"
-          vars:
-            _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
-            _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
-          delegate_to: localhost
-          delegate_facts: true
+    - name: Query pool list
+      ansible.builtin.shell: gluster pool list | awk '{print $2}'
+      args:
+        chdir: "/usr/sbin/"
+      ignore_errors: true
+      register: _member_query
+      changed_when: false
 
     - name: Set gluster members fact
       ansible.builtin.set_fact:
-        _gluster_existing_members: "{{ _existing }}"
-        _gluster_aliens: "{{ _aliens }}"
-        _gluster_member_del: "{{ _delete }}"
+        _gluster_alien: "{{ _is_alien | bool }}"
+        _gluster_member: "{{ _is_member | bool }}"
+        _gluster_member_del: "{{ _delete_members }}"
       vars:
-        _hosts: "{{ gluster_members }}"
-        _existing: "{{ hostvars['localhost']['_gluster_existing_members'] | default([]) }}"
-        _aliens: "{{ _hosts | reject('in', _existing) }}"
-        _delete: "{{ _existing | reject('in', _hosts) }}"
+        _status: "{{ _member_query }}"
+        _has_failed: "{{ _status.failed | bool }}"
+        _members_output: "{{ _status.stdout_lines | default([]) | reject('equalto', 'Hostname') }}"
+        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _target_members: "{{ gluster_target_members }}"
+        _target_members_num: "{{ _target_members | length }}"
+        _existing_members_num: "{{ _existing_members | length }}"
+        _is_alien: "{{ _has_failed and (_target_members_num > _existing_members_num) }}"
+        _is_member: "{{ not _is_alien }}"
+        _delete_members: "{{ _existing_members | reject('in', _target_members) }}"
+
+    - name: Group gluster members
+      ansible.builtin.group_by:
+        key: "{{ _alien_group if _gluster_alien else _member_group }}"
+      vars:
+        _suffix: "gluster_group"
+        _alien_group: "{{ _suffix }}_alien"
+        _member_group: "{{ _suffix }}_member"
+      changed_when: false
+
+    - name: Set gluster members fact
+      ansible.builtin.set_fact:
+        _gluster_aliens: "{{ group[_alien_group] }}"
+        _gluster_existing_members: "{{ group[_member_group] }}"
+      vars:
+        _suffix: "gluster_group"
+        _alien_group: "{{ _suffix }}_alien"
+        _member_group: "{{ _suffix }}_member"
+
+    - name: Debug gluster target members
+      ansible.builtin.debug:
+        msg: "Target gluster members: [{{ gluster_target_members | join(', ') }}]"
 
     - name: Debug gluster existing members
       ansible.builtin.debug:

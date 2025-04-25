@@ -35,7 +35,7 @@
         - name: Manage gluster peer members
           gluster.gluster.gluster_peer:
             state: present
-            nodes: "{{ gluster_members }}"
+            nodes: "{{ gluster_target_members }}"
           changed_when: false
 
         - name: Create gluster volumes
@@ -43,9 +43,9 @@
             state: present
             name: "{{ _volume }}"
             bricks: "{{ _brick }}"
-            cluster: "{{ gluster_members }}"
+            cluster: "{{ gluster_target_members }}"
             force: true
-            replicas: "{{ gluster_members | length }}"
+            replicas: "{{ gluster_target_members | length }}"
             start_on_create: true
           ignore_errors: true
           vars:
