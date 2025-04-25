@@ -6,6 +6,7 @@
 
 - name: Query cluster state
   hosts: gluster_up
+  become: true
   tasks:
     - name: Query pool list
       ansible.builtin.command: "gluster pool list"
