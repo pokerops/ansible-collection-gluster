@@ -79,6 +79,7 @@
           gluster.gluster.gluster_peer:
             state: absent
             nodes: "{{ _gluster_member_del }}"
+            force: true
           changed_when: false
           when: _gluster_member_del | length > 0
 
