@@ -58,9 +58,7 @@
         _members_output: "{{ _status.stdout_lines | default([]) | reject('equalto', 'Hostname') }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
         _target_members: "{{ gluster_target_members }}"
-        _target_members_num: "{{ _target_members }}"
-        _existing_members_num: "{{ _existing_members }}"
-        _is_alien: "{{ _has_failed or (_target_members_num | length  > _existing_members_num | length) }}"
+        _is_alien: "{{ _has_failed or ('localhost' in _existing_members) }}"
         _is_member: "{{ not _is_alien }}"
         _delete_members: "{{ _existing_members | reject('in', _target_members) }}"
 
