@@ -1,0 +1,46 @@
+---
+- name: Import install playbook
+  ansible.builtin.import_playbook: pokerops.gluster.install
+  vars:
+    gluster_hostgroup_name: gluster_down
+
+- name: Query cluster state
+  hosts: gluster_down
+  become: true
+  tasks:
+    - name: Query pool list
+      ansible.builtin.command: "gluster pool list"
+      args:
+        chdir: "/usr/sbin/"
+      register: _member_query
+      changed_when: false
+
+    - name: Set target node membership fact
+      ansible.builtin.set_fact:
+        _gluster_members: "{{ _existing }}"
+        _gluster_initial: "{{ groups['gluster'] }}"
+        _gluster_scaledown: "{{ _scale_down }}"
+      vars:
+        _scale_down: "{{ groups['gluster_up'] }}"
+        _members: "{{ _member_query.stdout_lines | map('split', '\t') | flatten }}"
+        _existing: "{{ (_members | select('in', _scale_down)) + [inventory_hostname] }}"
+
+    - name: Debug gluster members
+      ansible.builtin.debug:
+        msg: "Debug gluster members: [{{ _gluster_members | join(', ') }}]"
+
+    - name: Debug gluster initial members
+      ansible.builtin.debug:
+        msg: "Debug gluster initial members: [{{ _gluster_initial | join(', ') }}]"
+
+    - name: Debug gluster scaledown members
+      ansible.builtin.debug:
+        msg: "Debug gluster scaledown members: [{{ _gluster_scaledown | join(', ') }}]"
+
+    - name: Verify gluster members
+      ansible.builtin.assert:
+        that:
+          - (_gluster_initial | length) > (_gluster_scaledown | length)
+          - (_gluster_members | length) == (_gluster_scaledown | length)
+          - _gluster_members | difference(_gluster_scaledown) | length == 0
+          - _gluster_scaledown | difference(_gluster_members) | length == 0
