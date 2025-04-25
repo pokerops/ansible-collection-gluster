@@ -10,6 +10,7 @@
         _gluster_existing_members: "{{ _existing }}"
         _map_flatten: "nephelaiio.plugins.map_flatten"
         _select_attrs: "nephelaiio.plugins.select_attributes"
+        _alias_keys: "nephelaiio.plugins.alias_keys"
       vars:
         _existing: "{{ hostvars['localhost']['_gluster_existing_members'] | default([]) }}"
 
@@ -64,7 +65,7 @@
             _brick: "{{ item.brick }}"
             _volume: "{{ item.name }}"
             _failed_volumes: "{{ gluster_volume_status.results | selectattr('failed', 'defined') | selectattr('failed') }}"
-            _volumes_list: "{{ _failed_volumes | map(_map_flatten) | map('alias_keys', _aliases) }}"
+            _volumes_list: "{{ _failed_volumes | map(_map_flatten) | map(_alias_keys, _aliases) }}"
             _aliases:
               item.name: name
               item.brick: brick
