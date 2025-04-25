@@ -51,9 +51,32 @@
 
         - name: Set existing node membership fact
           ansible.builtin.set_fact:
-            _gluster_existing_members: "{{ (_existing | select('in', _hosts)) + [inventory_hostname] }}"
+            _gluster_existing_members: "{{ (_hosts | select('in', _existing)) + [inventory_hostname] }}"
           vars:
             _hosts: "{{ gluster_members }}"
             _existing: "{{ _member_query.stdout_lines | map('split', '\t') | flatten }}"
           delegate_to: localhost
           delegate_facts: true
+
+    - name: Set gluster members fact
+      ansible.builtin.set_fact:
+        _gluster_existing_members: "{{ _existing }}"
+        _gluster_aliens: "{{ _aliens }}"
+        _gluster_member_del: "{{ _delete }}"
+      vars:
+        _hosts: "{{ gluster_members }}"
+        _existing: "{{ hostvars['localhost']['_gluster_existing_members'] | default([]) }}"
+        _aliens: "{{ _hosts | reject('in', _existing) }}"
+        _delete: "{{ _existing | reject('in', _hosts) }}"
+
+    - name: Debug gluster existing members
+      ansible.builtin.debug:
+        msg: "Existing gluster members: [{{ _gluster_existing_members | join(',') }}]"
+
+    - name: Debug gluster members additions
+      ansible.builtin.debug:
+        msg: "New gluster members: [{{ _gluster_aliens | join(',') }}]"
+
+    - name: Debug gluster member removals
+      ansible.builtin.debug:
+        msg: "Removing gluster members: [{{ _gluster_member_del | join(',') }}]"

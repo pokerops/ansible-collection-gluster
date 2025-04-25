@@ -7,12 +7,9 @@
   tasks:
     - name: Set gluster facts
       ansible.builtin.set_fact:
-        _gluster_existing_members: "{{ _existing }}"
         _map_flatten: "nephelaiio.plugins.map_flatten"
         _select_attrs: "nephelaiio.plugins.select_attributes"
         _alias_keys: "nephelaiio.plugins.alias_keys"
-      vars:
-        _existing: "{{ hostvars['localhost']['_gluster_existing_members'] | default([]) }}"
 
     - name: Create brick paths
       ansible.builtin.file:
