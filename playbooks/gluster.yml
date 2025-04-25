@@ -38,15 +38,6 @@
             nodes: "{{ gluster_members }}"
           changed_when: false
 
-        - name: Get gluster volume status
-          gluster.gluster.gluster_heal_info:
-            name: "{{ item.name }}"
-          register: gluster_volume_status
-          ignore_errors: true
-          loop_control:
-            label: "{{ item.name }}"
-          loop: "{{ _gluster_volumes }}"
-
         - name: Create gluster volumes
           gluster.gluster.gluster_volume:
             state: present
@@ -60,19 +51,9 @@
           vars:
             _brick: "{{ item.brick }}"
             _volume: "{{ item.name }}"
-            _failed_volumes: "{{ gluster_volume_status.results | selectattr('failed', 'defined') | selectattr('failed') }}"
-            _volumes_list: "{{ _failed_volumes | map(_map_flatten) | map(_alias_keys, _aliases) }}"
-            _aliases:
-              item.name: name
-              item.brick: brick
-            _attributes:
-              - name
-              - brick
-              - failed
-            _volumes: "{{ _volumes_list | map(_select_attrs, _attributes) }}"
           loop_control:
             label: "{{ _volume }}"
-          loop: "{{ _volumes }}"
+          loop: "{{ _gluster_volumes }}"
 
         - name: Prune stale gluster peer members
           gluster.gluster.gluster_peer:
