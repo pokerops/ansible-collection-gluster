@@ -5,9 +5,11 @@
   vars_files:
     - ../vars/main.yml
   tasks:
-    - name: Set existing gluster members
+    - name: Set gluster facts
       ansible.builtin.set_fact:
         _gluster_existing_members: "{{ _existing }}"
+        _map_flatten: "nephelaiio.plugins.map_flatten"
+        _select_attrs: "nephelaiio.plugins.select_attributes"
       vars:
         _existing: "{{ hostvars['localhost']['_gluster_existing_members'] | default([]) }}"
 
@@ -29,20 +31,82 @@
         state: started
         enabled: true
 
-    - name: Run gluster probe for new members
-      ansible.builtin.command: "gluster peer probe {{ item }}"
-      args:
-        chdir: "/usr/sbin/"
-      vars:
-        _ipaddr: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
-        _ipaddr_members: "{{ gluster_members | reject('in', _ipaddr) }}"
-        _host_members: "{{ gluster_members | reject('in', inventory_hostname) }}"
-        _new_members: "{{ _host_members if _gluster_hosts_manage else _ipaddr_members }}"
-      loop: "{{ _new_members }}"
-      register: _member_query
-      changed_when: false
+    - name: Manage gluster brick tasks
       run_once: true
+      block:
+        - name: Run gluster peer probe
+          gluster.gluster.gluster_peer:
+            state: present
+            nodes: "{{ gluster_members }}"
+          changed_when: false
 
-    - debug:
-        msg: "{{ _member_query }}"
+        - name: Get gluster volume status
+          gluster.gluster.gluster_heal_info:
+            name: "{{ item.name }}"
+          register: gluster_volume_status
+          ignore_errors: true
+          loop_control:
+            label: "{{ item.name }}"
+          loop: "{{ _gluster_volumes }}"
+
+        - name: Create gluster volumes
+          gluster.gluster.gluster_volume:
+            state: present
+            name: "{{ _volume }}"
+            bricks: "{{ _brick }}"
+            cluster: "{{ _gluster_members }}"
+            force: true
+            replicas: "{{ _gluster_members | length }}"
+            start_on_create: true
+          when: item.failed
+          ignore_errors: true
+          vars:
+            _brick: "{{ item.brick }}"
+            _volume: "{{ item.name }}"
+            _failed_volumes: "{{ gluster_volume_status.results | selectattr('failed', 'defined') | selectattr('failed') }}"
+            _volumes_list: "{{ _failed_volumes | map(_map_flatten) | map('alias_keys', _aliases) }}"
+            _aliases:
+              item.name: name
+              item.brick: brick
+            _attributes:
+              - name
+              - brick
+              - failed
+            _volumes: "{{ _volumes_list | map(_select_attrs, _attributes) }}"
+          loop_control:
+            label: "{{ _volume }}"
+          loop: "{{ _volumes }}"
+
+    - name: Create mount directory
+      ansible.builtin.file:
+        path: "{{ item.mount }}"
+        state: directory
+      loop_control:
+        label: "{{ item.name }} - {{ item.mount }}"
+      loop: "{{ _gluster_volumes }}"
+
+    - name: Mount gluster source volume
+      ansible.builtin.mount:
+        src: "localhost:/{{ item.name }}"
+        path: "{{ item.mount }}"
+        fstype: glusterfs
+        opts: defaults
+        state: mounted
+      loop_control:
+        label: "{{ item.name }} - {{ item.mount }}"
+      loop: "{{ _gluster_volumes }}"
+
+    - name: Manage subdirectories
+      ansible.builtin.file:
+        dest: "{{ volume.mount }}/{{ path }}"
+        owner: "{{ _gluster_owner_user }}"
+        group: "{{ _gluster_owner_group }}"
+        mode: "{{ _gluster_directory_mode }}"
+        state: directory
+      vars:
+        volume: "{{ item.0 }}"
+        path: "{{ item.1 }}"
+      loop_control:
+        label: "{{ volume.mount }} - {{ path }}"
+      loop: "{{ _gluster_volumes | subelements('paths', skip_missing='yes') }}"
       run_once: true

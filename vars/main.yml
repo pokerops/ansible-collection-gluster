@@ -8,3 +8,6 @@ gluster_address_attrs: ["ansible_default_ipv4", "address"]
 _gluster_hostgroup_name: "{{ gluster_hostgroup_name | default('gluster') }}"
 _gluster_volumes: "{{ gluster_volumes | default([]) }}"
 _gluster_hosts_manage: "{{ gluster_hosts_manage | default('true') | bool }}"
+_gluster_owner_user: "{{ gluster_owner_user | default('root') }}"
+_gluster_owner_group: "{{ gluster_owner_group | default('root') }}"
+_gluster_directory_mode: "{{ gluster_directory_mode | default(0740) }}"

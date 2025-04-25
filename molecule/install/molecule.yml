@@ -45,6 +45,14 @@ provisioner:
     group_vars:
       all:
         libvirt_platforms: "{{ molecule_yml.platforms }}"
+        gluster_volumes:
+          - name: test
+            brick: /data/test
+            mount: /mnt/test
+            paths:
+              - a
+              - b
+              - c
 verifier:
   name: ansible
 scenario:

@@ -5,6 +5,11 @@
   vars_files:
     - ../vars/main.yml
   tasks:
+    - name: Verify gluster variables
+      ansible.builtin.assert:
+        that:
+          - _gluster_volumes | length > 0
+
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
         gluster_members: "{{ _gluster_members }}"
@@ -46,9 +51,9 @@
 
         - name: Set existing node membership fact
           ansible.builtin.set_fact:
-            _gluster_existing_nodes: "{{ (_existing | select('in', _hosts)) + [inventory_hostname] }}"
+            _gluster_existing_members: "{{ (_existing | select('in', _hosts)) + [inventory_hostname] }}"
           vars:
-            _hosts: "{{ ansible_play_hosts }}"
+            _hosts: "{{ gluster_members }}"
             _existing: "{{ _member_query.stdout_lines | map('split', '\t') | flatten }}"
           delegate_to: localhost
           delegate_facts: true
