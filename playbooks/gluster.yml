@@ -32,7 +32,7 @@
     - name: Manage gluster brick tasks
       run_once: true
       block:
-        - name: Run gluster peer probe
+        - name: Manage gluster peer members
           gluster.gluster.gluster_peer:
             state: present
             nodes: "{{ gluster_members }}"
@@ -74,6 +74,12 @@
           loop_control:
             label: "{{ _volume }}"
           loop: "{{ _volumes }}"
+
+        - name: Prune stale gluster peer members
+          gluster.gluster.gluster_peer:
+            state: present
+            nodes: "{{ _gluster_member_del }}"
+          changed_when: false
 
     - name: Create mount directory
       ansible.builtin.file:
