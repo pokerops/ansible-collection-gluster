@@ -102,7 +102,7 @@
         dest: "{{ volume.mount }}/{{ path }}"
         owner: "{{ _gluster_owner_user }}"
         group: "{{ _gluster_owner_group }}"
-        mode: "{{ _gluster_directory_mode }}"
+        mode: "{{ _gluster_directory_mode | int }}"
         state: directory
       vars:
         volume: "{{ item.0 }}"
