@@ -23,8 +23,7 @@
       vars:
         _scale_up: "{{ groups['gluster_up'] }}"
         _members: "{{ _member_query.stdout_lines | map('split', '\t') | flatten }}"
-        _members_filter: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _existing: "{{ _members_filter | select('in', _scale_up) }}"
+        _existing: "{{ (_members_filter | select('in', _scale_up)) + [inventory_hostname] }}"
 
     - name: Debug gluster members
       ansible.builtin.debug:
