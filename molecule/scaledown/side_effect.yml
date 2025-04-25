@@ -17,13 +17,12 @@
 
     - name: Set target node membership fact
       ansible.builtin.set_fact:
-        _gluster_members: "{{ _existing }}"
+        _gluster_members: "{{ _existing_members }}"
         _gluster_initial: "{{ groups['gluster'] }}"
-        _gluster_scaledown: "{{ _scale_down }}"
+        _gluster_scaledown: "{{ groups['gluster_up'] }}"
       vars:
-        _scale_down: "{{ groups['gluster_up'] }}"
-        _members: "{{ _member_query.stdout_lines | map('split', '\t') | flatten }}"
-        _existing: "{{ (_members | select('in', _scale_down)) + [inventory_hostname] }}"
+        _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
+        _existing_members: "{{ _existing | map('regex_replace', 'localhost', inventory_hostname) }}"
 
     - name: Debug gluster members
       ansible.builtin.debug:

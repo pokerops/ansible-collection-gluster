@@ -43,7 +43,7 @@
       when: gluster_service_name in services
       block:
         - name: Query pool list
-          ansible.builtin.command: "gluster pool list"
+          ansible.builtin.command: "gluster pool list | awk '{print $2}'"
           args:
             chdir: "/usr/sbin/"
           register: _member_query
@@ -51,10 +51,10 @@
 
         - name: Set existing node membership fact
           ansible.builtin.set_fact:
-            _gluster_existing_members: "{{ (_hosts | select('in', _existing)) + [inventory_hostname] }}"
+            _gluster_existing_members: "{{ _existing_members }}"
           vars:
-            _hosts: "{{ gluster_members }}"
-            _existing: "{{ _member_query.stdout_lines | map('split', '\t') | flatten }}"
+            _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
+            _existing_members: "{{ _existing | map('regex_replace', 'localhost', inventory_hostname) }}"
           delegate_to: localhost
           delegate_facts: true
 
