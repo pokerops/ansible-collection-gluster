@@ -9,7 +9,7 @@
   become: true
   tasks:
     - name: Query pool list
-      ansible.builtin.command: gluster pool list | awk '{print $2}'
+      ansible.builtin.shell: gluster pool list | awk '{print $2}'
       args:
         chdir: "/usr/sbin/"
       register: _member_query
@@ -22,7 +22,7 @@
         _gluster_scaledown: "{{ groups['gluster_up'] }}"
       vars:
         _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
-        _existing_members: "{{ _existing | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
 
     - name: Debug gluster members
       ansible.builtin.debug:
