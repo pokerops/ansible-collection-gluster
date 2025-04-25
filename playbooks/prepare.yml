@@ -60,8 +60,8 @@
         _target_members: "{{ gluster_target_members }}"
         _target_members_num: "{{ _target_members | length }}"
         _existing_members_num: "{{ _existing_members | length }}"
-        _is_alien: "{{ _has_failed and (_target_members_num > _existing_members_num) }}"
-        _is_member: "{{ not _is_alien }}"
+        _is_alien: "{{ _has_failed or (_target_members_num > _existing_members_num) }}"
+        _is_member: "{{ not _has_failed and (_target_members_num == _existing_members_num) }}"
         _delete_members: "{{ _existing_members | reject('in', _target_members) }}"
 
     - name: Group gluster members
