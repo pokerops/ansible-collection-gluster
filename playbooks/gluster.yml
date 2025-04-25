@@ -77,9 +77,10 @@
 
         - name: Prune stale gluster peer members
           gluster.gluster.gluster_peer:
-            state: present
+            state: absent
             nodes: "{{ _gluster_member_del }}"
           changed_when: false
+          when: _gluster_member_del | length > 0
 
     - name: Create mount directory
       ansible.builtin.file:
