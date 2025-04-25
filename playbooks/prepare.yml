@@ -47,7 +47,7 @@
       register: _member_query
       changed_when: false
 
-    - name: Set gluster members fact
+    - name: Set gluster member facts
       ansible.builtin.set_fact:
         _gluster_alien: "{{ _is_alien | bool }}"
         _gluster_member: "{{ _is_member | bool }}"
@@ -73,10 +73,10 @@
         _member_group: "{{ _suffix }}_member"
       changed_when: false
 
-    - name: Set gluster members fact
+    - name: Set gluster member facts
       ansible.builtin.set_fact:
-        _gluster_aliens: "{{ group[_alien_group] }}"
-        _gluster_existing_members: "{{ group[_member_group] }}"
+        _gluster_aliens: "{{ groups[_alien_group] }}"
+        _gluster_existing_members: "{{ groups[_member_group] }}"
       vars:
         _suffix: "gluster_group"
         _alien_group: "{{ _suffix }}_alien"
