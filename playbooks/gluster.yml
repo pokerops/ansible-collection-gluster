@@ -55,9 +55,9 @@
             state: present
             name: "{{ _volume }}"
             bricks: "{{ _brick }}"
-            cluster: "{{ _gluster_members }}"
+            cluster: "{{ gluster_members }}"
             force: true
-            replicas: "{{ _gluster_members | length }}"
+            replicas: "{{ gluster_members | length }}"
             start_on_create: true
           when: item.failed
           ignore_errors: true
