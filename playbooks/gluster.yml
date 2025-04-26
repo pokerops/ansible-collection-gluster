@@ -43,7 +43,7 @@
           register: _member_query
           retries: "{{ gluster_retries | default(5) }}"
           delay: "{{ gluster_delay | default(30) }}"
-          until: (gluster_target_members | length == _existing_members | length) | bool
+          until: gluster_target_members | select('in', _existing_members)
           changed_when: false
 
         - name: Create gluster volumes
