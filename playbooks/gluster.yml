@@ -55,7 +55,6 @@
             force: true
             replicas: "{{ gluster_target_members | length }}"
             start_on_create: true
-          ignore_errors: true
           vars:
             _brick: "{{ item.brick }}"
             _volume: "{{ item.name }}"
