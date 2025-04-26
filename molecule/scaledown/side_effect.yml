@@ -19,7 +19,7 @@
       ansible.builtin.set_fact:
         _gluster_members: "{{ _existing_members }}"
         _gluster_initial: "{{ groups['gluster'] }}"
-        _gluster_scaledown: "{{ groups['gluster_up'] }}"
+        _gluster_scaledown: "{{ groups['gluster_down"
       vars:
         _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
