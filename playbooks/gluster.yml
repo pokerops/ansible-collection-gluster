@@ -23,30 +23,31 @@
         state: started
         enabled: true
 
+    - name: Manage gluster peer members
+      gluster.gluster.gluster_peer:
+        state: present
+        nodes: "{{ gluster_target_members }}"
+      changed_when: false
+      run_once: true
+
+    - name: Wait for gluster peers to be connected
+      ansible.builtin.shell: gluster pool list | awk '{print $2}'
+      args:
+        chdir: "/usr/sbin/"
+      vars:
+        _status: "{{ _member_query }}"
+        _members_output: "{{ _status.stdout_lines | reject('equalto', 'Hostname') }}"
+        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+      register: _member_query
+      retries: "{{ gluster_retries | default(5) }}"
+      delay: "{{ gluster_delay | default(30) }}"
+      until: gluster_target_members | select('in', _existing_members)
+      changed_when: false
+
     - name: Manage gluster brick tasks
       run_once: true
       block:
-        - name: Manage gluster peer members
-          gluster.gluster.gluster_peer:
-            state: present
-            nodes: "{{ gluster_target_members }}"
-          changed_when: false
-
-        - name: Wait for gluster peers to be connected
-          ansible.builtin.shell: gluster pool list | awk '{print $2}'
-          args:
-            chdir: "/usr/sbin/"
-          vars:
-            _status: "{{ _member_query }}"
-            _members_output: "{{ _status.stdout_lines | reject('equalto', 'Hostname') }}"
-            _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
-          register: _member_query
-          retries: "{{ gluster_retries | default(5) }}"
-          delay: "{{ gluster_delay | default(30) }}"
-          until: gluster_target_members | select('in', _existing_members)
-          changed_when: false
-
-        - name: Create gluster volumes
+        - name: Manage gluster volumes
           gluster.gluster.gluster_volume:
             state: present
             name: "{{ _volume }}"
