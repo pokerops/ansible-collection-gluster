@@ -5,12 +5,6 @@
   vars_files:
     - ../vars/main.yml
   tasks:
-    - name: Set gluster facts
-      ansible.builtin.set_fact:
-        _map_flatten: "nephelaiio.plugins.map_flatten"
-        _select_attrs: "nephelaiio.plugins.select_attributes"
-        _alias_keys: "nephelaiio.plugins.alias_keys"
-
     - name: Create brick paths
       ansible.builtin.file:
         path: "{{ item.brick }}"
@@ -36,6 +30,20 @@
           gluster.gluster.gluster_peer:
             state: present
             nodes: "{{ gluster_target_members }}"
+          changed_when: false
+
+        - name: Wait for gluster peers to be connected
+          ansible.builtin.shell: gluster pool list | awk '{print $2}'
+          args:
+            chdir: "/usr/sbin/"
+          vars:
+            _status: "{{ _member_query }}"
+            _members_output: "{{ _status.stdout_lines | reject('equalto', 'Hostname') }}"
+            _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+          register: _member_query
+          retries: "{{ gluster_retries | default(5) }}"
+          delay: "{{ gluster_delay | default(30) }}"
+          until: (gluster_target_members | length == _existing_members | length) | bool
           changed_when: false
 
         - name: Create gluster volumes
