@@ -22,7 +22,8 @@
         _brick: "{{ item.brick }}"
         _volume: "{{ item.name }}"
         _query: "{{ _member_query.stdout }}"
-      failed_when: not 'Started' is search(_query)
+        _status: "Status: Started"
+      failed_when: not _status is search(_query)
       register: _member_query
       changed_when: false
       loop_control:
