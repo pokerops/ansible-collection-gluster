@@ -2,7 +2,18 @@
 - name: Query cluster state
   hosts: "{{ gluster_hostgroup_name | default('gluster') }}"
   become: true
+  vars_files:
+    - ../vars/main.yml
   tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Verify gluster service status
+      ansible.builtin.assert:
+        that:
+          - gluster_service_name in services
+          - services[gluster_service_name].state | lower == 'running'
+
     - name: Query volume info
       ansible.builtin.shell: gluster volume info {{ _volume }} | grep -i status
       args:
