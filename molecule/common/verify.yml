@@ -14,12 +14,41 @@
           - gluster_service_name in services
           - services[gluster_service_name].state | lower == 'running'
 
-    - name: Query volume info
+    - name: Query pool list
+      ansible.builtin.shell: gluster pool list | awk '{print $2}'
+      args:
+        chdir: "/usr/sbin/"
+      register: _member_query
+      changed_when: false
+
+    - name: Query peer status
+      ansible.builtin.shell: gluster peer status | grep -i state
+      args:
+        chdir: "/usr/sbin/"
+      register: _peer_query
+      changed_when: false
+
+    - name: Verify gluster node membership
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname in _existing_members
+          - (_gluster_group | length) == (_existing_members | length)
+      vars:
+        _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
+        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _gluster_group: "{{ groups['gluster'] }}"
+
+    - name: Verify gluster node status
+      ansible.builtin.assert:
+        that: _members_output | length == 0
+      vars:
+        _members_output: "{{ _peer_query.stdout | reject('match', 'Connected') }}"
+
+    - name: Verify volume statuses
       ansible.builtin.shell: gluster volume info {{ _volume }} | grep -i status
       args:
         chdir: "/usr/sbin/"
       vars:
-        _brick: "{{ item.brick }}"
         _volume: "{{ item.name }}"
         _query: "{{ _member_query.stdout }}"
         _status: "Status: Started"
