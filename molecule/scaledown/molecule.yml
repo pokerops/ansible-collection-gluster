@@ -56,6 +56,7 @@ provisioner:
     create: ../common/create.yml
     prepare: ../common/prepare.yml
     converge: ../common/install.yml
+    verify: ../common/verify.yml
     destroy: ../common/destroy.yml
   inventory:
     group_vars:
