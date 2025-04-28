@@ -85,4 +85,5 @@ scenario:
     - create
     - prepare
     - converge
+    - verify
     - side_effect

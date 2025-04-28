@@ -56,6 +56,7 @@
             force: true
             replicas: "{{ gluster_target_members | length }}"
             start_on_create: true
+            options: "{{ item.options | default(omit) }}"
           vars:
             _brick: "{{ item.brick }}"
             _volume: "{{ item.name }}"
@@ -103,4 +104,3 @@
       loop_control:
         label: "{{ volume.mount }} - {{ path }}"
       loop: "{{ _gluster_volumes | subelements('paths', skip_missing='yes') }}"
-      run_once: true

@@ -1,0 +1,24 @@
+---
+- name: Query cluster state
+  hosts: "{{ _gluster_hostgroup_name }}"
+  become: true
+  tasks:
+    - name: Query volume info
+      ansible.builtin.shell: gluster volume info {{ _volume }} | grep -i status
+      args:
+        chdir: "/usr/sbin/"
+      vars:
+        _brick: "{{ item.brick }}"
+        _volume: "{{ item.name }}"
+      register: _member_query
+      changed_when: false
+      loop_control:
+        label: "{{ _volume }}"
+      loop: "{{ _gluster_volumes }}"
+
+    - debug:
+        var: _member_query
+
+    - name: Verify gluster volume status
+      ansible.builtin.assert:
+        that: "'Started' in _member_query.stdout"
