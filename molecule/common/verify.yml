@@ -36,7 +36,8 @@
       vars:
         _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _gluster_group: "{{ groups['gluster'] }}"
+        _gluster_group_name: "{{ gluster_hostgroup_name | default('gluster') }}"
+        _gluster_group: "{{ groups[_gluster_group_name] }}"
 
     - name: Verify gluster node status
       ansible.builtin.assert:
