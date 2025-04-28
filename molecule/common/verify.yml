@@ -27,9 +27,9 @@
         label: "{{ _volume }}"
       loop: "{{ gluster_volumes }}"
 
-    - debug:
-        var: _member_query
-
     - name: Verify gluster volume status
       ansible.builtin.assert:
-        that: "'Started' in _member_query.stdout"
+        that: "'Started' is search(item.stdout)"
+      vars:
+        _query: "{{ _member_query.results | default([]) }}"
+      loop: "{{ _query }}"
