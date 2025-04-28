@@ -21,15 +21,11 @@
       vars:
         _brick: "{{ item.brick }}"
         _volume: "{{ item.name }}"
+        _query: "{{ _member_query.stdout }}"
+      failed_when: "not 'Started' is search(_query)"
+      failed_msg: "Volume {{ item.name }} is not started"
       register: _member_query
       changed_when: false
       loop_control:
         label: "{{ _volume }}"
       loop: "{{ gluster_volumes }}"
-
-    - name: Verify gluster volume status
-      ansible.builtin.assert:
-        that: "'Started' is search(item.stdout)"
-      vars:
-        _query: "{{ _member_query.results | default([]) }}"
-      loop: "{{ _query }}"
