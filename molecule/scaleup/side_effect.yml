@@ -43,3 +43,8 @@
           - (_gluster_members | length) == (_gluster_scaleup | length)
           - _gluster_members | difference(_gluster_scaleup) | length == 0
           - _gluster_scaleup | difference(_gluster_members) | length == 0
+
+- name: Import verification playbook
+  ansible.builtin.import_playbook: ../common/verify.yml
+  vars:
+    gluster_hostgroup_name: gluster_up

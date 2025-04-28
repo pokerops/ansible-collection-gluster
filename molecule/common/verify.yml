@@ -1,6 +1,6 @@
 ---
 - name: Query cluster state
-  hosts: "{{ _gluster_hostgroup_name }}"
+  hosts: "{{ gluster_hostgroup_name | default('gluster') }}"
   become: true
   tasks:
     - name: Query volume info
