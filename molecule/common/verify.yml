@@ -40,9 +40,10 @@
 
     - name: Verify gluster node status
       ansible.builtin.assert:
-        that: _members_output | length == 0
+        that: _query | length == 0
       vars:
-        _members_output: "{{ _peer_query.stdout | reject('match', 'Connected') }}"
+        _output: "{{ _peer_query.stdout }}"
+        _query: "{{ _output | reject('regex', 'Connected') }}"
 
     - name: Verify volume statuses
       ansible.builtin.shell: gluster volume info {{ _volume }} | grep -i status
