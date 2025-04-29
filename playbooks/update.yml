@@ -1,0 +1,59 @@
+---
+- name: Update gluster members
+  hosts: "{{ _gluster_hostgroup_name }}"
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  vars_files:
+    - ../vars/main.yml
+  vars:
+    update_reboot: false
+    update_cache_valid_time: 1
+  roles:
+    - pokerops.gluster.update
+  pre_tasks:
+    - name: Query pool list
+      ansible.builtin.shell: gluster pool list | awk '{print $2}'
+      args:
+        chdir: "/usr/sbin/"
+      register: _member_query
+      changed_when: false
+
+    - name: Verify gluster status
+      ansible.builtin.assert:
+        that: inventory_hostname in _existing_members
+        fail_msg: "Gluster is in an inconsistent state"
+      vars:
+        _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
+        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+
+    - name: Query peer status
+      ansible.builtin.shell: gluster peer status | grep -i state
+      args:
+        chdir: "/usr/sbin/"
+      register: _peer_query
+      changed_when: false
+
+    - name: Verify gluster status
+      ansible.builtin.assert:
+        that: _query | length == (_gluster_group | length - 1)
+        fail_msg: "Gluster node is in an inconsistent state"
+      vars:
+        _output: "{{ _peer_query.stdout_lines }}"
+        _query: "{{ _output | select('regex', 'Connected') }}"
+        _gluster_group: "{{ groups[_gluster_hostgroup_name] }}"
+
+    - name: Stop gluster service
+      ansible.builtin.service:
+        name: "{{ gluster_service_name }}"
+        state: stopped
+
+  tasks:
+    - name: Reboot node
+      ansible.builtin.reboot:
+        reboot_timeout: "{{ gluster_reboot_timeout | default(300) }}"
+
+    - name: Include service tasks
+      ansible.builtin.include_tasks: tasks/service.yml
+      vars:
+        gluster_service_state: started

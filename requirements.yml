@@ -1,5 +1,8 @@
 ---
-roles: []
+roles:
+  - name: update
+    src: https://github.com/robertdebock/ansible-role-update.git
+    version: 3.1.9
 collections:
   - name: pokerops.gluster
     source: .
