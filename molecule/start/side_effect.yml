@@ -17,4 +17,4 @@
     - name: Verify service run status
       ansible.builtin.fail:
         msg: "gluster service is not running"
-      when: services[gluster_service_name].state not in ["started"]
+      when: services[gluster_service_name].state not in ["running"]
