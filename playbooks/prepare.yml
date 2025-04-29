@@ -40,9 +40,8 @@
           ansible.builtin.assert:
             that: _query | length == 0
           vars:
-            _output: "{{ _peer_query.stdout | default('') }}"
-            _split: "{{ _output | split('\n') }}"
-            _query: "{{ _split | reject('regex', 'Connected') }}"
+            _output: "{{ _peer_query.stdout_lines | default('') }}"
+            _query: "{{ _output | reject('regex', 'Connected') }}"
 
     - name: Add host entries for cluster members
       ansible.builtin.lineinfile:
