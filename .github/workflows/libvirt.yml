@@ -19,6 +19,21 @@ jobs:
   molecule:
     name: libvirt
     runs-on: libvirt
+    strategy:
+      matrix:
+        scenario:
+          - install
+          - start
+          - stop
+          - restart
+          - scaleup
+          - scaledown
+          - update
+        image:
+          - name: ubuntu2204
+            command: /lib/systemd/systemd
+          - name: ubuntu2004
+            command: /lib/systemd/systemd
     steps:
       - name: Check out the codebase
         uses: actions/checkout@v4
@@ -38,3 +53,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           PY_COLORS: "1"
           ANSIBLE_FORCE_COLOR: "1"
+          MOLECULE_SCENARIO: ${{ matrix.scenario }}
+          MOLECULE_DOCKER_IMAGE: ${{ matrix.image.name }}
+          MOLECULE_DOCKER_COMMAND: ${{ matrix.image.command }}
