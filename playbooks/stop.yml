@@ -1,0 +1,32 @@
+---
+- name: Stop gluster members
+  hosts: "{{ _gluster_hostgroup_name }}"
+  become: true
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: End play for offline hosts
+      ansible.builtin.meta: end_host
+      when: not gluster_service_name in services
+
+    - name: Query pool list
+      ansible.builtin.shell: gluster pool list | awk '{print $2}'
+      args:
+        chdir: "/usr/sbin/"
+      register: _member_query
+      changed_when: false
+
+    - name: End play when node is not member of cluster
+      ansible.builtin.meta: end_host
+      vars:
+        _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
+        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+      when: not inventory_hostname in _existing_members
+
+    - name: Stop gluster service
+      ansible.builtin.service:
+        name: "{{ gluster_service_name }}"
+        state: stopped

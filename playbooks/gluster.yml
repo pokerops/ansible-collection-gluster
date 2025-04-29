@@ -39,8 +39,8 @@
         _members_output: "{{ _status.stdout_lines | reject('equalto', 'Hostname') }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
       register: _member_query
-      retries: "{{ gluster_retries | default(5) }}"
-      delay: "{{ gluster_delay | default(30) }}"
+      retries: "{{ _gluster_retries }}"
+      delay: "{{ _gluster_delay }}"
       until: gluster_target_members | select('in', _existing_members)
       changed_when: false
 

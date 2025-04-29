@@ -1,0 +1,11 @@
+---
+- name: Start gluster members
+  hosts: "{{ _gluster_hostgroup_name }}"
+  become: true
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: Include service tasks
+      ansible.builtin.include_tasks: tasks/service.yml
+      vars:
+        gluster_service_state: started
