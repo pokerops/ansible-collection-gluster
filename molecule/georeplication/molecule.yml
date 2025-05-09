@@ -14,7 +14,7 @@ platforms:
     size: 30G
     groups:
       - gluster
-      - gluster-primary
+      - gluster_primary
   - name: gluster-${MOLECULE_SCENARIO_NAME}-primary-02
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
@@ -22,7 +22,7 @@ platforms:
     size: 30G
     groups:
       - gluster
-      - gluster-primary
+      - gluster_primary
   - name: gluster-${MOLECULE_SCENARIO_NAME}-primary-03
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
@@ -30,7 +30,7 @@ platforms:
     size: 30G
     groups:
       - gluster
-      - gluster-primary
+      - gluster_primary
   - name: gluster-${MOLECULE_SCENARIO_NAME}-secondary-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
@@ -38,7 +38,7 @@ platforms:
     size: 30G
     groups:
       - gluster
-      - gluster-secondary
+      - gluster_secondary
   - name: gluster-${MOLECULE_SCENARIO_NAME}-secondary-02
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
@@ -46,7 +46,7 @@ platforms:
     size: 30G
     groups:
       - gluster
-      - gluster-secondary
+      - gluster_secondary
   - name: gluster-${MOLECULE_SCENARIO_NAME}-secondary-03
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
@@ -54,7 +54,7 @@ platforms:
     size: 30G
     groups:
       - gluster
-      - gluster-secondary
+      - gluster_secondary
 provisioner:
   name: ansible
   config_options:
