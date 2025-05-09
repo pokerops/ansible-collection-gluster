@@ -4,6 +4,7 @@
   become: true
   vars_files:
     - ../vars/main.yml
+  any_errors_fatal: true
   tasks:
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
