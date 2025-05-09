@@ -76,5 +76,5 @@
             _user: "{{ _gluster_georeplica_user }}"
           loop_control:
             label: "{{ item }}"
-          loop: "{{ groups[_gluster_hostgroup_name] }}"
+          loop: "{{ play_hosts }}"
           delegate_to: "{{ item }}"
