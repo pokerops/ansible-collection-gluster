@@ -73,6 +73,7 @@ provisioner:
       all:
         libvirt_platforms: "{{ molecule_yml.platforms }}"
         gluster_georeplica_manage: true
+        gluster_nolog: false
       gluster_primary:
         gluster_hostgroup_name: gluster_primary
         gluster_volumes:
