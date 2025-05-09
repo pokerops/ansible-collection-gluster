@@ -70,8 +70,10 @@
         - name: Distribute SSH public keys to nodes
           ansible.posix.authorized_key:
             comment: "{{ item }}"
-            user: "{{ _rke_install_user }}"
+            user: "{{ _user.name }}"
             key: "{{ gluster_publickey.public_key }}"
+          vars:
+            _user: "{{ _gluster_georeplica_user }}"
           loop_control:
             label: "{{ item }}"
           loop: "{{ groups[_gluster_hostgroup_name] }}"
