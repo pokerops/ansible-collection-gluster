@@ -99,7 +99,7 @@
         _alien_group_name: "{{ _prefix }}_alien"
         _member_group_name: "{{ _prefix }}_member"
         _alien_group: "{{ groups[_alien_group_name] }}"
-        _member_group: "{{ groups[_member_group_name] }}"
+        _members_group: "{{ groups[_member_group_name] }}"
         _targets: "{{ gluster_target_members }}"
         _aliens: "{{ _alien_group | select('in', _targets) }}"
         _members: "{{ _members_group | select('in', _targets) }}"
