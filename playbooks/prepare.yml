@@ -19,7 +19,7 @@
         that:
           - _members_num | length > 1
       vars:
-        _members_num: "{{ gluster_target_members | length }}"
+        _members_num: "{{ gluster_target_members }}"
 
     - name: Gather service facts
       ansible.builtin.service_facts:
