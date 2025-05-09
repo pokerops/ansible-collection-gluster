@@ -49,7 +49,7 @@
 - name: Configure cluster SSH access
   hosts: "{{ _gluster_hostgroup_name }}"
   serial: 1
-  become: true
+  become_user: "{{ _gluster_georeplica_user.name }}"
   vars_files:
     - ../vars/main.yml
   tasks:
