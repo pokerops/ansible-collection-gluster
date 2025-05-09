@@ -93,7 +93,7 @@
     - name: Set gluster member facts
       ansible.builtin.set_fact:
         _gluster_aliens: "{{ _aliens }}"
-        _gluster_existing_members: "{{ _existing }}"
+        _gluster_existing_members: "{{ _members }}"
       vars:
         _prefix: "{{ _gluster_hostgroup_name }}"
         _alien_group_name: "{{ _prefix }}_alien"
@@ -102,7 +102,7 @@
         _member_group: "{{ groups[_member_group_name] }}"
         _targets: "{{ gluster_target_members }}"
         _aliens: "{{ _alien_group | select('in', _targets) }}"
-        _existing: "{{ _existing_group | select('in', _targets) }}"
+        _members: "{{ _members_group | select('in', _targets) }}"
 
     - name: Debug gluster target members
       ansible.builtin.debug:
