@@ -85,32 +85,37 @@
       ansible.builtin.group_by:
         key: "{{ _alien_group if _gluster_alien else _member_group }}"
       vars:
-        _suffix: "gluster_group"
-        _alien_group: "{{ _suffix }}_alien"
-        _member_group: "{{ _suffix }}_member"
+        _prefix: "{{ _gluster_hostgroup_name }}"
+        _alien_group: "{{ _prefix }}_alien"
+        _member_group: "{{ _prefix }}_member"
       changed_when: false
 
     - name: Set gluster member facts
       ansible.builtin.set_fact:
-        _gluster_aliens: "{{ groups[_alien_group] | default([]) }}"
-        _gluster_existing_members: "{{ groups[_member_group] | default([]) }}"
+        _gluster_aliens: "{{ _aliens }}"
+        _gluster_existing_members: "{{ _existing }}"
       vars:
-        _suffix: "gluster_group"
-        _alien_group: "{{ _suffix }}_alien"
-        _member_group: "{{ _suffix }}_member"
+        _prefix: "{{ _gluster_hostgroup_name }}"
+        _alien_group_name: "{{ _prefix }}_alien"
+        _member_group_name: "{{ _prefix }}_member"
+        _alien_group: "{{ groups[_alien_group_name] }}"
+        _member_group: "{{ groups[_member_group_name] }}"
+        _targets: "{{ gluster_target_members }}"
+        _aliens: "{{ _alien_group | select('in', _targets) }}"
+        _existing: "{{ _existing_group | select('in', _targets) }}"
 
     - name: Debug gluster target members
       ansible.builtin.debug:
-        msg: "Target gluster {{ _gluster_hostgroup_name }} members: [{{ gluster_target_members | join(', ') }}]"
+        msg: "Target {{ _gluster_hostgroup_name }} gluster members: [{{ gluster_target_members | join(', ') }}]"
 
     - name: Debug gluster existing members
       ansible.builtin.debug:
-        msg: "Existing gluster {{ _gluster_hostgroup_name }} members: [{{ _gluster_existing_members | join(', ') }}]"
+        msg: "Existing {{ _gluster_hostgroup_name }} gluster members: [{{ _gluster_existing_members | join(', ') }}]"
 
-    - name: Debug gluster members additions
+    - name: Debug gluster member additions
       ansible.builtin.debug:
-        msg: "New gluster {{ _gluster_hostgroup_name }} members: [{{ _gluster_aliens | join(', ') }}]"
+        msg: "New {{ _gluster_hostgroup_name }} gluster members: [{{ _gluster_aliens | join(', ') }}]"
 
     - name: Debug gluster member removals
       ansible.builtin.debug:
-        msg: "Removing gluster {{ _gluster_hostgroup_name }} members: [{{ _gluster_member_del | join(', ') }}]"
+        msg: "Removing {{ _gluster_hostgroup_name }} gluster members: [{{ _gluster_member_del | join(', ') }}]"
