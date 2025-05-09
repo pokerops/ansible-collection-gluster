@@ -4,3 +4,6 @@
 
 - name: Deploy Gluster
   ansible.builtin.import_playbook: pokerops.gluster.gluster
+
+- name: Run Gluster Geo Replication user
+  ansible.builtin.import_playbook: pokerops.gluster.ssh

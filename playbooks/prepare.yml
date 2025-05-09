@@ -19,6 +19,13 @@
         _gluster_addrs: "{{ _gluster_hosts | map('extract', hostvars, gluster_address_attrs) }}"
         _gluster_target_members: "{{ _gluster_hosts if _gluster_hosts_manage else _gluster_addrs }}"
 
+    - name: Verify gluster membership count
+      ansible.builtin.assert:
+        that:
+          - _members_num | length > 1
+      vars:
+        _members_num: "{{ gluster_target_members | length }}"
+
     - name: Gather service facts
       ansible.builtin.service_facts:
 
