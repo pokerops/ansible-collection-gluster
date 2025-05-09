@@ -46,6 +46,11 @@
             - _user_state == 'absent'
             - _group_state == 'absent'
 
+        - name: Group gluster members
+          ansible.builtin.group_by:
+            key: "gluster_members_all"
+          changed_when: false
+
 - name: Configure cluster SSH access
   hosts: "{{ _gluster_hostgroup_name }}"
   serial: 1
@@ -74,7 +79,8 @@
             key: "{{ gluster_publickey.public_key }}"
           vars:
             _user: "{{ _gluster_georeplica_user }}"
+          become: true
           loop_control:
             label: "{{ item }}"
-          loop: "{{ play_hosts }}"
+          loop: "{{ groups['gluster_members_all'] }}"
           delegate_to: "{{ item }}"
