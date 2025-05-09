@@ -28,7 +28,6 @@
         state: present
         nodes: "{{ gluster_target_members }}"
       changed_when: false
-      run_once: true
 
     - name: Wait for gluster peers to be connected
       ansible.builtin.shell: gluster pool list | awk '{print $2}'
