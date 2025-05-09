@@ -26,8 +26,11 @@
     - name: Manage gluster peer members
       gluster.gluster.gluster_peer:
         state: present
-        nodes: "{{ gluster_target_members }}"
+        nodes: "{{ _targets }}"
+      vars:
+        _targets: "{{ gluster_target_members }}"
       changed_when: false
+      when: (inventory_hostname == (_targets | first))
 
     - name: Wait for gluster peers to be connected
       ansible.builtin.shell: gluster pool list | awk '{print $2}'
