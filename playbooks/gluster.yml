@@ -47,7 +47,7 @@
       changed_when: false
 
     - name: Manage gluster brick tasks
-      run_once: true
+      when: (inventory_hostname == (gluster_target_members | first))
       block:
         - name: Manage gluster volumes
           gluster.gluster.gluster_volume:

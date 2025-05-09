@@ -6,9 +6,9 @@ gluster_address_attrs: ["ansible_default_ipv4", "address"]
 gluster_ssh_key: ~/.ssh/id_rsa
 gluster_georeplica_user_default:
   name: georeplica
-  group: "{{ _gluster_georeplica_group.name }}"
+  group: "{{ gluster_georeplica_group_default.name }}"
 gluster_georeplica_group_default:
-  name: "{{ _gluster_georeplica_group.name }}"
+  name: "georeplica"
 
 # Overridable values
 _gluster_hostgroup_name: "{{ gluster_hostgroup_name | default('gluster') }}"
