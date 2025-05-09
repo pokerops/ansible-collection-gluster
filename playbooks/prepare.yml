@@ -101,16 +101,16 @@
 
     - name: Debug gluster target members
       ansible.builtin.debug:
-        msg: "Target gluster members: [{{ gluster_target_members | join(', ') }}]"
+        msg: "Target gluster {{ _gluster_hostgroup_name }} members: [{{ gluster_target_members | join(', ') }}]"
 
     - name: Debug gluster existing members
       ansible.builtin.debug:
-        msg: "Existing gluster members: [{{ _gluster_existing_members | join(', ') }}]"
+        msg: "Existing gluster {{ _gluster_hostgroup_name }} members: [{{ _gluster_existing_members | join(', ') }}]"
 
     - name: Debug gluster members additions
       ansible.builtin.debug:
-        msg: "New gluster members: [{{ _gluster_aliens | join(', ') }}]"
+        msg: "New gluster {{ _gluster_hostgroup_name }} members: [{{ _gluster_aliens | join(', ') }}]"
 
     - name: Debug gluster member removals
       ansible.builtin.debug:
-        msg: "Removing gluster members: [{{ _gluster_member_del | join(', ') }}]"
+        msg: "Removing gluster {{ _gluster_hostgroup_name }} members: [{{ _gluster_member_del | join(', ') }}]"
