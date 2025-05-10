@@ -54,7 +54,6 @@
 - name: Configure cluster SSH access
   hosts: "{{ _gluster_hostgroup_name }}"
   serial: 1
-  become_user: "{{ _gluster_georeplica_user.name }}"
   vars_files:
     - ../vars/main.yml
   tasks:
@@ -70,6 +69,8 @@
         - name: Create SSH keypair
           community.crypto.openssh_keypair:
             path: "{{ gluster_ssh_key }}"
+            owner: "{{ _gluster_georeplica_user.name }}"
+            group: "{{ _gluster_georeplica_group.name }}"
           register: gluster_publickey
 
         - name: Distribute SSH public keys to nodes
@@ -82,4 +83,4 @@
           loop_control:
             label: "{{ item }}"
           loop: "{{ groups['gluster_members_all'] }}"
-          delegate_to: "{{ inventory_hostname }}"
+          delegate_to: "{{ item }}"
