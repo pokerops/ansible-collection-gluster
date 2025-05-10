@@ -79,8 +79,7 @@
             key: "{{ gluster_publickey.public_key }}"
           vars:
             _user: "{{ _gluster_georeplica_user }}"
-          become: true
           loop_control:
             label: "{{ item }}"
           loop: "{{ groups['gluster_members_all'] }}"
-          delegate_to: "{{ item }}"
+          delegate_to: "{{ inventory_hostname }}"
