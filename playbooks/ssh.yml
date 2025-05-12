@@ -1,6 +1,7 @@
 ---
-- name: Verify gluster georeplication variables
+- name: Manage gluster geo replication credentials
   hosts: "{{ _gluster_hostgroup_name }}"
+  become: true
   vars_files:
     - ../vars/main.yml
   tasks:
@@ -8,12 +9,6 @@
       ansible.builtin.meta: end_host
       when: not _gluster_georeplica_manage
 
-- name: Manage gluster geo replication credentials
-  hosts: "{{ _gluster_hostgroup_name }}"
-  become: true
-  vars_files:
-    - ../vars/main.yml
-  tasks:
     - name: Create geo replication group
       ansible.builtin.group:
         name: "{{ _group.name }}"
@@ -65,6 +60,10 @@
   vars_files:
     - ../vars/main.yml
   tasks:
+    - name: End play when gluster georeplication is not required
+      ansible.builtin.meta: end_host
+      when: not _gluster_georeplica_manage
+
     - name: Create SSH directory
       ansible.builtin.file:
         path: "{{ gluster_ssh_key | dirname }}"
