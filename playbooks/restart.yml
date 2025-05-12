@@ -1,4 +1,7 @@
 ---
+- name: Run Gluster facts
+  ansible.builtin.import_playbook: pokerops.gluster.facts
+
 - name: Restart gluster members
   hosts: "{{ _gluster_hostgroup_name }}"
   become: true

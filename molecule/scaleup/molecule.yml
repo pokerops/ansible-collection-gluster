@@ -70,6 +70,8 @@ provisioner:
               - a
               - b
               - c
+      gluster_up:
+        gluster_groupset: gluster_up
 verifier:
   name: ansible
 scenario:

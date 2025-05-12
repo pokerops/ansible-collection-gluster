@@ -1,0 +1,119 @@
+---
+- name: Set gluster members
+  hosts: "{{ _gluster_hostgroup_name }}"
+  become: true
+  vars:
+    _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
+    _gluster_prefix: "{{ _gluster_prefix | default('gluster') }}"
+    _gluster_name: "{{ _gluster_prefix }}_{{ _gluster_groupset }}"
+  vars_files:
+    - ../vars/main.yml
+  any_errors_fatal: true
+  tasks:
+    - name: Group gluster members
+      ansible.builtin.group_by:
+        key: "{{ _gluster_name }}"
+
+      changed_when: false
+    - name: Set gluster hosts fact
+      ansible.builtin.set_fact:
+        gluster_target_members: "{{ _gluster_target_members }}"
+      vars:
+        _map_format: "nephelaiio.plugins.map_format"
+        _gluster_hosts: "{{ groups[_gluster_name] }}"
+        _gluster_addrs: "{{ _gluster_hosts | map('extract', hostvars, gluster_address_attrs) }}"
+        _gluster_target_members: "{{ _gluster_hosts if _gluster_hosts_manage else _gluster_addrs }}"
+
+    - name: Verify gluster membership count
+      ansible.builtin.assert:
+        that:
+          - _members_num | length > 1
+      vars:
+        _members_num: "{{ gluster_target_members }}"
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Manage gluster status check tasks
+      when: gluster_service_name in services
+      block:
+        - name: End play for offline hosts
+          ansible.builtin.meta: end_host
+          when: services[gluster_service_name].state | lower != 'running'
+
+        - name: Query peer status
+          ansible.builtin.shell: gluster peer status | grep -i state
+          args:
+            chdir: "/usr/sbin/"
+          register: _peer_query
+          changed_when: false
+
+        - name: Verify gluster node status
+          ansible.builtin.assert:
+            that: _query | length == 0
+          vars:
+            _output: "{{ _peer_query.stdout_lines | default('') }}"
+            _query: "{{ _output | reject('regex', 'Connected') }}"
+
+    - name: Query pool list
+      ansible.builtin.shell: gluster pool list | awk '{print $2}'
+      args:
+        chdir: "/usr/sbin/"
+      ignore_errors: true
+      register: _member_query
+      changed_when: false
+
+    - name: Set gluster member facts
+      ansible.builtin.set_fact:
+        _gluster_alien: "{{ _is_alien | bool }}"
+        _gluster_member: "{{ _is_member | bool }}"
+        _gluster_member_del: "{{ _delete_members }}"
+      vars:
+        _status: "{{ _member_query }}"
+        _status_error: "{{ _status.stderr | default('') }}"
+        _has_failed: "{{ (_status_error is search('gluster: not found')) | bool }}"
+        _members_output: "{{ _status.stdout_lines | default([]) | reject('equalto', 'Hostname') }}"
+        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _target_members: "{{ gluster_target_members }}"
+        _is_alien: "{{ _has_failed or (_existing_members | length == 1) }}"
+        _is_member: "{{ not _is_alien }}"
+        _delete_members: "{{ _existing_members | reject('in', _target_members) }}"
+
+    - name: Group gluster members
+      ansible.builtin.group_by:
+        key: "{{ _alien_group if _gluster_alien else _member_group }}"
+      vars:
+        _prefix: "{{ _gluster_prefix }}"
+        _alien_group: "{{ _prefix }}_alien"
+        _member_group: "{{ _prefix }}_member"
+      changed_when: false
+
+    - name: Set gluster member facts
+      ansible.builtin.set_fact:
+        _gluster_aliens: "{{ _aliens }}"
+        _gluster_existing_members: "{{ _members }}"
+      vars:
+        _prefix: "{{ _gluster_prefix }}"
+        _alien_group_name: "{{ _prefix }}_alien"
+        _member_group_name: "{{ _prefix }}_member"
+        _alien_group: "{{ groups[_alien_group_name] | default([]) }}"
+        _members_group: "{{ groups[_member_group_name] | default([]) }}"
+        _targets: "{{ gluster_target_members }}"
+        _aliens: "{{ _alien_group | select('in', _targets) }}"
+        _members: "{{ _members_group | select('in', _targets) }}"
+
+    - name: Debug gluster target members
+      ansible.builtin.debug:
+        msg: "Target {{ _gluster_name }} gluster members: [{{ gluster_target_members | join(', ') }}]"
+
+    - name: Debug gluster existing members
+      ansible.builtin.debug:
+        msg: "Existing {{ _gluster_name }} gluster members: [{{ _gluster_existing_members | join(', ') }}]"
+
+    - name: Debug gluster member additions
+      ansible.builtin.debug:
+        msg: "New {{ _gluster_name }} gluster members: [{{ _gluster_aliens | join(', ') }}]"
+
+    - name: Debug gluster member removals
+      ansible.builtin.debug:
+        msg: "Removing {{ _gluster_name }} gluster members: [{{ _gluster_member_del | join(', ') }}]"

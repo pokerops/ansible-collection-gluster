@@ -1,4 +1,7 @@
 ---
+- name: Run Gluster facts
+  ansible.builtin.import_playbook: pokerops.gluster.facts
+
 - name: Update gluster members
   hosts: "{{ _gluster_hostgroup_name }}"
   become: true
@@ -41,7 +44,7 @@
       vars:
         _output: "{{ _peer_query.stdout_lines }}"
         _query: "{{ _output | select('regex', 'Connected') }}"
-        _gluster_group: "{{ groups[_gluster_hostgroup_name] }}"
+        _gluster_group: "{{ gluster_target_members }}"
 
     - name: Stop gluster service
       ansible.builtin.service:
