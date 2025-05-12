@@ -75,7 +75,7 @@ provisioner:
         gluster_georeplica_manage: true
         gluster_nolog: false
       gluster_primary:
-        gluster_hostgroup_name: gluster_primary
+        gluster_groupset: primary
         gluster_volumes:
           - name: test
             brick: /data/test
@@ -85,7 +85,7 @@ provisioner:
               - b
               - c
       gluster_secondary:
-        gluster_hostgroup_name: gluster_secondary
+        gluster_groupset: secondary
 verifier:
   name: ansible
 scenario:
