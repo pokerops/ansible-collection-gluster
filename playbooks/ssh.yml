@@ -52,7 +52,6 @@
   hosts: "{{ _gluster_hostgroup_name }}"
   gather_facts: false
   become: true
-  become_user: "{{ _gluster_georeplica_user.name }}"
   serial: 1
   vars_files:
     - ../vars/main.yml
