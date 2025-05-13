@@ -3,7 +3,7 @@
 gluster_package_name: "glusterfs-server"
 gluster_service_name: "glusterd.service"
 gluster_address_attrs: ["ansible_default_ipv4", "address"]
-gluster_ssh_key: "/var/lib/glusterd/geo-replication/{{ _gluster_georeplica_user.name }}/id_rsa"
+gluster_ssh_key: ~/.ssh/id_rsa
 gluster_georeplica_user_default:
   name: georeplica
   group: "{{ gluster_georeplica_group_default.name }}"
