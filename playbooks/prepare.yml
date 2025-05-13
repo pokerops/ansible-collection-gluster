@@ -16,3 +16,9 @@
         _fqdn: "{{ hostvars[item]['ansible_fqdn'] }}"
         _hostname: "{{ hostvars[item]['ansible_hostname'] }}"
       loop: "{{ groups[_gluster_hostgroup_name] }}"
+
+    - name: Configure gluster repository
+      ansible.builtin.include_role:
+        name: pokerops.gluster.gluster_repo
+      vars:
+        gluster_repo_release: "{{ _gluster_release }}"

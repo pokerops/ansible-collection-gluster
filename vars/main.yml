@@ -9,6 +9,7 @@ gluster_georeplica_user_default:
   group: "{{ gluster_georeplica_group_default.name }}"
 gluster_georeplica_group_default:
   name: "georeplica"
+gluster_release_default: 11
 
 # Overridable values
 _gluster_hostgroup_name: "{{ gluster_hostgroup_name | default('gluster') }}"
@@ -23,3 +24,4 @@ _gluster_georeplica_user: "{{ gluster_georeplica_user | default(gluster_georepli
 _gluster_georeplica_group: "{{ gluster_georeplica_group | default(gluster_georeplica_group_default) }}"
 _gluster_georeplica_manage: "{{ gluster_georeplica_manage | default('false') | bool }}"
 _gluster_nolog: "{{ gluster_nolog | default('true') | bool }}"
+_gluster_release: "{{ gluster_release | default(gluster_release_default) }}"

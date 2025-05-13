@@ -3,3 +3,6 @@ roles:
   - name: update
     src: https://github.com/robertdebock/ansible-role-update.git
     version: 3.1.9
+  - name: gluster_repo
+    src: https://github.com/pokerops/ansible-role-gluster-repo.git
+    version: 0.0.2
