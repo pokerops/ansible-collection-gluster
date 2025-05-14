@@ -45,15 +45,22 @@
           changed_when: false
 
         - name: Get gluster mountbroker volume status
-          ansible.builtin.shell: "gluster-mountbroker status"
+          ansible.builtin.shell: "gluster-mountbroker status | awk -F '|' '/{{ _broker_name }}/ {print $2 $3}'"
           args:
             chdir: "/usr/sbin/"
+          vars:
+            _broker_path: "{{ gluster_georeplica_mountbroker }}"
+            _broker_name: "{{ _broker_path | split('/') | last }}"
           register: _mount_broker_status
           changed_when: false
 
         - name: Debug gluster mountbroker volume status
           ansible.builtin.debug:
             msg: "{{ _mount_broker_status }}"
+          vars:
+            _status: "{{ _mount_broker_status }}"
+
+        - fail:
 
 - name: Import gluster restart playbook tasks
   ansible.builtin.import_playbook: ../restart.yml
