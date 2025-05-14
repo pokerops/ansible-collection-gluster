@@ -2,6 +2,10 @@
 - name: Install gluster
   hosts: "{{ _gluster_hostgroup_name }}"
   become: true
+  vars:
+    _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
+    _gluster_prefix: "{{ gluster_prefix | default('gluster') }}"
+    _gluster_name: "{{ _gluster_prefix }}_{{ _gluster_groupset }}"
   vars_files:
     - ../vars/main.yml
   tasks:
@@ -29,8 +33,9 @@
         nodes: "{{ _targets }}"
       vars:
         _targets: "{{ gluster_target_members }}"
+        _hosts: "{{ groups[_gluster_name] }}"
       changed_when: false
-      when: (inventory_hostname == (_targets | first))
+      when: (inventory_hostname == (_hosts | first))
 
     - name: Wait for gluster peers to be connected
       ansible.builtin.shell: gluster pool list | awk '{print $2}'

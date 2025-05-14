@@ -91,6 +91,7 @@ provisioner:
             brick: /data/test-secondary
             mount: /mnt/test-secondary
             paths: []
+            replica: true
 verifier:
   name: ansible
 scenario:
