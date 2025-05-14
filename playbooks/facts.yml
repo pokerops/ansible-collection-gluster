@@ -14,6 +14,7 @@
     - name: Group gluster members
       ansible.builtin.group_by:
         key: "{{ _gluster_name }}"
+      changed_when: false
 
     - name: Get gluster georeplication members
       when: _gluster_georeplica_manage
@@ -25,6 +26,7 @@
             _volumes: "{{ _gluster_volumes }}"
             _volume_replicas_attr: "{{ _volumes | selectattr('replica', 'defined') }}"
             _volume_replicas: "{{ _volume_replicas_attr | selectattr('replica') }}"
+          changed_when: false
           when: _volume_replicas | length > 0
 
         - name: Set gluster replica members fact
@@ -46,7 +48,6 @@
             _paths: "{{ _volumes | selectattr('path', 'defined') }}"
           when: inventory_hostname in _gluster_replica_hosts
 
-      changed_when: false
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
         gluster_target_members: "{{ _gluster_target_members }}"
