@@ -119,11 +119,7 @@
             _replica_names_dict: "{{ _replica_names | map(_to_dict, 'replica_name') }}"
             _replicas_combine: "{{ _replica_volumes | zip(_replica_names_dict) | map('combine') }}"
             _primary_volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
-            _volume_names: "{{ _primary_volumes | map(attribute='name') }}"
-            _volume_format: "{{ _volume_names | map(_map_format, _primary_member + '::%s') }}"
-            _volume_dict: "{{ _volume_format | map(_to_dict, 'name') }}"
-            _volumes_list: "{{ _primary_volumes | zip(_volume_dict) | map('combine') }}"
-            _volumes: "{{ _replicas_combine | zip(_volumes_list) | map('combine') }}"
+            _volumes: "{{ _replicas_combine | zip(_primary_volumes) | map('combine') }}"
 
         - name: Debug gluster geo replication volumes
           ansible.builtin.debug:
