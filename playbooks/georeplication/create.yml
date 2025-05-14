@@ -21,10 +21,10 @@
         - name: Set georeplication facts
           ansible.builtin.set_fact:
             _gluster_user: "{{ _gluster_georeplica_user.name }}"
-            _gluster_group: "{{ _gluster_georeplica_group.name }}"
+            _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
 
         - name: Setup gluster mountbroker
-          ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_group }}"
+          ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_usergroup }}"
           args:
             chdir: "/usr/sbin/"
           vars:

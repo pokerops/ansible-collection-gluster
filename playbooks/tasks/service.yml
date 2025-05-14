@@ -32,10 +32,10 @@
   vars:
     _output: "{{ _peer_query.stdout_lines | default([]) }}"
     _query: "{{ _output | select('match', '.*Connected.*') }}"
-    _gluster_group: "{{ gluster_target_members }}"
+    _group: "{{ gluster_target_members }}"
   retries: "{{ _gluster_retries }}"
   delay: "{{ _gluster_delay }}"
-  until: _query | length == ((_gluster_group | length | int) - 1)
+  until: (_query | length) == ((_group | length) - 1)
   register: _peer_query
   changed_when: false
 

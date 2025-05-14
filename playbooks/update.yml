@@ -39,12 +39,12 @@
 
     - name: Verify gluster status
       ansible.builtin.assert:
-        that: _query | length == (_gluster_group | length - 1)
+        that: _query | length == (_group | length - 1)
         fail_msg: "Gluster node is in an inconsistent state"
       vars:
         _output: "{{ _peer_query.stdout_lines }}"
         _query: "{{ _output | select('regex', 'Connected') }}"
-        _gluster_group: "{{ gluster_target_members }}"
+        _group: "{{ gluster_target_members }}"
 
     - name: Stop gluster service
       ansible.builtin.service:
