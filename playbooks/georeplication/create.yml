@@ -114,14 +114,29 @@
             _primary_volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
             _volumes: "{{ _replicas_combine | zip(_primary_volumes) | map('combine') }}"
 
-        - debug:
-            msg: "{{ _gluster_georeplica_volumes }}"
-
-        - fail:
-
         - name: Setup gluster mountbroker
           ansible.builtin.shell: "gluster-georep-sshkey generate"
           args:
             chdir: "/usr/sbin/"
           register: _georeplica_sshkey
           changed_when: false
+
+        - debug:
+            msg: "{{ _georeplica_sshkey }}"
+
+        - name: Create geo replication session
+          gluster.gluster.geo_rep:
+            action: create
+            mastervol: "{{ _primary }}"
+            slavevol: "{{ _replica }}"
+            georepuser: "{{ _gluster_user }}"
+          vars:
+            _primary: "{{ item.name }}"
+            _replica: "{{ item.replica_name }}"
+          loop_control:
+            label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+          loop: "{{ _gluster_georeplica_volumes }}"
+          register: _georeplica_create
+
+        - debug:
+            msg: "{{ _georeplica_create }}"
