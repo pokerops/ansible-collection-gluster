@@ -37,7 +37,7 @@
     chdir: "/usr/sbin/"
   vars:
     _output: "{{ _peer_query.stdout_lines | default([]) }}"
-    _query: "{{ _output | select('match', 'Connected') }}"
+    _query: "{{ _output | select('match', '.*Connected.*') }}"
     _gluster_group: "{{ gluster_target_members }}"
   retries: "{{ _gluster_retries }}"
   delay: "{{ _gluster_delay }}"
