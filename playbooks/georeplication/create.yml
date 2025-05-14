@@ -9,7 +9,7 @@
   vars:
     _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
   vars_files:
-    - ../vars/main.yml
+    - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_host
