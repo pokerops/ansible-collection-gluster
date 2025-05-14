@@ -64,12 +64,12 @@
 
         - name: Verify gluster mountbroker volume status
           ansible.builtin.assert:
-            that: _members | reject('match', 'OK') | length > 0
+            that:
+              - (_members | length) == (gluster_target_members | length)
+              - _members | reject('match', 'OK') | length > 0
           vars:
             _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
             _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
-
-        - fail:
 
 - name: Import gluster restart playbook tasks
   ansible.builtin.import_playbook: ../restart.yml
