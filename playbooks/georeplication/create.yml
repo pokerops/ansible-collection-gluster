@@ -56,9 +56,10 @@
 
         - name: Debug gluster mountbroker volume status
           ansible.builtin.debug:
-            msg: "{{ _mount_broker_status }}"
+            msg: "{{ _members }}"
           vars:
-            _status: "{{ _mount_broker_status }}"
+            _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
+            _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
 
         - fail:
 
