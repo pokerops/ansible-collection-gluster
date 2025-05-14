@@ -62,6 +62,8 @@
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
         gluster_target_members: "{{ _gluster_target_members }}"
+        _to_dict: "nephelaiio.plugins.to_dict"
+        _map_format: "nephelaiio.plugins.map_format"
       vars:
         _map_format: "nephelaiio.plugins.map_format"
         _gluster_hosts: "{{ groups[_gluster_name] }}"
