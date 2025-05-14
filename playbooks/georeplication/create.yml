@@ -111,8 +111,8 @@
             _replica_names: "{{ _replica_volumes | map(attribute='name') }}"
             _replica_names_dict: "{{ _replica_names | map(_to_dict, 'replica_name') }}"
             _replicas_combine: "{{ _replica_volumes | zip(_replica_names_dict) | map('combine') }}"
-            _primary_volumes: "{{ _gluster_volumes }}"
-            _volumes: "{{ _primary_volumes | zip(_replicas_combine) | map('combine') }}"
+            _primary_volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
+            _volumes: "{{ _replicas_combine | zip(_primary_volumes) | map('combine') }}"
 
         - debug:
             msg: "{{ _gluster_georeplica_volumes }}"
