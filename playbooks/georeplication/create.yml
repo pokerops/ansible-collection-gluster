@@ -1,0 +1,64 @@
+---
+- name: Run Gluster facts
+  ansible.builtin.import_playbook: pokerops.gluster.facts
+
+- name: Create geo replication session tasks
+  hosts: "{{ _gluster_georeplica_groupset }}"
+  gather_facts: false
+  become: true
+  vars:
+    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: End play when gluster georeplication is not required
+      ansible.builtin.meta: end_host
+      when: not _gluster_georeplica_manage
+
+    - name: Manage gluster replication member tasks
+      run_once: true
+      block:
+        - name: Set georeplication facts
+          ansible.builtin.set_fact:
+            _gluster_user: "{{ _gluster_georeplica_user.name }}"
+            _gluster_group: "{{ _gluster_georeplica_group.name }}"
+
+        - name: Setup gluster mountbroker
+          ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_group }}"
+          args:
+            chdir: "/usr/sbin/"
+          vars:
+            _mount: "{{ gluster_georeplica_mountbroker }}"
+          register: _mount_broker_setup
+          changed_when: false
+
+        - name: Add gluster mountbroker volumes
+          ansible.builtin.shell: "gluster-mountbroker add {{ _name }} {{ _gluster_user }}"
+          args:
+            chdir: "/usr/sbin/"
+          vars:
+            _name: "{{ item.name }}"
+          loop: "{{ _gluster_volumes }}"
+          loop_control:
+            label: "{{ _name }}"
+          register: _mount_broker_volumes
+          changed_when: false
+
+        - name: Get gluster mountbroker volume status
+          ansible.builtin.shell: "gluster-mountbroker status"
+          args:
+            chdir: "/usr/sbin/"
+          register: _mount_broker_status
+          changed_when: false
+
+        - name: Debug gluster mountbroker volume status
+          ansible.builtin.debug:
+            msg: "{{ _mount_broker_status }}"
+
+    - name: Include service tasks
+      ansible.builtin.include_tasks: ../tasks/service.yml
+      vars:
+        _hosts: "{{ groups[_gluster_georeplica_groupset] }}"
+        gluster_service_state: restarted
+      loop: "{{ _hosts }}"
+      delegate_to: "{{ item }}"

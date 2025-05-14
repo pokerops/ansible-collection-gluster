@@ -10,6 +10,7 @@ gluster_georeplica_user_default:
 gluster_georeplica_group_default:
   name: "georeplica"
 gluster_release_default: 11
+gluster_georeplica_mountbroker: "/var/mountbroker-root"
 
 # Overridable values
 _gluster_hostgroup_name: "{{ gluster_hostgroup_name | default('gluster') }}"

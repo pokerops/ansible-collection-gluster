@@ -7,6 +7,7 @@
     _gluster_prefix: "{{ gluster_prefix | default('gluster') }}"
     _gluster_name: "{{ _gluster_prefix }}_{{ _gluster_groupset }}"
     _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
+    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
   vars_files:
     - ../vars/main.yml
   any_errors_fatal: true
@@ -19,15 +20,25 @@
     - name: Get gluster georeplication members
       when: _gluster_georeplica_manage
       block:
-        - name: Group gluster replica site members
-          ansible.builtin.group_by:
-            key: "{{ _gluster_georeplica_groupset }}"
+        - name: Set gluster replica members fact
+          ansible.builtin.set_fact:
+            _gluster_volume_replicas: "{{ _volume_replicas }}"
           vars:
             _volumes: "{{ _gluster_volumes }}"
             _volume_replicas_attr: "{{ _volumes | selectattr('replica', 'defined') }}"
             _volume_replicas: "{{ _volume_replicas_attr | selectattr('replica') }}"
+
+        - name: Group gluster primary site members
+          ansible.builtin.group_by:
+            key: "{{ _gluster_primary_groupset }}"
           changed_when: false
-          when: _volume_replicas | length > 0
+          when: _gluster_volume_replicas | length == 0
+
+        - name: Group gluster replica site members
+          ansible.builtin.group_by:
+            key: "{{ _gluster_georeplica_groupset }}"
+          changed_when: false
+          when: _gluster_volume_replicas | length > 0
 
         - name: Set gluster replica members fact
           ansible.builtin.set_fact:
