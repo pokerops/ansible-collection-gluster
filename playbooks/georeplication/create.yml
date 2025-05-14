@@ -2,7 +2,7 @@
 - name: Run Gluster facts
   ansible.builtin.import_playbook: pokerops.gluster.facts
 
-- name: Create geo replication session tasks
+- name: Manage geo replication mount broker tasks
   hosts: "{{ _gluster_georeplica_groupset }}"
   gather_facts: false
   become: true
@@ -71,8 +71,57 @@
             _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
             _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
 
+    - name: Set gluster replica volumes
+      ansible.builtin.set_fact:
+        _gluster_replica_volumes: "{{ _gluster_volumes }}"
+      delegate_facts: true
+      delegate_to: localhost
+
 - name: Import gluster restart playbook tasks
   ansible.builtin.import_playbook: ../restart.yml
   vars:
     _gluster_replicas: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
     gluster_hostgroup_restart: "{{ groups[_gluster_replicas] }}"
+  when: _gluster_georeplica_manage
+
+- name: Create geo replication session tasks
+  hosts: "{{ _gluster_primary_groupset }}"
+  gather_facts: false
+  become: true
+  vars:
+    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
+  vars_files:
+    - ../../vars/main.yml
+  tasks:
+    - name: End play when gluster georeplication is not required
+      ansible.builtin.meta: end_host
+      when: not _gluster_georeplica_manage
+
+    - name: Manage gluster replication member tasks
+      run_once: true
+      block:
+        - name: Set georeplication facts
+          ansible.builtin.set_fact:
+            _gluster_user: "{{ _gluster_georeplica_user.name }}"
+            _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
+            _gluster_georeplica_volumes: "{{ _volumes }}"
+          vars:
+            _to_dict: "nephelaiio.plugins.to_dict"
+            _replica_volumes: "{{ hostvars['localhost']['_gluster_replica_volumes'] | sort(attribute='name') }}"
+            _replica_names: "{{ _replica_volumes | map(attribute='name') }}"
+            _replica_names_dict: "{{ _replica_names | map(_to_dict, 'replica_name') }}"
+            _replicas_combine: "{{ _replica_volumes | zip(_replica_names_dict) | map('combine') }}"
+            _primary_volumes: "{{ _gluster_volumes }}"
+            _volumes: "{{ _primary_volumes | zip(_replicas_combine) | map('combine') }}"
+
+        - debug:
+            msg: "{{ _gluster_georeplica_volumes }}"
+
+        - fail:
+
+        - name: Setup gluster mountbroker
+          ansible.builtin.shell: "gluster-georep-sshkey generate"
+          args:
+            chdir: "/usr/sbin/"
+          register: _georeplica_sshkey
+          changed_when: false
