@@ -59,4 +59,4 @@
   ansible.builtin.import_playbook: ../restart.yml
   vars:
     _gluster_replicas: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
-    gluster_hostgroup_restart: "{{ _gluster_replicas }}"
+    gluster_hostgroup_restart: "{{ groups[_gluster_replicas] }}"

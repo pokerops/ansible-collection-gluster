@@ -25,12 +25,6 @@
     name: "{{ gluster_service_name }}"
     state: "{{ gluster_service_state | default('started') }}"
 
-- debug:
-    msg: "{{ gluster_target_members }}"
-
-- debug:
-    msg: "{{ gluster_target_members | length - 1 }}"
-
 - name: Query peer status
   ansible.builtin.shell: gluster peer status | grep -i state
   args:
