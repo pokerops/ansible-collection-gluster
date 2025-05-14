@@ -3,9 +3,11 @@
   ansible.builtin.import_playbook: pokerops.gluster.facts
 
 - name: Restart gluster members
-  hosts: "{{ _gluster_hostgroup_name }}"
+  hosts: "{{ _gluster_hostgroup_restart }}"
   become: true
   serial: 1
+  vars:
+    _gluster_hostgroup_restart: "{{ gluster_hostgroup_restart | default(_gluster_hostgroup_name) }}"
   vars_files:
     - ../vars/main.yml
   tasks:
