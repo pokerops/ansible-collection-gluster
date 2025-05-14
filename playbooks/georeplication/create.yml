@@ -144,6 +144,7 @@
             mastervol: "{{ _primary }}"
             slavevol: "{{ _replica }}"
             georepuser: "{{ _gluster_user }}"
+            force: true
           vars:
             _primary: "{{ item.name }}"
             _replica: "{{ item.replica_name }}"
