@@ -56,10 +56,11 @@
 
         - name: Debug gluster mountbroker volume status
           ansible.builtin.debug:
-            msg: "{{ _members }}"
+            msg: "{{ _members_split }}"
           vars:
             _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
             _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
+            _members_split: "{{ _members | map('split') | map('join', ' ') }}"
 
         - name: Verify gluster mountbroker volume status
           ansible.builtin.assert:
