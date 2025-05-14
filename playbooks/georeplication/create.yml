@@ -45,7 +45,7 @@
           changed_when: false
 
         - name: Get gluster mountbroker volume status
-          ansible.builtin.shell: "gluster-mountbroker status | awk -F '|' '/{{ _broker_name }}/ {print $2 $3}'"
+          ansible.builtin.shell: "gluster-mountbroker status | awk -F '|' '/{{ _broker_name }}/ {print $2 $4 $5}'"
           args:
             chdir: "/usr/sbin/"
           vars:
@@ -57,6 +57,13 @@
         - name: Debug gluster mountbroker volume status
           ansible.builtin.debug:
             msg: "{{ _members }}"
+          vars:
+            _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
+            _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
+
+        - name: Verify gluster mountbroker volume status
+          ansible.builtin.assert:
+            that: _members | reject('match', 'OK') | length > 0
           vars:
             _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
             _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
