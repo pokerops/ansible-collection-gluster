@@ -144,8 +144,22 @@
           register: _georeplica_status
           changed_when: false
 
+        - name: Debug gluster geo replication status
+          ansible.builtin.debug:
+            msg: "{{ _georeplica_status.stdout_lines | default([]) }}"
+
+        - name: Set gluster geo replication status fact
+          ansible.builtin.set_fact:
+            _gluster_replica_status_count: "{{ _status | length }}"
+            _gluster_replica_targets_count: "{{ _replicas_count }}"
+          vars:
+            _status: "{{ _georeplica_status.stdout_lines | default([]) }}"
+            _primaries: "{{ groups[_gluster_primary_groupset] | length }}"
+            _volumes: "{{ _gluster_georeplica_volumes | length }}"
+            _replicas_count: "{{ _primaries * _volumes }}"
+
         - name: Manage geo replication session creation tasks
-          when: ((_georeplica_status.stdout_lines | default([])) | length > 0)
+          when: _gluster_replica_targets_count > _gluster_replica_status_count
           block:
             - name: Create geo replication session
               ansible.builtin.shell: |
