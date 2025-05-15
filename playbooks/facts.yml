@@ -82,9 +82,9 @@
     - name: Manage gluster status check tasks
       when: gluster_service_name in services
       block:
-        - name: End play for offline hosts
-          ansible.builtin.meta: end_host
-          when: services[gluster_service_name].state | lower != 'running'
+        - name: Verify gluster service status
+          ansible.builtin.assert:
+            that: services[gluster_service_name].state | lower == 'running'
 
         - name: Query peer status
           ansible.builtin.shell: gluster peer status | grep -i state
