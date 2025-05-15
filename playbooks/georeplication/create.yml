@@ -135,21 +135,57 @@
         - debug:
             msg: "{{ _georeplica_sshkey }}"
 
-        - name: Create geo replication session
+        - name: Get gluster geo replication status
           ansible.builtin.shell: |
-            gluster volume geo-replication {{ _primary }} \
-            {{ _gluster_user }}@{{ _replica }} \
-            create push-pem
+            gluster volume geo-replication status | awk \
+            'NR>3 {print $1 " " $2 " " $5 " " $7}'
           args:
             chdir: "/usr/sbin/"
-          vars:
-            _primary: "{{ item.name }}"
-            _replica: "{{ item.replica_name }}"
-          loop_control:
-            label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-          loop: "{{ _gluster_georeplica_volumes }}"
-          register: _georeplica_create
+          register: _georeplica_status
           changed_when: false
 
-        - debug:
-            msg: "{{ _georeplica_create }}"
+        - name: Manage geo replication session creation tasks
+          when: ((_georeplica_status.stdout_lines | default([])) | length > 0)
+          block:
+            - name: Create geo replication session
+              ansible.builtin.shell: |
+                gluster volume geo-replication {{ _primary }} \
+                {{ _gluster_user }}@{{ _replica }} \
+                create push-pem
+              args:
+                chdir: "/usr/sbin/"
+              vars:
+                _primary: "{{ item.name }}"
+                _replica: "{{ item.replica_name }}"
+              loop_control:
+                label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+              loop: "{{ _gluster_georeplica_volumes }}"
+              register: _georeplica_create
+              changed_when: false
+
+            - name: Verify gluster geo replication session status
+              ansible.builtin.assert:
+                that: _status is search('has been successful')
+              vars:
+                _status: "{{ _georeplica_create.stdout | default('') }}"
+
+            - name: Get gluster geo replication status
+              ansible.builtin.shell: |
+                gluster volume geo-replication status | awk \
+                'NR>3 {print $1 " " $2 " " $5 " " $7}'
+              args:
+                chdir: "/usr/sbin/"
+              register: _georeplica_status
+              changed_when: false
+
+            - name: Verify gluster geo replication session status
+              ansible.builtin.assert:
+                that:
+                  - _status | length == _replicas_count
+                  - _failures | length == 0
+              vars:
+                _status: "{{ _georeplica_status.stdout_lines | default([]) }}"
+                _failures: "{{ _status | select('match', 'Faulty') }}"
+                _primaries: "{{ groups[_gluster_primary_groupset] | length }}"
+                _volumes: "{{ _gluster_georeplica_volumes | length }}"
+                _replicas_count: "{{ _primaries * _volumes }}"
