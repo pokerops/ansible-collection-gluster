@@ -6,6 +6,7 @@
   hosts: "{{ _gluster_georeplica_groupset }}"
   gather_facts: false
   become: true
+  any_errors_fatal: true
   vars:
     _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
   vars_files:
@@ -23,26 +24,64 @@
             _gluster_user: "{{ _gluster_georeplica_user.name }}"
             _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
 
-        - name: Setup gluster mountbroker
-          ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_usergroup }}"
-          args:
-            chdir: "/usr/sbin/"
-          vars:
-            _mount: "{{ gluster_georeplica_mountbroker }}"
-          register: _mount_broker_setup
-          changed_when: false
+        - name: Verify existing gluster geo replication sessions
+          delegate_to: "{{ groups[_gluster_primary_groupset] | first }}"
+          block:
+            - name: Get gluster geo replication status
+              ansible.builtin.shell: |
+                gluster volume geo-replication status | awk \
+                'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $7"\"}"}'
+              args:
+                chdir: "/usr/sbin/"
+              register: _georeplica_status
+              changed_when: false
 
-        - name: Add gluster mountbroker volumes
-          ansible.builtin.shell: "gluster-mountbroker add {{ _name }} {{ _gluster_user }}"
-          args:
-            chdir: "/usr/sbin/"
+            - name: Set georeplication session status
+              ansible.builtin.set_fact:
+                _gluster_georeplica_sessions: "{{ _output | map('from_json') }}"
+              vars:
+                _output: "{{ _georeplica_status.stdout_lines | default([]) }}"
+              delegate_facts: true
+              delegate_to: localhost
+
+            - name: Debug gluster geo replication status
+              ansible.builtin.debug:
+                msg: "{{ _sessions }}"
+              vars:
+                _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
+
+        - name: Set georeplication existing volumes fact
+          ansible.builtin.set_fact:
+            _gluster_georeplica_volumes: "{{ _missing_volumes }}"
           vars:
-            _name: "{{ item.name }}"
-          loop: "{{ _gluster_volumes }}"
-          loop_control:
-            label: "{{ _name }}"
-          register: _mount_broker_volumes
-          changed_when: false
+            _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
+            _existing_volumes: "{{ _sessions | map(attribute='volume') | unique }}"
+            _volumes: "{{ _gluster_volumes }}"
+            _missing_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_volumes) }}"
+
+        - name: Manage gluster mountbroker tasks
+          when: _gluster_georeplica_volumes | length > 0
+          block:
+            - name: Setup gluster mountbroker
+              ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_usergroup }}"
+              args:
+                chdir: "/usr/sbin/"
+              vars:
+                _mount: "{{ gluster_georeplica_mountbroker }}"
+              register: _mount_broker_setup
+              changed_when: false
+
+            - name: Add gluster mountbroker volumes
+              ansible.builtin.shell: "gluster-mountbroker add {{ _name }} {{ _gluster_user }}"
+              args:
+                chdir: "/usr/sbin/"
+              vars:
+                _name: "{{ item.name }}"
+              loop: "{{ _gluster_volumes }}"
+              loop_control:
+                label: "{{ _name }}"
+              register: _mount_broker_volumes
+              changed_when: false
 
         - name: Get gluster mountbroker volume status
           ansible.builtin.shell: "gluster-mountbroker status | awk -F '|' '/{{ _broker_name }}/ {print $2 $4 $5}'"
@@ -86,14 +125,18 @@
 
 - name: Import gluster restart playbook tasks
   ansible.builtin.import_playbook: ../restart.yml
+  any_errors_fatal: true
   vars:
     _gluster_replicas: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
     gluster_hostgroup_restart: "{{ groups[_gluster_replicas] }}"
-  when: _gluster_georeplica_manage
+  when:
+    - _gluster_georeplica_manage
+    - _gluster_georeplica_volumes | length > 0
 
 - name: Create geo replication session tasks
   hosts: "{{ _gluster_primary_groupset }}"
   gather_facts: false
+  any_errors_fatal: true
   become: true
   vars:
     _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
@@ -160,7 +203,7 @@
             _volumes_list: "{{ _replicas_combine | zip(_primary_volumes) | map('combine') }}"
             _volumes: "{{ _volumes_list | rejectattr('name', 'in', _existing_replicas) }}"
 
-        - name: Debug gluster geo replication volumes
+        - name: Debug gluster geo replication volumes to create a session
           ansible.builtin.debug:
             msg: "{{ _gluster_georeplica_volumes }}"
 
