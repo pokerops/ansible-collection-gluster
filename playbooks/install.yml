@@ -9,4 +9,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.gluster
 
 - name: Run Gluster Geo Replication user
-  ansible.builtin.import_playbook: pokerops.gluster.ssh
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.ssh
+
+- name: Run Gluster Geo Replication sessions create
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.create
