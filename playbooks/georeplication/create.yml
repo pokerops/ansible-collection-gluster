@@ -17,6 +17,10 @@
       ansible.builtin.meta: end_host
       when: not _gluster_georeplica_manage
 
+    - name: Verify gluster secondary service status
+      ansible.builtin.assert:
+        that: services[gluster_service_name].state | lower == 'running'
+
     - name: Manage gluster replication member tasks
       run_once: true
       block:
@@ -28,6 +32,10 @@
         - name: Verify existing gluster geo replication sessions
           delegate_to: "{{ groups[_gluster_primary_groupset] | first }}"
           block:
+            - name: Verify gluster secondary service status
+              ansible.builtin.assert:
+                that: services[gluster_service_name].state | lower == 'running'
+
             - name: Get gluster geo replication status
               ansible.builtin.shell: |
                 gluster volume geo-replication status | awk \
@@ -151,6 +159,10 @@
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_host
       when: not _gluster_georeplica_manage
+
+    - name: Verify gluster secondary service status
+      ansible.builtin.assert:
+        that: services[gluster_service_name].state | lower == 'running'
 
     - name: Manage gluster replication member tasks
       run_once: true
