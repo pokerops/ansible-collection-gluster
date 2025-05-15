@@ -263,19 +263,37 @@
                 _sessions: "{{ _gluster_georeplica_sessions }}"
                 _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
 
-            - name: Execute gluster geo replication pem keys script
-              ansible.builtin.shell: |
-                {{ _script }} {{ _gluster_user }} {{ _primary }} {{ _replica }}
-              vars:
-                _script: "{{ gluster_georeplication_keys_script }}"
-                _primary: "{{ item.name }}"
-                _replica: "{{ item.replica_name }}"
-              loop_control:
-                label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-              loop: "{{ _gluster_georeplica_volumes }}"
+            - name: Manage gluster geo replication common key tasks
               delegate_to: "{{ groups[_gluster_georeplica_groupset] | first }}"
-              register: _georeplica_sshkeys_script
-              changed_when: false
+              block:
+                - name: Wait for gluster common key replication
+                  ansible.builtin.stat:
+                    path:
+                  vars:
+                    _home: "/home/{{ _gluster_user }}"
+                    _path: "{{ _home }}/{{ _primary }}_{{ _replica }}_common_secret.pem.pub"
+                    _primary: "{{ item.name }}"
+                    _replica: "{{ item.replica_name }}"
+                  loop_control:
+                    label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+                  loop: "{{ _gluster_georeplica_volumes }}"
+                  retries: "{{ _gluster_retries }}"
+                  delay: "{{ _gluster_delay }}"
+                  until: _georeplica_common_key.stat.exists | bool
+                  register: _georeplica_common_key
+
+                - name: Execute gluster geo replication pem keys script
+                  ansible.builtin.shell: |
+                    {{ _script }} {{ _gluster_user }} {{ _primary }} {{ _replica }}
+                  vars:
+                    _script: "{{ gluster_georeplication_keys_script }}"
+                    _primary: "{{ item.name }}"
+                    _replica: "{{ item.replica_name }}"
+                  loop_control:
+                    label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+                  loop: "{{ _gluster_georeplica_volumes }}"
+                  register: _georeplica_sshkeys_script
+                  changed_when: false
 
             - name: Create geo replication session
               ansible.builtin.shell: |
