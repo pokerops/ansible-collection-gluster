@@ -193,6 +193,26 @@
               changed_when: false
 
             - name: Verify gluster geo replication session status
+              ansible.builtin.debug:
+                msg: "{{ _replicas_count }}"
+              vars:
+                _status: "{{ _georeplica_status.stdout_lines | default([]) }}"
+                _failures: "{{ _status | select('match', 'Faulty') }}"
+                _primaries: "{{ groups[_gluster_primary_groupset] | length }}"
+                _volumes: "{{ _gluster_georeplica_volumes | length }}"
+                _replicas_count: "{{ (_primaries | int) * (_volumes | int) }}"
+
+            - name: Verify gluster geo replication session status
+              ansible.builtin.debug:
+                msg: "{{ _status | length }}"
+              vars:
+                _status: "{{ _georeplica_status.stdout_lines | default([]) }}"
+                _failures: "{{ _status | select('match', 'Faulty') }}"
+                _primaries: "{{ groups[_gluster_primary_groupset] | length }}"
+                _volumes: "{{ _gluster_georeplica_volumes | length }}"
+                _replicas_count: "{{ (_primaries | int) * (_volumes | int) }}"
+
+            - name: Verify gluster geo replication session status
               ansible.builtin.assert:
                 that:
                   - _status | length == _replicas_count
