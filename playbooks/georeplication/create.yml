@@ -177,14 +177,11 @@
               register: _georeplica_create
               changed_when: false
 
-            - debug:
-                msg: "{{ _georeplica_create.stdout }}"
-
             - name: Verify gluster geo replication session status
               ansible.builtin.assert:
-                that: _status is search('has been successful')
+                that: _status | selectattr('stdout', 'match', 'has been successful')
               vars:
-                _status: "{{ _georeplica_create.stdout | default('') }}"
+                _status: "{{ _georeplica_create.results | default([]) }}"
 
             - name: Get gluster geo replication status
               ansible.builtin.shell: |
