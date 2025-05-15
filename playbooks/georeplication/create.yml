@@ -59,7 +59,7 @@
             _existing_volumes: "{{ _sessions | map(attribute='replica') }}"
             _existing_split: "{{ _existing_volumes | map('split', '::') | map('last') | flatten }}"
             _volumes: "{{ _gluster_volumes }}"
-            _missing_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_volumes) }}"
+            _missing_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_split) }}"
 
         - name: Manage gluster mountbroker tasks
           when: _gluster_georeplica_volumes | length > 0
