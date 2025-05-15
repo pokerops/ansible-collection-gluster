@@ -156,7 +156,7 @@
             _status: "{{ _georeplica_status.stdout_lines | default([]) }}"
             _primaries: "{{ groups[_gluster_primary_groupset] | length }}"
             _volumes: "{{ _gluster_georeplica_volumes | length }}"
-            _replicas_count: "{{ _primaries * _volumes }}"
+            _replicas_count: "{{ (_primaries | int) * (_volumes | int) }}"
 
         - name: Manage geo replication session creation tasks
           when: _gluster_replica_targets_count > _gluster_replica_status_count
