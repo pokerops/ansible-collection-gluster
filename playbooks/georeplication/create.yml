@@ -144,6 +144,7 @@
   become: true
   vars:
     _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
+    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
@@ -261,3 +262,39 @@
               vars:
                 _sessions: "{{ _gluster_georeplica_sessions }}"
                 _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
+
+            - name: Execute gluster geo replication pem keys script
+              ansible.builtin.shell: |
+                {{ _script }} {{ _gluster_user }} {{ _primary }} {{ _replica }}
+              vars:
+                _script: "{{ gluster_georeplication_keys_script }}"
+                _primary: "{{ item.name }}"
+                _replica: "{{ item.replica_name }}"
+              loop_control:
+                label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+              loop: "{{ _gluster_georeplica_volumes }}"
+              delegate_to: "{{ groups[_gluster_georeplica_groupset] | first }}"
+              register: _georeplica_sshkeys_script
+              changed_when: false
+
+            - name: Create geo replication session
+              ansible.builtin.shell: |
+                gluster volume geo-replication {{ _primary }} \
+                {{ _gluster_user }}@{{ _replica }} \
+                start
+              args:
+                chdir: "/usr/sbin/"
+              vars:
+                _primary: "{{ item.name }}"
+                _replica: "{{ item.replica_name }}"
+              loop_control:
+                label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+              loop: "{{ _gluster_georeplica_volumes }}"
+              register: _georeplica_start
+              changed_when: false
+
+            - name: Verify gluster geo replication session start
+              ansible.builtin.assert:
+                that: _status | rejectattr('stdout', 'match', '.*has been successful.*') | length == 0
+              vars:
+                _status: "{{ _georeplica_start.results | default([]) }}"
