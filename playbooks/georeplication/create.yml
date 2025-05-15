@@ -274,8 +274,9 @@
                     _path: "{{ _home }}/{{ _primary }}_{{ _replica }}_common_secret.pem.pub"
                     _primary: "{{ item.name }}"
                     _replica: "{{ item.replica_name }}"
-                    _results: "{{ _georeplica_common_key.results | map(attribute='stat') }}"
-                    _query: "{{ _results | rejectattr('exists') }}"
+                    _results: "{{ _georeplica_common_key.results | default([]) | map(attribute='stat') }}"
+                    _status: "{{ _results | map(attribute='stat') }}"
+                    _query: "{{ _status | rejectattr('exists') }}"
                   loop_control:
                     label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
                   loop: "{{ _gluster_georeplica_volumes }}"
@@ -290,7 +291,7 @@
                   vars:
                     _script: "{{ gluster_georeplication_keys_script }}"
                     _primary: "{{ item.name }}"
-                    _replica: "{{ item.replica_name }}"
+                    _replica: "{{ item.replica_name | split('::') | last }}"
                   loop_control:
                     label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
                   loop: "{{ _gluster_georeplica_volumes }}"
