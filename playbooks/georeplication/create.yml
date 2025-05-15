@@ -179,7 +179,7 @@
 
             - name: Verify gluster geo replication session status
               ansible.builtin.assert:
-                that: _status | rejectattr('stdout', 'match', 'has been successful') | length == 0
+                that: _status | rejectattr('stdout', 'match', '.*has been successful.*') | length == 0
               vars:
                 _status: "{{ _georeplica_create.results | default([]) }}"
 
@@ -202,4 +202,4 @@
                 _failures: "{{ _status | select('match', 'Faulty') }}"
                 _primaries: "{{ groups[_gluster_primary_groupset] | length }}"
                 _volumes: "{{ _gluster_georeplica_volumes | length }}"
-                _replicas_count: "{{ _primaries * _volumes }}"
+                _replicas_count: "{{ (_primaries | int) * (_volumes | int) }}"
