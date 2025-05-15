@@ -6,6 +6,8 @@
     _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
     _gluster_prefix: "{{ gluster_prefix | default('gluster') }}"
     _gluster_name: "{{ _gluster_prefix }}_{{ _gluster_groupset }}"
+    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
+    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
   vars_files:
     - ../vars/main.yml
   tasks:
@@ -88,12 +90,16 @@
       loop: "{{ _gluster_volumes }}"
 
     - name: Mount gluster source volume
-      ansible.builtin.mount:
+      ansible.posix.mount:
         src: "localhost:/{{ item.name }}"
         path: "{{ item.mount }}"
         fstype: glusterfs
-        opts: defaults
+        opts: "{{ _options }}"
         state: mounted
+      vars:
+        _replicas: "{{ groups[_gluster_georeplica_groupset] }}"
+        _option_default: "{{ item.opts | default('defaults') }}"
+        _options: "{{ 'ro' if inventory_hostname in _replicas else _option_default }}"
       loop_control:
         label: "{{ item.name }} - {{ item.mount }}"
       loop: "{{ _gluster_volumes }}"
