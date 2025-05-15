@@ -56,7 +56,8 @@
             _gluster_georeplica_volumes: "{{ _missing_volumes }}"
           vars:
             _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
-            _existing_volumes: "{{ _sessions | map(attribute='volume') | unique }}"
+            _existing_volumes: "{{ _sessions | map(attribute='replica') }}"
+            _existing_split: "{{ _existing_volumes | map('split', '::') | map('last') | flatten }}"
             _volumes: "{{ _gluster_volumes }}"
             _missing_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_volumes) }}"
 
@@ -114,6 +115,7 @@
     - name: Set gluster replica volumes
       ansible.builtin.set_fact:
         _gluster_replica_volumes: "{{ _volumes_list }}"
+        _gluster_georeplica_volumes: "{{ _gluster_georeplica_volumes }}"
       vars:
         _replica_member: "{{ groups[_gluster_georeplica_groupset] | sort | first }}"
         _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
@@ -130,6 +132,7 @@
   vars:
     _gluster_replicas: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
     gluster_hostgroup_restart: "{{ groups[_gluster_replicas] }}"
+    _gluster_georeplica_volumes: "{{ hostvars['localhost']['_gluster_georeplica_volumes'] }}"
   when:
     - _gluster_georeplica_manage
     - _gluster_georeplica_volumes | length > 0
