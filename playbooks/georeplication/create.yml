@@ -268,18 +268,20 @@
               block:
                 - name: Wait for gluster common key replication
                   ansible.builtin.stat:
-                    path:
+                    path: "{{ _path }}"
                   vars:
                     _home: "/home/{{ _gluster_user }}"
                     _path: "{{ _home }}/{{ _primary }}_{{ _replica }}_common_secret.pem.pub"
                     _primary: "{{ item.name }}"
                     _replica: "{{ item.replica_name }}"
+                    _results: "{{ _georeplica_common_key.results | map(attribute='stat') }}"
+                    _query: "{{ _results | rejectattr('exists') }}"
                   loop_control:
                     label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
                   loop: "{{ _gluster_georeplica_volumes }}"
                   retries: "{{ _gluster_retries }}"
                   delay: "{{ _gluster_delay }}"
-                  until: _georeplica_common_key.stat.exists | bool
+                  until: _query | length == 0
                   register: _georeplica_common_key
 
                 - name: Execute gluster geo replication pem keys script
