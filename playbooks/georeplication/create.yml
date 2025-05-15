@@ -177,6 +177,9 @@
               register: _georeplica_create
               changed_when: false
 
+            - debug:
+                msg: "{{ _georeplica_create.stdout }}"
+
             - name: Verify gluster geo replication session status
               ansible.builtin.assert:
                 that: _status is search('has been successful')
