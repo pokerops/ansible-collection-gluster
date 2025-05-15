@@ -126,11 +126,22 @@
           register: _georeplica_status
           changed_when: false
 
+        - name: Set georeplication session status
+          ansible.builtin.set_fact:
+            _gluster_georeplica_sessions: "{{ _output | map('from_json') }}"
+          vars:
+            _output: "{{ _georeplica_status.stdout_lines | default([]) }}"
+
         - name: Debug gluster geo replication status
           ansible.builtin.debug:
-            msg: "{{ _georeplica_status.stdout_lines | default([]) }}"
+            msg: "{{ _gluster_georeplica_sessions }}"
 
-        - fail:
+        - name: Verify gluster geo replication session status
+          ansible.builtin.assert:
+            that: _failing | length == 0
+          vars:
+            _sessions: "{{ _gluster_georeplica_sessions }}"
+            _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
 
         - name: Set georeplication facts
           ansible.builtin.set_fact:
@@ -138,30 +149,23 @@
             _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
             _gluster_georeplica_volumes: "{{ _volumes }}"
           vars:
+            _sessions: "{{ _gluster_georeplica_sessions }}"
+            _existing_replicas: "{{ _sessions | map(attribute='volume') | unique }}"
             _primary_member: "{{ groups[_gluster_primary_groupset] | sort | first }}"
             _replica_volumes: "{{ hostvars['localhost']['_gluster_replica_volumes'] | sort(attribute='name') }}"
             _replica_names: "{{ _replica_volumes | map(attribute='name') }}"
             _replica_names_dict: "{{ _replica_names | map(_to_dict, 'replica_name') }}"
             _replicas_combine: "{{ _replica_volumes | zip(_replica_names_dict) | map('combine') }}"
             _primary_volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
-            _volumes: "{{ _replicas_combine | zip(_primary_volumes) | map('combine') }}"
+            _volumes_list: "{{ _replicas_combine | zip(_primary_volumes) | map('combine') }}"
+            _volumes: "{{ _volumes_list | rejectattr('name', 'in', _existing_replicas) }}"
 
         - name: Debug gluster geo replication volumes
           ansible.builtin.debug:
             msg: "{{ _gluster_georeplica_volumes }}"
 
-        - name: Set gluster geo replication status fact
-          ansible.builtin.set_fact:
-            _gluster_replica_status_count: "{{ _status | length }}"
-            _gluster_replica_targets_count: "{{ _replicas_count }}"
-          vars:
-            _status: "{{ _georeplica_status.stdout_lines | default([]) }}"
-            _primaries: "{{ groups[_gluster_primary_groupset] | length }}"
-            _volumes: "{{ _gluster_georeplica_volumes | length }}"
-            _replicas_count: "{{ (_primaries | int) * (_volumes | int) }}"
-
         - name: Manage geo replication session creation tasks
-          when: _gluster_replica_targets_count > _gluster_replica_status_count
+          when: _gluster_georeplica_volumes | length > 0
           block:
             - name: Create geo replication session
               ansible.builtin.shell: |
@@ -188,40 +192,25 @@
             - name: Get gluster geo replication status
               ansible.builtin.shell: |
                 gluster volume geo-replication status | awk \
-                'NR>3 {print $1 " " $2 " " $5 " " $7}'
+                'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $7"\"}"}'
               args:
                 chdir: "/usr/sbin/"
               register: _georeplica_status
               changed_when: false
 
-            - name: Verify gluster geo replication session status
-              ansible.builtin.debug:
-                msg: "{{ _replicas_count }}"
+            - name: Set georeplication session status
+              ansible.builtin.set_fact:
+                _gluster_georeplica_sessions: "{{ _output | map('from_json') }}"
               vars:
-                _status: "{{ _georeplica_status.stdout_lines | default([]) }}"
-                _failures: "{{ _status | select('match', 'Faulty') }}"
-                _primaries: "{{ groups[_gluster_primary_groupset] | length }}"
-                _volumes: "{{ _gluster_georeplica_volumes | length }}"
-                _replicas_count: "{{ (_primaries | int) * (_volumes | int) }}"
+                _output: "{{ _georeplica_status.stdout_lines | default([]) }}"
 
-            - name: Verify gluster geo replication session status
+            - name: Debug gluster geo replication status
               ansible.builtin.debug:
-                msg: "{{ _status | length }}"
-              vars:
-                _status: "{{ _georeplica_status.stdout_lines | default([]) }}"
-                _failures: "{{ _status | select('match', 'Faulty') }}"
-                _primaries: "{{ groups[_gluster_primary_groupset] | length }}"
-                _volumes: "{{ _gluster_georeplica_volumes | length }}"
-                _replicas_count: "{{ (_primaries | int) * (_volumes | int) }}"
+                msg: "{{ _gluster_georeplica_sessions }}"
 
             - name: Verify gluster geo replication session status
               ansible.builtin.assert:
-                that:
-                  - (_status | length | int) == (_replicas_count | int)
-                  - _failures | length == 0
+                that: _failing | length == 0
               vars:
-                _status: "{{ _georeplica_status.stdout_lines | default([]) }}"
-                _failures: "{{ _status | select('match', 'Faulty') }}"
-                _primaries: "{{ groups[_gluster_primary_groupset] | length }}"
-                _volumes: "{{ _gluster_georeplica_volumes | length }}"
-                _replicas_count: "{{ (_primaries | int) * (_volumes | int) }}"
+                _sessions: "{{ _gluster_georeplica_sessions }}"
+                _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
