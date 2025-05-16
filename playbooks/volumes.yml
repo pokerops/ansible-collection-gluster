@@ -55,7 +55,7 @@
         opts: "{{ _options }}"
         state: mounted
       vars:
-        _replicas: "{{ groups[_gluster_georeplica_groupset] }}"
+        _replicas: "{{ groups[_gluster_georeplica_groupset] | default([]) }}"
         _option_default: "{{ item.opts | default('defaults') }}"
         _options: "{{ 'ro' if inventory_hostname in _replicas else _option_default }}"
       loop_control:
