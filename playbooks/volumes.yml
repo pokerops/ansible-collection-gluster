@@ -1,0 +1,77 @@
+---
+- name: Manage gluster volumes
+  hosts: "{{ _gluster_hostgroup_name }}"
+  become: true
+  vars:
+    _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
+    _gluster_prefix: "{{ gluster_prefix | default('gluster') }}"
+    _gluster_name: "{{ _gluster_prefix }}_{{ _gluster_groupset }}"
+    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
+    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: Create brick paths
+      ansible.builtin.file:
+        path: "{{ item.brick }}"
+        state: directory
+      loop_control:
+        label: "{{ item.brick }}"
+      loop: "{{ _gluster_volumes }}"
+
+    - name: Manage gluster volume tasks
+      when: (inventory_hostname == (gluster_target_members | first))
+      block:
+        - name: Manage gluster volumes
+          gluster.gluster.gluster_volume:
+            state: present
+            name: "{{ _volume }}"
+            bricks: "{{ _brick }}"
+            cluster: "{{ gluster_target_members }}"
+            force: true
+            replicas: "{{ gluster_target_members | length }}"
+            start_on_create: true
+            options: "{{ item.options | default(omit) }}"
+          vars:
+            _brick: "{{ item.brick }}"
+            _volume: "{{ item.name }}"
+          loop_control:
+            label: "{{ _volume }}"
+          loop: "{{ _gluster_volumes }}"
+
+    - name: Create mount directory
+      ansible.builtin.file:
+        path: "{{ item.mount }}"
+        state: directory
+      loop_control:
+        label: "{{ item.name }} - {{ item.mount }}"
+      loop: "{{ _gluster_volumes }}"
+
+    - name: Mount gluster source volume
+      ansible.posix.mount:
+        src: "localhost:/{{ item.name }}"
+        path: "{{ item.mount }}"
+        fstype: glusterfs
+        opts: "{{ _options }}"
+        state: mounted
+      vars:
+        _replicas: "{{ groups[_gluster_georeplica_groupset] }}"
+        _option_default: "{{ item.opts | default('defaults') }}"
+        _options: "{{ 'ro' if inventory_hostname in _replicas else _option_default }}"
+      loop_control:
+        label: "{{ item.name }} - {{ item.mount }}"
+      loop: "{{ _gluster_volumes }}"
+
+    - name: Manage subdirectories
+      ansible.builtin.file:
+        dest: "{{ volume.mount }}/{{ path }}"
+        owner: "{{ _gluster_owner_user }}"
+        group: "{{ _gluster_owner_group }}"
+        mode: "{{ _gluster_directory_mode | int }}"
+        state: directory
+      vars:
+        volume: "{{ item.0 }}"
+        path: "{{ item.1 }}"
+      loop_control:
+        label: "{{ volume.mount }} - {{ path }}"
+      loop: "{{ _gluster_volumes | subelements('paths', skip_missing='yes') }}"
