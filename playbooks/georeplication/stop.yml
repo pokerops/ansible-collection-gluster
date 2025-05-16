@@ -20,7 +20,7 @@
       vars:
         _replica_state_default: "start"
         _volumes_num: "{{ _volumes | length }}"
-        _replica_state_default_map: "{{ [_replica_state_default] * _volumes_num }}"
+        _replica_state_default_map: "{{ [_replica_state_default] * _volumes_num | int }}"
         _replica_state_default_dict: "{{ _replica_state_default_map | map(_to_dict, 'state') }}"
         _replica_member: "{{ groups[_gluster_georeplica_groupset] | sort | first }}"
         _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
@@ -61,12 +61,12 @@
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_sessions: "{{ _output | map('from_json') }}"
+            _gluster_georeplica_sessions: "{{ _output }}"
             _gluster_user: "{{ _gluster_georeplica_user.name }}"
             _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
             _gluster_georeplica_volumes: "{{ _stop_volumes }}"
           vars:
-            _output: "{{ _georeplica_status.stdout_lines | default([]) }}"
+            _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
             _existing_replicas: "{{ _output | map(attribute='volume') | unique }}"
             _replica_volumes: "{{ hostvars['localhost']['_gluster_replica_volumes'] | sort(attribute='name') }}"
             _primary_volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
