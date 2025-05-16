@@ -156,13 +156,16 @@
       run_once: true
       block:
         - name: Manage gluster geo replication ssh keys
-          ansible.builtin.shell: "gluster-georep-sshkey generate"
+          ansible.builtin.shell: |
+            gluster-georep-sshkey generate | awk 'NR>3 {print last} {last=$0}' \
+            awk '{print "{\"server\": \"" $2 "\", \"node_status\": \"" $4 "\", \"keygen_status\": \"" $6"\"}"}'
           args:
             chdir: "/usr/sbin/"
           register: _georeplica_sshkey
           changed_when: false
 
-        - debug:
+        - name: Debug gluster geo replication ssh keys status
+          ansible.builtin.debug:
             msg: "{{ _georeplica_sshkey }}"
 
         - name: Get gluster geo replication status
