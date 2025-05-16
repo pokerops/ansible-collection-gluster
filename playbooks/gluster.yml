@@ -2,6 +2,7 @@
 - name: Install gluster
   hosts: "{{ _gluster_hostgroup_name }}"
   become: true
+  any_errors_fatal: true
   vars:
     _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
     _gluster_prefix: "{{ gluster_prefix | default('gluster') }}"
@@ -44,13 +45,3 @@
       delay: "{{ _gluster_delay }}"
       until: gluster_target_members | select('in', _existing_members)
       changed_when: false
-
-    - name: Prune stale gluster peer members
-      gluster.gluster.gluster_peer:
-        state: absent
-        nodes: "{{ _gluster_member_del }}"
-        force: true
-      changed_when: false
-      when:
-        - _gluster_member_del | length > 0
-        - (inventory_hostname == (gluster_target_members | first))

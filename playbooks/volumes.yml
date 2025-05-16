@@ -2,6 +2,7 @@
 - name: Manage gluster volumes
   hosts: "{{ _gluster_hostgroup_name }}"
   become: true
+  any_errors_fatal: true
   vars:
     _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
     _gluster_prefix: "{{ gluster_prefix | default('gluster') }}"
@@ -38,6 +39,14 @@
           loop_control:
             label: "{{ _volume }}"
           loop: "{{ _gluster_volumes }}"
+
+        - name: Prune stale gluster peer members
+          gluster.gluster.gluster_peer:
+            state: absent
+            nodes: "{{ _gluster_member_del }}"
+            force: true
+          changed_when: false
+          when: _gluster_member_del | length > 0
 
     - name: Create mount directory
       ansible.builtin.file:
