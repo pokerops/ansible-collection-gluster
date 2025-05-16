@@ -12,6 +12,11 @@ gluster_georeplica_group_default:
 gluster_release_default: 11
 gluster_georeplica_mountbroker: "/var/mountbroker-root"
 gluster_georeplication_keys_script: /usr/libexec/glusterfs/set_geo_rep_pem_keys.sh
+gluster_meta_volume:
+  name: gluster_shared_storage
+  brick: /data/gluster-shared-storage
+  mount: /var/run/gluster/shared_storage/
+  paths: []
 
 # Overridable values
 _gluster_hostgroup_name: "{{ gluster_hostgroup_name | default('gluster') }}"

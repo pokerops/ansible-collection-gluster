@@ -286,6 +286,25 @@
                 _sessions: "{{ _gluster_georeplica_sessions }}"
                 _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
 
+            - name: Configure geo replication meta volume
+              ansible.builtin.shell: |
+                gluster volume geo-replication {{ _primary }} \
+                {{ _gluster_user }}@{{ _replica }} config \
+                use-meta-volume true
+              args:
+                chdir: "/usr/sbin/"
+              vars:
+                _primary: "{{ item.name }}"
+                _replica: "{{ item.replica_name }}"
+              loop_control:
+                label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+              loop: "{{ _gluster_georeplica_volumes }}"
+              register: _georeplica_meta
+              changed_when: false
+
+            - debug:
+                msg: "{{ _georeplica_meta }}"
+
             - name: Manage gluster geo replication common key tasks
               delegate_to: "{{ groups[_gluster_georeplica_groupset] | first }}"
               block:
