@@ -1,6 +1,7 @@
 ---
 - name: Override gluster volumes
   hosts: "gluster_secondary"
+  gather_facts: false
   tasks:
     - name: Set gluster volumes
       ansible.builtin.set_fact:
@@ -17,6 +18,7 @@
 
 - name: Override gluster volumes
   hosts: "gluster_secondary"
+  gather_facts: false
   tasks:
     - name: Set gluster volumes
       ansible.builtin.set_fact:
@@ -32,6 +34,7 @@
 
 - name: Override gluster volumes
   hosts: "gluster_secondary"
+  gather_facts: false
   tasks:
     - name: Set gluster volumes
       ansible.builtin.set_fact:
@@ -48,6 +51,7 @@
 
 - name: Override gluster volumes
   hosts: "gluster"
+  gather_facts: false
   tasks:
     - name: Set gluster primary volumes
       ansible.builtin.set_fact:
