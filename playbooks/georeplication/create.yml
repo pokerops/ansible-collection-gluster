@@ -302,8 +302,11 @@
               register: _georeplica_meta
               changed_when: false
 
-            - debug:
-                msg: "{{ _georeplica_meta }}"
+            - name: Verify gluster geo replication meta volume configuration
+              ansible.builtin.assert:
+                that: _status is search('.*config updated successfully.*') | bool
+              vars:
+                _status: "{{ _georeplica_meta.stdout | default('') }}"
 
             - name: Manage gluster geo replication common key tasks
               delegate_to: "{{ groups[_gluster_georeplica_groupset] | first }}"
@@ -343,8 +346,7 @@
             - name: Start geo replication session
               ansible.builtin.shell: |
                 gluster volume geo-replication {{ _primary }} \
-                {{ _gluster_user }}@{{ _replica }} \
-                start
+                {{ _gluster_user }}@{{ _replica }} start
               args:
                 chdir: "/usr/sbin/"
               vars:

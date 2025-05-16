@@ -29,3 +29,6 @@
 
 - name: Import geo replication start playbook
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.start
+
+- name: Import geo replication delete playbook
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.delete
