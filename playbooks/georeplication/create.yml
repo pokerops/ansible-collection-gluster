@@ -242,7 +242,7 @@
               ansible.builtin.shell: |
                 gluster volume geo-replication {{ _primary }} \
                 {{ _gluster_user }}@{{ _replica }} \
-                create push-pem
+                create push-pem force
               args:
                 chdir: "/usr/sbin/"
               vars:
