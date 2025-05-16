@@ -121,7 +121,7 @@
             _statuses_default:
               - "Active"
               - "Passive"
-            _results: "{{ _georeplica_status.stdout | default({}) | map('from_json') }}"
+            _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
             _status: "{{ _results | rejectattr('status', 'in', _statuses_default) }}"
           args:
             chdir: "/usr/sbin/"

@@ -321,7 +321,7 @@
                   register: _georeplica_sshkeys_script
                   changed_when: false
 
-            - name: Create geo replication session
+            - name: Start geo replication session
               ansible.builtin.shell: |
                 gluster volume geo-replication {{ _primary }} \
                 {{ _gluster_user }}@{{ _replica }} \
