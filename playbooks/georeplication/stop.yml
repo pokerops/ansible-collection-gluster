@@ -72,7 +72,7 @@
             _primary_volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
             _volumes_list: "{{ _replica_volumes | zip(_primary_volumes) | map('combine') }}"
             _volumes: "{{ _volumes_list | selectattr('name', 'in', _existing_replicas) }}"
-            _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stop') }}"
+            _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
 
         - name: Debug gluster geo replication status
           ansible.builtin.debug:
