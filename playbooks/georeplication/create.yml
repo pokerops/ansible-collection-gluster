@@ -304,9 +304,9 @@
 
             - name: Verify gluster geo replication meta volume configuration
               ansible.builtin.assert:
-                that: _status is search('.*config updated successfully.*') | bool
+                that: _status | rejectattr('stdout', 'match', '.*config updated successfully.*') | length == 0
               vars:
-                _status: "{{ _georeplica_meta.stdout | default('') }}"
+                _status: "{{ _georeplica_meta.results | default([]) }}"
 
             - name: Manage gluster geo replication common key tasks
               delegate_to: "{{ groups[_gluster_georeplica_groupset] | first }}"
