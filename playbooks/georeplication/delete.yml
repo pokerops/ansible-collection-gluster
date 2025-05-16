@@ -92,6 +92,27 @@
           ansible.builtin.meta: end_play
           when: _gluster_georeplica_volumes | length == 0
 
+        - name: Stop geo replication session
+          ansible.builtin.shell: |
+            gluster volume geo-replication {{ _primary }} \
+            {{ _gluster_user }}@{{ _replica }} stop force
+          args:
+            chdir: "/usr/sbin/"
+          vars:
+            _primary: "{{ item.name }}"
+            _replica: "{{ item.replica_name }}"
+          loop_control:
+            label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+          loop: "{{ _gluster_georeplica_volumes }}"
+          register: _georeplica_stop
+          changed_when: false
+
+        - name: Verify gluster geo replication session status
+          ansible.builtin.assert:
+            that: _status | rejectattr('stdout', 'match', '.*has been successful.*') | length == 0
+          vars:
+            _status: "{{ _georeplica_stop.results | default([]) }}"
+
         - name: Delete geo replication session
           ansible.builtin.shell: |
             gluster volume geo-replication {{ _primary }} \
