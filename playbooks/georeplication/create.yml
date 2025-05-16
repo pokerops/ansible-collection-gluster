@@ -178,6 +178,16 @@
           ansible.builtin.debug:
             msg: "{{ _gluster_georeplica_sshkeys }}"
 
+        - name: Verify gluster geo replication ssh keys status
+          ansible.builtin.assert:
+            that:
+              - _node_status_failures | length == 0
+              - _keygen_status_failures | length == 0
+          vars:
+            _keys: "{{ _gluster_georeplica_sshkeys }}"
+            _node_status_failures: "{{ _keys | rejectattr('node_status', 'equalto', 'UP') }}"
+            _keygen_status_failures: "{{ _keys | rejectattr('keygen_status', 'equalto', 'OK') }}"
+
         - name: Get gluster geo replication status
           ansible.builtin.shell: |
             gluster volume geo-replication status | awk \
