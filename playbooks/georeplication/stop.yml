@@ -116,7 +116,7 @@
         - name: Get gluster geo replication status
           ansible.builtin.shell: |
             gluster volume geo-replication status | awk \
-            'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+            'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $7"\"}"}'
           vars:
             _statuses_default:
               - "Active"
