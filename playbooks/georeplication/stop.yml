@@ -117,9 +117,18 @@
           ansible.builtin.shell: |
             gluster volume geo-replication status | awk \
             'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+          vars:
+            _statuses_default:
+              - "Active"
+              - "Passive"
+            _results: "{{ _georeplica_status.stdout | default({}) | map('from_json') }}"
+            _status: "{{ _results | rejectattr('status', 'in', _statuses_default) }}"
           args:
             chdir: "/usr/sbin/"
           register: _georeplica_status
+          retries: "{{ _gluster_retries }}"
+          delay: "{{ _gluster_delay }}"
+          until: _status | length == 0
           changed_when: false
 
         - name: Set georeplication session status
