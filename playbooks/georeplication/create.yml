@@ -172,7 +172,7 @@
             _nodes: "{{ _output | map(attribute='server') }}"
             _nodes_replace: "{{ _nodes | map('regex_replace', 'localhost', inventory_hostname) }}"
             _nodes_dict: "{{ _nodes_replace | map(_to_dict, 'server') }}"
-            _nodes_list: "{{ _output | zip(_nodes_list) | map('combine') }}"
+            _nodes_list: "{{ _output | zip(_nodes_dict) | map('combine') }}"
 
         - name: Debug gluster geo replication ssh keys status
           ansible.builtin.debug:
