@@ -119,7 +119,7 @@
         - name: Get gluster geo replication status
           ansible.builtin.shell: |
             gluster volume geo-replication status | awk \
-            'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $7"\"}"}'
+            'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
           vars:
             _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
             _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
