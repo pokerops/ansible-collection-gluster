@@ -83,5 +83,5 @@
             replica: true
       when: inventory_hostname in groups['gluster_secondary']
 
-- name: Import geo replication create playbook
-  ansible.builtin.import_playbook: pokerops.gluster.georeplication.create
+- name: Import geo replication install playbook
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.install
