@@ -18,7 +18,7 @@
       vars:
         _volumes: "{{ _gluster_volumes }}"
         _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
-        _hosts: "{{ inventory_hostname in groups[_gluster_primary_groupset] | bool }}"
+        _hosts: "{{ inventory_hostname in groups[_gluster_primary_groupset] }}"
         _georeplica_manage: "{{ _gluster_georeplica_manage }}"
 
     - name: Create brick paths
