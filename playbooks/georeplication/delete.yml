@@ -64,7 +64,7 @@
             _gluster_georeplica_sessions: "{{ _output }}"
             _gluster_user: "{{ _gluster_georeplica_user.name }}"
             _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
-            _gluster_georeplica_volumes: "{{ _stop_volumes }}"
+            _gluster_georeplica_volumes: "{{ _delete_volumes }}"
           vars:
             _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
             _existing_replicas: "{{ _output | map(attribute='volume') | unique }}"
@@ -72,13 +72,13 @@
             _primary_volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
             _volumes_list: "{{ _replica_volumes | zip(_primary_volumes) | map('combine') }}"
             _volumes: "{{ _volumes_list | selectattr('name', 'in', _existing_replicas) }}"
-            _delete_volumes: "{{ _volumes | selectattr('state', 'equalto', 'delete') }}"
+            _delete_volumes: "{{ _volumes | selectattr('state', 'equalto', 'absent') }}"
 
         - name: Debug gluster geo replication status
           ansible.builtin.debug:
             msg: "{{ _gluster_georeplica_sessions }}"
 
-        - name: Debug gluster geo replication volumes to stop a session
+        - name: Debug gluster geo replication volumes to delete a session
           ansible.builtin.debug:
             msg: "{{ _gluster_georeplica_volumes }}"
 
