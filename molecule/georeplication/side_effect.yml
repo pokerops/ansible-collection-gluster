@@ -14,3 +14,18 @@
 
 - name: Import geo replication stop playbook
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.stop
+
+- name: Override gluster volumes
+  hosts: "gluster_secondary"
+  tasks:
+    - name: Set gluster volumes
+      ansible.builtin.set_fact:
+        gluster_volumes:
+          - name: test-secondary
+            brick: /data/test-secondary
+            mount: /mnt/test-secondary
+            paths: []
+            replica: true
+
+- name: Import geo replication start playbook
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.start
