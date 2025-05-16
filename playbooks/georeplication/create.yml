@@ -157,16 +157,26 @@
       block:
         - name: Manage gluster geo replication ssh keys
           ansible.builtin.shell: |
-            gluster-georep-sshkey generate | awk 'NR>3 {print last} {last=$0}' \
-            awk '{print "{\"server\": \"" $2 "\", \"node_status\": \"" $4 "\", \"keygen_status\": \"" $6"\"}"}'
+            gluster-georep-sshkey generate | awk 'NR>4 {print last} {last=$0}' | awk \
+            '{print "{\"server\": \"" $2 "\", \"node_status\": \"" $4 "\", \"keygen_status\": \"" $6"\"}"}'
           args:
             chdir: "/usr/sbin/"
           register: _georeplica_sshkey
           changed_when: false
 
+        - name: Set gluster geo replication ssh keys status fact
+          ansible.builtin.set_fact:
+            _gluster_georeplica_sshkeys: "{{ _nodes_list }}"
+          vars:
+            _output: "{{ _georeplica_sshkey.stdout_lines | default([]) | map('from_json') }}"
+            _nodes: "{{ _output | map(attribute='server') }}"
+            _nodes_replace: "{{ _nodes | map('regex_replace', 'localhost', inventory_hostname) }}"
+            _nodes_dict: "{{ _nodes_replace | map(_to_dict, 'server') }}"
+            _nodes_list: "{{ _output | zip(_nodes_list) | map('combine') }}"
+
         - name: Debug gluster geo replication ssh keys status
           ansible.builtin.debug:
-            msg: "{{ _georeplica_sshkey }}"
+            msg: "{{ _gluster_georeplica_sshkeys }}"
 
         - name: Get gluster geo replication status
           ansible.builtin.shell: |
