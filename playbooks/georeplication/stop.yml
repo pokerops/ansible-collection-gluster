@@ -118,11 +118,10 @@
             gluster volume geo-replication status | awk \
             'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $7"\"}"}'
           vars:
-            _statuses_default:
-              - "Active"
-              - "Passive"
             _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
-            _status: "{{ _results | rejectattr('status', 'in', _statuses_default) }}"
+            _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
+            _query_volumes: "{{ _results | selectattr('volume', 'in', _volumes) }}"
+            _status: "{{ _query_volumes | rejectattr('status', 'equalto', 'Stopped') }}"
           args:
             chdir: "/usr/sbin/"
           register: _georeplica_status
