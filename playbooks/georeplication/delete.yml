@@ -95,7 +95,7 @@
         - name: Delete geo replication session
           ansible.builtin.shell: |
             gluster volume geo-replication {{ _primary }} \
-            {{ _gluster_user }}@{{ _replica }} delete
+            {{ _gluster_user }}@{{ _replica }} delete reset-sync-time
           args:
             chdir: "/usr/sbin/"
           vars:
