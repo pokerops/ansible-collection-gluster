@@ -45,3 +45,43 @@
 
 - name: Import geo replication delete playbook
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.delete
+
+- name: Override gluster volumes
+  hosts: "gluster"
+  tasks:
+    - name: Set gluster primary volumes
+      ansible.builtin.set_fact:
+        gluster_volumes:
+          - name: test
+            brick: /data/test
+            mount: /mnt/test
+            paths:
+              - a
+              - b
+              - c
+          - name: bla
+            brick: /data/bla
+            mount: /mnt/bla
+            paths:
+              - a
+              - b
+              - c
+      when: inventory_hostname in groups['gluster_primary']
+
+    - name: Set gluster volumes
+      ansible.builtin.set_fact:
+        gluster_volumes:
+          - name: test-secondary
+            brick: /data/test-secondary
+            mount: /mnt/test-secondary
+            paths: []
+            replica: true
+          - name: bla-secondary
+            brick: /data/bla-secondary
+            mount: /mnt/bla-secondary
+            paths: []
+            replica: true
+      when: inventory_hostname in groups['gluster_secondary']
+
+- name: Import geo replication create playbook
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.create
