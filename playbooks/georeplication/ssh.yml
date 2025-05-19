@@ -4,15 +4,15 @@
   gather_facts: false
   become: true
   vars:
-    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
-    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
+    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
+    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ groups[_gluster_georeplica_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
       when: _replicas | length == 0
 
     - name: Create geo replication group
@@ -59,15 +59,15 @@
   become: true
   serial: 1
   vars:
-    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
-    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
+    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
+    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ groups[_gluster_georeplica_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
       when: _replicas | length == 0
 
     - name: Create SSH directory

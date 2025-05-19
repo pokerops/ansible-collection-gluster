@@ -7,8 +7,8 @@
     _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
     _gluster_prefix: "{{ gluster_prefix | default('gluster') }}"
     _gluster_name: "{{ _gluster_prefix }}_{{ _gluster_groupset }}"
-    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
-    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
+    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
+    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
   vars_files:
     - ../vars/main.yml
   tasks:
@@ -18,7 +18,7 @@
       vars:
         _volumes: "{{ _gluster_volumes }}"
         _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
-        _hosts: "{{ inventory_hostname in groups[_gluster_primary_groupset] }}"
+        _hosts: "{{ inventory_hostname in groups[_gluster_server_primary_groupset] }}"
 
     - name: Create brick paths
       ansible.builtin.file:
@@ -72,7 +72,7 @@
         opts: "{{ _options }}"
         state: mounted
       vars:
-        _replicas: "{{ groups[_gluster_georeplica_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
         _option_default: "{{ item.opts | default('defaults') }}"
         _options: "{{ 'ro' if inventory_hostname in _replicas else _option_default }}"
       loop_control:
@@ -92,4 +92,4 @@
       loop_control:
         label: "{{ volume.mount }} - {{ path }}"
       loop: "{{ __gluster_volumes | subelements('paths', skip_missing='yes') }}"
-      when: inventory_hostname in groups[_gluster_primary_groupset]
+      when: inventory_hostname in groups[_gluster_server_primary_groupset]

@@ -206,7 +206,7 @@
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
   vars:
-    gluster_georeplica_groupset: "gluster_replication_create"
+    gluster_server_replica_groupset: "gluster_server_replica_create"
     gluster_server_primary_groupset: "gluster_server_primary_create"
 
 - name: Verify gluster volumes status

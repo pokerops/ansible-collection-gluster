@@ -3,13 +3,13 @@
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
 
 - name: Start geo replication session tasks
-  hosts: "{{ _gluster_primary_groupset }}"
+  hosts: "{{ _gluster_server_primary_groupset }}"
   gather_facts: false
   any_errors_fatal: true
   become: true
   vars:
-    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
-    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
+    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
+    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
     _gluster_volumes_statuses:
       - "Active"
       - "Passive"
@@ -19,7 +19,7 @@
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ groups[_gluster_georeplica_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
       when: _replicas | length == 0
 
     - name: Manage gluster replication member tasks

@@ -6,8 +6,8 @@
     _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
     _gluster_prefix: "{{ gluster_prefix | default('gluster') }}"
     _gluster_name: "{{ _gluster_prefix }}_{{ _gluster_groupset }}"
-    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
-    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
+    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
+    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
   vars_files:
     - ../vars/main.yml
   any_errors_fatal: true
@@ -19,7 +19,7 @@
 
     - name: Group gluster primary site members
       ansible.builtin.group_by:
-        key: "{{ _gluster_primary_groupset }}"
+        key: "{{ _gluster_server_primary_groupset }}"
       changed_when: false
       when: not _gluster_georeplica_manage
 
@@ -28,22 +28,26 @@
       block:
         - name: Group gluster replica site members
           ansible.builtin.group_by:
-            key: "{{ _gluster_georeplica_groupset }}"
+            key: "{{ _gluster_server_replica_groupset }}"
           changed_when: false
 
         - name: Set gluster replica members fact
           ansible.builtin.set_fact:
-            _gluster_replica_hosts: "{{ _replica_hosts }}"
-            _gluster_primary_hosts: "{{ _primary_hosts }}"
+            _gluster_replica: "{{ _replica_hosts }}"
+            _gluster_primary: "{{ _primary_hosts }}"
           vars:
-            _replica_hosts: "{{ groups[_gluster_georeplica_groupset] | default([]) }}"
-            _primary_hosts: "{{ groups[_gluster_primary_groupset] | default([]) }}"
+            _replica_hosts: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
+            _primary_hosts: "{{ groups[_gluster_server_primary_groupset] | default([]) }}"
+
+        - name: Debug gluster geo replication members
+          ansible.builtin.debug:
+            msg: "Gluster replica {{ _gluster_server_replica_groupset }} members: [{{ _gluster_replica | join(', ') }}]"
 
         - name: Verify gluster georeplication hosts
           ansible.builtin.assert:
             that:
-              - _gluster_primary_hosts | length > 0
-              - _gluster_replica_hosts | length > 0
+              - _gluster_server | length > 0
+              - _gluster_replica | length > 0
 
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:

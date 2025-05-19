@@ -3,17 +3,17 @@
   ansible.builtin.import_playbook: pokerops.gluster.facts
 
 - name: Get geo replication volume facts
-  hosts: "{{ _gluster_georeplica_groupset }}"
+  hosts: "{{ _gluster_server_replica_groupset }}"
   gather_facts: false
   vars:
-    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
+    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ groups[_gluster_georeplica_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
       when: _replicas | length == 0
 
     - name: Set gluster replica volumes
@@ -24,7 +24,7 @@
         _volumes_num: "{{ _volumes | length }}"
         _replica_state_default_map: "{{ [_replica_state_default] * _volumes_num | int }}"
         _replica_state_default_dict: "{{ _replica_state_default_map | map(_to_dict, 'state') }}"
-        _replica_member: "{{ groups[_gluster_georeplica_groupset] | sort | first }}"
+        _replica_member: "{{ groups[_gluster_server_replica_groupset] | sort | first }}"
         _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
         _volume_names: "{{ _volumes | map(attribute='name') }}"
         _volume_format: "{{ _volume_names | map(_map_format, _replica_member + '::%s') }}"
