@@ -34,8 +34,10 @@
         - name: Set gluster replica members fact
           ansible.builtin.set_fact:
             _gluster_replica_hosts: "{{ _replica_hosts }}"
+            _gluster_primary_hosts: "{{ _primary_hosts }}"
           vars:
             _replica_hosts: "{{ groups[_gluster_georeplica_groupset] | default([]) }}"
+            _primary_hosts: "{{ groups[_gluster_primary_groupset] | default([]) }}"
 
         - name: Verify gluster georeplication hosts
           ansible.builtin.assert:
