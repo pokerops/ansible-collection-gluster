@@ -72,10 +72,7 @@ provisioner:
     group_vars:
       all:
         libvirt_platforms: "{{ molecule_yml.platforms }}"
-        gluster_georeplica_manage: true
         gluster_nolog: false
-      gluster_primary:
-        gluster_groupset: primary
         gluster_volumes:
           - name: test
             brick: /data/test
@@ -84,14 +81,11 @@ provisioner:
               - a
               - b
               - c
+      gluster_primary:
+        gluster_groupset: primary
       gluster_secondary:
+        gluster_georeplica_manage: true
         gluster_groupset: secondary
-        gluster_volumes:
-          - name: test-secondary
-            brick: /data/test-secondary
-            mount: /mnt/test-secondary
-            paths: []
-            replica: true
 verifier:
   name: ansible
 scenario:

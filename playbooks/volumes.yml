@@ -93,3 +93,4 @@
       loop_control:
         label: "{{ volume.mount }} - {{ path }}"
       loop: "{{ __gluster_volumes | subelements('paths', skip_missing='yes') }}"
+      when: inventory_hostname in groups[_gluster_primary_groupset]

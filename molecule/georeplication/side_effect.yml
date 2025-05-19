@@ -6,11 +6,9 @@
     - name: Set gluster volumes
       ansible.builtin.set_fact:
         gluster_volumes:
-          - name: test-secondary
-            brick: /data/test-secondary
-            mount: /mnt/test-secondary
-            paths: []
-            replica: true
+          - name: test
+            brick: /data/test
+            mount: /mnt/test
             state: stopped
 
 - name: Import geo replication stop playbook
@@ -23,11 +21,9 @@
     - name: Set gluster volumes
       ansible.builtin.set_fact:
         gluster_volumes:
-          - name: test-secondary
-            brick: /data/test-secondary
-            mount: /mnt/test-secondary
-            paths: []
-            replica: true
+          - name: test
+            brick: /data/test
+            mount: /mnt/test
 
 - name: Import geo replication start playbook
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.start
@@ -39,11 +35,9 @@
     - name: Set gluster volumes
       ansible.builtin.set_fact:
         gluster_volumes:
-          - name: test-secondary
-            brick: /data/test-secondary
-            mount: /mnt/test-secondary
-            paths: []
-            replica: true
+          - name: test
+            brick: /data/test
+            mount: /mnt/test
             state: absent
 
 - name: Import geo replication delete playbook
@@ -55,6 +49,7 @@
   tasks:
     - name: Set gluster primary volumes
       ansible.builtin.set_fact:
+        gluster_georeplica_manage: true
         gluster_volumes:
           - name: test
             brick: /data/test
@@ -74,18 +69,27 @@
 
     - name: Set gluster volumes
       ansible.builtin.set_fact:
+        gluster_georeplica_manage: false
         gluster_volumes:
-          - name: test-secondary
-            brick: /data/test-secondary
-            mount: /mnt/test-secondary
-            paths: []
-            replica: true
-          - name: bla-secondary
-            brick: /data/bla-secondary
-            mount: /mnt/bla-secondary
-            paths: []
-            replica: true
+          - name: test
+            brick: /data/test
+            mount: /mnt/test
+            paths:
+              - a
+              - b
+              - c
+          - name: bla
+            brick: /data/bla
+            mount: /mnt/bla
+            paths:
+              - a
+              - b
+              - c
       when: inventory_hostname in groups['gluster_secondary']
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
+  vars:
+    gluster_groupset: "georeplica_create"
+    gluster_georeplica_groupset: "gluster_replication_create"
+    gluster_primary_groupset: "gluster_primary_create"
