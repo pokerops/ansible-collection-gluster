@@ -1,6 +1,6 @@
 ---
 - name: Override gluster volumes state to stopped
-  hosts: "gluster_secondary"
+  hosts: "gluster"
   gather_facts: false
   tasks:
     - name: Set gluster volumes
@@ -54,7 +54,7 @@
         _stop_existing: "{{ _existing | selectattr('status', 'equalto', 'Stopped') }}"
 
 - name: Override gluster volumes state to present
-  hosts: "gluster_secondary"
+  hosts: "gluster"
   gather_facts: false
   tasks:
     - name: Set gluster volumes
@@ -115,7 +115,7 @@
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
 
 - name: Override gluster volumes state to absent
-  hosts: "gluster_secondary"
+  hosts: "gluster"
   gather_facts: false
   tasks:
     - name: Set gluster volumes
@@ -175,27 +175,16 @@
       ansible.builtin.set_fact:
         gluster_georeplica_manage: true
         gluster_groupset: "secondary_create"
-        gluster_volumes:
-          - name: test
-            brick: /data/test
-            mount: /mnt/test
-            paths:
-              - a
-              - b
-              - c
-          - name: bla
-            brick: /data/bla
-            mount: /mnt/bla
-            paths:
-              - a
-              - b
-              - c
       when: inventory_hostname in groups['gluster_primary']
 
     - name: Set gluster volumes
       ansible.builtin.set_fact:
         gluster_georeplica_manage: false
         gluster_groupset: "primary_create"
+      when: inventory_hostname in groups['gluster_secondary']
+
+    - name: Set gluster volumes
+      ansible.builtin.set_fact:
         gluster_volumes:
           - name: test
             brick: /data/test
@@ -211,7 +200,6 @@
               - a
               - b
               - c
-      when: inventory_hostname in groups['gluster_secondary']
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
