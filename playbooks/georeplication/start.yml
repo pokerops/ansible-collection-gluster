@@ -89,15 +89,15 @@
           ansible.builtin.debug:
             msg: "{{ _gluster_georeplica_volumes }}"
 
+        - name: End play when there are no geo replications to start
+          ansible.builtin.meta: end_play
+          when: _gluster_georeplica_volumes | length == 0
+
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
             that: _sessions | length > 0
           vars:
             _sessions: "{{ _gluster_georeplica_sessions }}"
-
-        - name: End play when there are no geo replications to start
-          ansible.builtin.meta: end_play
-          when: _gluster_georeplica_volumes | length == 0
 
         - name: Start geo replication session
           ansible.builtin.shell: |
