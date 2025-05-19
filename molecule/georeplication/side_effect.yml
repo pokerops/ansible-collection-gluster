@@ -51,7 +51,7 @@
         _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
         _volume_names: "{{ _stop_volumes | map(attribute='name') }}"
         _stop_existing: "{{ _existing | selectattr('status', 'equalto', 'Stopped') }}"
-        _query_volumes: "{{ _stop_existing | rejectattr('name', 'in', _volume_names) }}"
+        _query_volumes: "{{ _stop_existing | rejectattr('server', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to present
   hosts: "gluster"
@@ -112,7 +112,7 @@
         _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
         _volume_names: "{{ _start_volumes | map(attribute='name') }}"
-        _query_volumes: "{{ _start_existing | rejectattr('name', 'in', _volume_names) }}"
+        _query_volumes: "{{ _start_existing | rejectattr('server', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to absent
   hosts: "gluster"
@@ -252,4 +252,4 @@
         _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
         _volume_names: "{{ _start_volumes | map(attribute='name') }}"
-        _query_volumes: "{{ _start_existing | rejectattr('name', 'in', _volume_names) }}"
+        _query_volumes: "{{ _start_existing | rejectattr('server', 'in', _volume_names) }}"
