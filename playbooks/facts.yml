@@ -1,6 +1,6 @@
 ---
 - name: Set gluster members
-  hosts: "{{ _gluster_hostgroup_name }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}"
   become: true
   vars:
     _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"

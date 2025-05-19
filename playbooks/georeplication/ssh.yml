@@ -1,6 +1,6 @@
 ---
 - name: Manage gluster geo replication credentials
-  hosts: "{{ _gluster_hostgroup_name }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}"
   gather_facts: false
   become: true
   vars:
@@ -54,7 +54,7 @@
         - _group_state == 'absent'
 
 - name: Configure cluster SSH access
-  hosts: "{{ _gluster_hostgroup_name }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}"
   gather_facts: false
   become: true
   serial: 1
@@ -90,5 +90,5 @@
         _user: "{{ _gluster_georeplica_user }}"
       loop_control:
         label: "{{ item }}"
-      loop: "{{ groups[_gluster_hostgroup_name] }}"
+      loop: "{{ groups[_gluster_server_hostgroup_name] }}"
       delegate_to: "{{ item }}"

@@ -7,54 +7,54 @@ dependency:
 driver:
   name: default
 platforms:
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-primary-01
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-primary-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster
-      - gluster_primary
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-primary-02
+      - gluster_server
+      - gluster_server_primary
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-primary-02
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster
-      - gluster_primary
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-primary-03
+      - gluster_server
+      - gluster_server_primary
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-primary-03
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster
-      - gluster_primary
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-secondary-01
+      - gluster_server
+      - gluster_server_primary
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-secondary-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster
-      - gluster_secondary
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-secondary-02
+      - gluster_server
+      - gluster_server_secondary
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-secondary-02
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster
-      - gluster_secondary
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-secondary-03
+      - gluster_server
+      - gluster_server_secondary
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-secondary-03
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster
-      - gluster_secondary
+      - gluster_server
+      - gluster_server_secondary
   - name: gluster-client-${MOLECULE_SCENARIO_NAME}-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
@@ -89,7 +89,7 @@ provisioner:
               - b
               - c
         gluster_groupset: primary
-      gluster_secondary:
+      gluster_server_secondary:
         gluster_georeplica_manage: true
         gluster_groupset: secondary
 verifier:

@@ -20,7 +20,7 @@ gluster_meta_volume:
   paths: []
 
 # Overridable values
-_gluster_hostgroup_name: "{{ gluster_hostgroup_name | default('gluster') }}"
+_gluster_server_hostgroup_name: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
 _gluster_volumes: "{{ gluster_volumes | default([]) }}"
 _gluster_hosts_manage: "{{ gluster_hosts_manage | default('true') | bool }}"
 _gluster_owner_user: "{{ gluster_owner_user | default('root') }}"

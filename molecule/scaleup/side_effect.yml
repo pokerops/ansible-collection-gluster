@@ -2,10 +2,10 @@
 - name: Import install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
   vars:
-    gluster_hostgroup_name: gluster_up
+    gluster_server_hostgroup_name: gluster_server_up
 
 - name: Query cluster state
-  hosts: gluster_up
+  hosts: gluster_server_up
   become: true
   tasks:
     - name: Query pool list
@@ -18,8 +18,8 @@
     - name: Set target node membership fact
       ansible.builtin.set_fact:
         _gluster_members: "{{ _existing_members }}"
-        _gluster_initial: "{{ groups['gluster'] }}"
-        _gluster_scaleup: "{{ groups['gluster_up'] }}"
+        _gluster_initial: "{{ groups['gluster_server'] }}"
+        _gluster_scaleup: "{{ groups['gluster_server_up'] }}"
       vars:
         _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
@@ -47,4 +47,4 @@
 - name: Import verification playbook
   ansible.builtin.import_playbook: ../common/verify.yml
   vars:
-    gluster_hostgroup_name: gluster_up
+    gluster_server_hostgroup_name: gluster_server_up

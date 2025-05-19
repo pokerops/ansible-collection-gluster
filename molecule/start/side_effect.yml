@@ -3,7 +3,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.start
 
 - name: Verify gluster service
-  hosts: gluster
+  hosts: gluster_server
   vars:
     gluster_service_name: "glusterd.service"
   tasks:

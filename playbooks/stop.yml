@@ -1,6 +1,6 @@
 ---
 - name: Stop gluster members
-  hosts: "{{ _gluster_hostgroup_name }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}"
   become: true
   vars_files:
     - ../vars/main.yml

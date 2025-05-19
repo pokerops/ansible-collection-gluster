@@ -1,6 +1,6 @@
 ---
 - name: Override gluster volumes state to stopped
-  hosts: "gluster"
+  hosts: "gluster_server"
   gather_facts: false
   tasks:
     - name: Set gluster volumes
@@ -15,7 +15,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.stop
 
 - name: Verify gluster volumes status
-  hosts: "gluster_primary"
+  hosts: "gluster_server_primary"
   become: true
   gather_facts: false
   tasks:
@@ -54,7 +54,7 @@
         _query_volumes: "{{ _stop_existing | rejectattr('volume', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to present
-  hosts: "gluster"
+  hosts: "gluster_server"
   gather_facts: false
   tasks:
     - name: Set gluster volumes
@@ -68,7 +68,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.start
 
 - name: Verify gluster volumes status
-  hosts: "gluster_primary"
+  hosts: "gluster_server_primary"
   become: true
   gather_facts: false
   tasks:
@@ -115,7 +115,7 @@
         _query_volumes: "{{ _start_existing | rejectattr('volume', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to absent
-  hosts: "gluster"
+  hosts: "gluster_server"
   gather_facts: false
   tasks:
     - name: Set gluster volumes
@@ -130,7 +130,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.delete
 
 - name: Verify gluster volumes status
-  hosts: "gluster_primary"
+  hosts: "gluster_server_primary"
   become: true
   gather_facts: false
   tasks:
@@ -168,21 +168,21 @@
         _delete_existing: "{{ _existing | rejectattr('volume', 'in', _volume_names) }}"
 
 - name: Override gluster volumes to change replication direction
-  hosts: "gluster:gluster_client"
+  hosts: "gluster_server:gluster_client"
   gather_facts: false
   tasks:
     - name: Set gluster primary facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: true
         gluster_groupset: "secondary_create"
-      when: inventory_hostname in groups['gluster_primary']
+      when: inventory_hostname in groups['gluster_server_primary']
 
     - name: Set gluster replica facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: false
         gluster_groupset: "primary_create"
       when: |
-        inventory_hostname in groups['gluster_secondary'] or
+        inventory_hostname in groups['gluster_server_secondary'] or
         inventory_hostname in groups['gluster_client']
 
     - name: Set gluster volumes
@@ -207,10 +207,10 @@
   ansible.builtin.import_playbook: pokerops.gluster.install
   vars:
     gluster_georeplica_groupset: "gluster_replication_create"
-    gluster_primary_groupset: "gluster_primary_create"
+    gluster_server_primary_groupset: "gluster_server_primary_create"
 
 - name: Verify gluster volumes status
-  hosts: "gluster_secondary"
+  hosts: "gluster_server_secondary"
   become: true
   gather_facts: false
   tasks:

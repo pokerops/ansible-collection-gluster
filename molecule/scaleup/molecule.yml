@@ -7,44 +7,44 @@ dependency:
 driver:
   name: default
 platforms:
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-01
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster
-      - gluster_up
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-02
+      - gluster_server
+      - gluster_server_up
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-02
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster
-      - gluster_up
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-03
+      - gluster_server
+      - gluster_server_up
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-03
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster
-      - gluster_up
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-04
+      - gluster_server
+      - gluster_server_up
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-04
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster_up
-  - name: gluster-${MOLECULE_SCENARIO_NAME}-05
+      - gluster_server_up
+  - name: gluster-server-${MOLECULE_SCENARIO_NAME}-05
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 4
     size: 30G
     groups:
-      - gluster_up
+      - gluster_server_up
   - name: gluster-client-${MOLECULE_SCENARIO_NAME}-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1

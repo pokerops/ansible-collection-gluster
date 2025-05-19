@@ -2,7 +2,7 @@
 - name: Import install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
   vars:
-    gluster_hostgroup_name: gluster_down
+    gluster_server_hostgroup_name: gluster_down
 
 - name: Query cluster state
   hosts: gluster_down
@@ -47,4 +47,4 @@
 - name: Import verification playbook
   ansible.builtin.import_playbook: ../common/verify.yml
   vars:
-    gluster_hostgroup_name: gluster_down
+    gluster_server_hostgroup_name: gluster_down

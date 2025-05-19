@@ -1,6 +1,6 @@
 ---
 - name: Install gluster
-  hosts: "{{ _gluster_hostgroup_name }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}"
   become: true
   any_errors_fatal: true
   vars:

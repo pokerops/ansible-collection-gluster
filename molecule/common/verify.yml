@@ -1,6 +1,6 @@
 ---
 - name: Query cluster state
-  hosts: "{{ gluster_hostgroup_name | default('gluster') }}"
+  hosts: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
   become: true
   vars:
     gluster_service_name: "glusterd.service"
@@ -36,7 +36,7 @@
       vars:
         _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _gluster_group_name: "{{ gluster_hostgroup_name | default('gluster') }}"
+        _gluster_group_name: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
         _group: "{{ groups[_gluster_group_name] }}"
 
     - name: Verify gluster node status
@@ -94,7 +94,7 @@
       loop: "{{ gluster_volumes }}"
 
 - name: Test gluster file replication
-  hosts: "{{ gluster_hostgroup_name | default('gluster') }}"
+  hosts: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
   become: true
   tasks:
     - name: Query gluster mounts

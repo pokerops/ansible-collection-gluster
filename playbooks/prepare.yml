@@ -1,6 +1,6 @@
 ---
 - name: Prepare gluster members
-  hosts: "{{ _gluster_hostgroup_name }}:{{ _gluster_client_hostgroup_name }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}:{{ _gluster_client_hostgroup_name }}"
   become: true
   vars_files:
     - ../vars/main.yml
@@ -15,7 +15,7 @@
         _member_address: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
         _fqdn: "{{ hostvars[item]['ansible_fqdn'] }}"
         _hostname: "{{ hostvars[item]['ansible_hostname'] }}"
-      loop: "{{ groups[_gluster_hostgroup_name] }}"
+      loop: "{{ groups[_gluster_server_hostgroup_name] }}"
 
     - name: Configure gluster repository
       ansible.builtin.include_role:
