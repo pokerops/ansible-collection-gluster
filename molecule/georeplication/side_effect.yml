@@ -44,14 +44,14 @@
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: (_stop_volumes | length) == (_stop_hosts | length)
+        that: _query_volumes | length == 0
       vars:
-        _primaries: "{{ groups['gluster_primary'] }}"
         _existing: "{{ _gluster_georeplica_volumes }}"
         _volumes: "{{ gluster_volumes }}"
         _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
+        _volume_names: "{{ _stop_volumes | map(attribute='name') }}"
         _stop_existing: "{{ _existing | selectattr('status', 'equalto', 'Stopped') }}"
-        _stop_hosts: "{{ _stop_existing | selectattr('server', 'in', _primaries) }}"
+        _query_volumes: "{{ _stop_existing | rejectattr('name', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to present
   hosts: "gluster"
@@ -97,9 +97,8 @@
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: (_start_volumes | length) == (_start_hosts | length)
+        that: _query_volumes | length == 0
       vars:
-        _primaries: "{{ groups('gluster_primary') }}"
         _statuses:
           - "Active"
           - "Passive"
@@ -112,7 +111,8 @@
         _volumes_list: "{{ _replica_state_default_dict | zip(_volumes) | map('combine') }}"
         _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
-        _start_hosts: "{{ _start_existing | selectattr('server', 'in', _primaries) }}"
+        _volume_names: "{{ _start_volumes | map(attribute='name') }}"
+        _query_volumes: "{{ _start_existing | rejectattr('name', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to absent
   hosts: "gluster"
@@ -237,9 +237,8 @@
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: (_start_volumes | length) == (_start_existing | length)
+        that: _query_volumes | length == 0
       vars:
-        _primaries: "{{ groups('gluster_secondary') }}"
         _statuses:
           - "Active"
           - "Passive"
@@ -252,4 +251,5 @@
         _volumes_list: "{{ _replica_state_default_dict | zip(_volumes) | map('combine') }}"
         _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
-        _start_hosts: "{{ _start_existing | selectattr('server', 'in', _primaries) }}"
+        _volume_names: "{{ _start_volumes | map(attribute='name') }}"
+        _query_volumes: "{{ _start_existing | rejectattr('name', 'in', _volume_names) }}"
