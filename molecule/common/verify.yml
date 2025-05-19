@@ -60,3 +60,67 @@
       loop_control:
         label: "{{ _volume }}"
       loop: "{{ gluster_volumes }}"
+
+- name: Test gluster client connection
+  hosts: "{{ gluster_client_hostgroup_name | default('gluster_client') }}"
+  become: true
+  tasks:
+    - name: Query gluster client mounts
+      ansible.builtin.stat:
+        path: "{{ _mount }}"
+      vars:
+        _mount: "{{ item.mount }}"
+      loop_control:
+        label: "{{ _mount }}"
+      loop: "{{ gluster_volumes }}"
+      register: _gluster_client_paths
+
+    - name: Verify gluster mount paths
+      ansible.builtin.assert:
+        that:
+          - _query | length == 0
+          - _mount is ansible.builtin.mount
+      vars:
+        _results: "{{ _gluster_client_paths.results | default([]) }}"
+        _paths: "{{ _results | map(attribute='stat') }}"
+        _query: "{{ _paths | rejectattr('exists') }}"
+        _mount: "{{ item.mount }}"
+      loop_control:
+        label: "{{ _mount }}"
+      loop: "{{ gluster_volumes }}"
+
+    - name: Test gluster client mount
+      ansible.builtin.copy:
+        content: "Test file content"
+        dest: "{{ _mount }}/test.log"
+      vars:
+        _mount: "{{ item.mount }}"
+      loop_control:
+        label: "{{ _mount }}"
+      loop: "{{ gluster_volumes }}"
+
+- name: Test gluster file replication
+  hosts: "{{ gluster_hostgroup_name | default('gluster') }}"
+  become: true
+  tasks:
+    - name: Query gluster mounts
+      ansible.builtin.stat:
+        path: "{{ _mount }}/test.log"
+      vars:
+        _mount: "{{ item.mount }}"
+      loop_control:
+        label: "{{ _mount }}"
+      loop: "{{ gluster_volumes }}"
+      register: _gluster_paths
+
+    - name: Verify gluster mount paths
+      ansible.builtin.assert:
+        that: _query | length == 0
+      vars:
+        _results: "{{ _gluster_paths.results | default([]) }}"
+        _paths: "{{ _results | map(attribute='stat') }}"
+        _query: "{{ _paths | rejectattr('exists') }}"
+        _mount: "{{ item.mount }}"
+      loop_control:
+        label: "{{ _mount }}"
+      loop: "{{ gluster_volumes }}"
