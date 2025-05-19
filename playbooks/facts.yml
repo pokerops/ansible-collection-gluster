@@ -33,21 +33,23 @@
 
         - name: Set gluster replica members fact
           ansible.builtin.set_fact:
-            _gluster_replica: "{{ _replica_hosts }}"
-            _gluster_primary: "{{ _primary_hosts }}"
+            _gluster_replicas: "{{ _replica_hosts }}"
+            _gluster_primaries: "{{ _primary_hosts }}"
           vars:
             _replica_hosts: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
             _primary_hosts: "{{ groups[_gluster_server_primary_groupset] | default([]) }}"
 
         - name: Debug gluster geo replication members
           ansible.builtin.debug:
-            msg: "Gluster replica {{ _gluster_server_replica_groupset }} members: [{{ _gluster_replica | join(', ') }}]"
+            msg: "Gluster replica {{ _groupset }} members: [{{ _gluster_replicas | join(', ') }}]"
+          vars:
+            _groupset: "{{ _gluster_server_replica_groupset }}"
 
         - name: Verify gluster georeplication hosts
           ansible.builtin.assert:
             that:
-              - _gluster_primary | length > 0
-              - _gluster_replica | length > 0
+              - _gluster_primaries | length > 0
+              - _gluster_replicas | length > 0
 
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
