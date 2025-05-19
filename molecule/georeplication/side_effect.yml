@@ -44,12 +44,14 @@
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: (_stop_volumes | length) == (_stop_existing | length)
+        that: (_stop_volumes | length) == (_stop_hosts | length)
       vars:
+        _primaries: "{{ groups['gluster_primary'] }}"
         _existing: "{{ _gluster_georeplica_volumes }}"
         _volumes: "{{ gluster_volumes }}"
         _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
         _stop_existing: "{{ _existing | selectattr('status', 'equalto', 'Stopped') }}"
+        _stop_hosts: "{{ _stop_existing | selectattr('server', 'in', _primaries) }}"
 
 - name: Override gluster volumes state to present
   hosts: "gluster"
@@ -95,8 +97,9 @@
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: (_start_volumes | length) == (_start_existing | length)
+        that: (_start_volumes | length) == (_start_hosts | length)
       vars:
+        _primaries: "{{ groups('gluster_primary') }}"
         _statuses:
           - "Active"
           - "Passive"
@@ -109,6 +112,7 @@
         _volumes_list: "{{ _replica_state_default_dict | zip(_volumes) | map('combine') }}"
         _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
+        _start_hosts: "{{ _start_existing | selectattr('server', 'in', _primaries) }}"
 
 - name: Override gluster volumes state to absent
   hosts: "gluster"
@@ -235,6 +239,7 @@
       ansible.builtin.assert:
         that: (_start_volumes | length) == (_start_existing | length)
       vars:
+        _primaries: "{{ groups('gluster_secondary') }}"
         _statuses:
           - "Active"
           - "Passive"
@@ -247,3 +252,4 @@
         _volumes_list: "{{ _replica_state_default_dict | zip(_volumes) | map('combine') }}"
         _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
+        _start_hosts: "{{ _start_existing | selectattr('server', 'in', _primaries) }}"
