@@ -7,8 +7,10 @@
     - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
-      ansible.builtin.meta: end_host
-      when: not _gluster_georeplica_manage
+      ansible.builtin.meta: end_play
+      vars:
+        _replicas: "{{ groups[_gluster_georeplica_groupset] | default([]) }}"
+      when: _replicas | length == 0
 
     - name: Create geo replication group
       ansible.builtin.group:
@@ -57,8 +59,10 @@
     - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
-      ansible.builtin.meta: end_host
-      when: not _gluster_georeplica_manage
+      ansible.builtin.meta: end_play
+      vars:
+        _replicas: "{{ groups[_gluster_georeplica_groupset] | default([]) }}"
+      when: _replicas | length == 0
 
     - name: Create SSH directory
       ansible.builtin.file:

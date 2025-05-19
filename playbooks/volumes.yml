@@ -14,12 +14,11 @@
   tasks:
     - name: Set volume facts
       ansible.builtin.set_fact:
-        __gluster_volumes: "{{ (_hosts and _georeplica_manage) | ternary(_meta_volumes, _volumes) }}"
+        __gluster_volumes: "{{ _hosts | ternary(_meta_volumes, _volumes) }}"
       vars:
         _volumes: "{{ _gluster_volumes }}"
         _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
         _hosts: "{{ inventory_hostname in groups[_gluster_primary_groupset] }}"
-        _georeplica_manage: "{{ _gluster_georeplica_manage }}"
 
     - name: Create brick paths
       ansible.builtin.file:
