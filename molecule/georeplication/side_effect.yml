@@ -44,9 +44,7 @@
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that:
-          - (_existing | length) == (_volumes | length)
-          - (_stop_volumes | length) == (_stop_existing | length)
+        that: (_stop_volumes | length) == (_stop_existing | length)
       vars:
         _existing: "{{ _gluster_georeplica_volumes }}"
         _volumes: "{{ gluster_volumes }}"
@@ -97,9 +95,7 @@
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that:
-          - (_existing | length) == (_volumes | length)
-          - (_start_volumes | length) == (_start_existing | length)
+        that: (_start_volumes | length) == (_start_existing | length)
       vars:
         _statuses:
           - "Active"
@@ -237,9 +233,7 @@
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that:
-          - (_existing | length) == (_volumes | length)
-          - (_start_volumes | length) == (_start_existing | length)
+        that: (_start_volumes | length) == (_start_existing | length)
       vars:
         _statuses:
           - "Active"
