@@ -114,7 +114,7 @@
       ansible.builtin.group_by:
         key: "{{ _alien_group if _gluster_alien else _member_group }}"
       vars:
-        _prefix: "{{ _gluster_prefix }}"
+        _prefix: "{{ _gluster_name }}"
         _alien_group: "{{ _prefix }}_alien"
         _member_group: "{{ _prefix }}_member"
       changed_when: false
@@ -124,7 +124,7 @@
         _gluster_aliens: "{{ _aliens }}"
         _gluster_existing_members: "{{ _members }}"
       vars:
-        _prefix: "{{ _gluster_prefix }}"
+        _prefix: "{{ _gluster_name }}"
         _alien_group_name: "{{ _prefix }}_alien"
         _member_group_name: "{{ _prefix }}_member"
         _alien_group: "{{ groups[_alien_group_name] | default([]) }}"
