@@ -3,6 +3,9 @@
   hosts: "{{ _gluster_hostgroup_name }}"
   gather_facts: false
   become: true
+  vars:
+    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
+    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
@@ -55,6 +58,9 @@
   gather_facts: false
   become: true
   serial: 1
+  vars:
+    _gluster_georeplica_groupset: "{{ gluster_georeplica_groupset | default('gluster_replication_hosts') }}"
+    _gluster_primary_groupset: "{{ gluster_primary_groupset | default('gluster_primary_hosts') }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
