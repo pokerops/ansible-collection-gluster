@@ -44,7 +44,7 @@
           - (_stop_volumes | length) == (_stop_existing | length)
       vars:
         _existing: "{{ _gluster_georeplica_volumes }}"
-        _volumes: "{{ _gluster_volumes }}"
+        _volumes: "{{ gluster_volumes }}"
         _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
         _stop_existing: "{{ _existing | selectattr('status', 'equalto', 'Stopped') }}"
 
@@ -95,7 +95,7 @@
           - "Active"
           - "Passive"
         _existing: "{{ _gluster_georeplica_volumes }}"
-        _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
+        _volumes: "{{ gluster_volumes | sort(attribute='name') }}"
         _replica_state_default: "present"
         _volumes_num: "{{ _volumes | length }}"
         _replica_state_default_map: "{{ [_replica_state_default] * _volumes_num | int }}"
@@ -147,7 +147,7 @@
         that: _delete_existing | length == 0
       vars:
         _existing: "{{ _gluster_georeplica_volumes }}"
-        _volumes: "{{ _gluster_volumes }}"
+        _volumes: "{{ gluster_volumes }}"
         _delete_volumes: "{{ _volumes | selectattr('state', 'equalto', 'absent') }}"
         _volume_names: "{{ _delete_volumes | map(attribute='name') }}"
         _delete_existing: "{{ _existing | rejectattr('name', 'in', _volume_names) }}"
@@ -237,7 +237,7 @@
           - "Active"
           - "Passive"
         _existing: "{{ _gluster_georeplica_volumes }}"
-        _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
+        _volumes: "{{ gluster_volumes | sort(attribute='name') }}"
         _replica_state_default: "present"
         _volumes_num: "{{ _volumes | length }}"
         _replica_state_default_map: "{{ [_replica_state_default] * _volumes_num | int }}"
