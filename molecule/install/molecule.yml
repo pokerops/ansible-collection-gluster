@@ -28,6 +28,13 @@ platforms:
     size: 30G
     groups:
       - gluster
+  - name: gluster-client-${MOLECULE_SCENARIO_NAME}-01
+    image: "${MOLECULE_KVM_IMAGE}"
+    cpu: 1
+    mem: 2
+    size: 5G
+    groups:
+      - gluster_client
 provisioner:
   name: ansible
   config_options:

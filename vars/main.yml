@@ -1,6 +1,7 @@
 ---
 # Defaults
 gluster_package_name: "glusterfs-server"
+gluster_client_package_name: "glusterfs-client"
 gluster_service_name: "glusterd.service"
 gluster_address_attrs: ["ansible_default_ipv4", "address"]
 gluster_ssh_key: ~/.ssh/id_rsa
@@ -32,3 +33,4 @@ _gluster_georeplica_group: "{{ gluster_georeplica_group | default(gluster_georep
 _gluster_georeplica_manage: "{{ gluster_georeplica_manage | default('false') | bool }}"
 _gluster_nolog: "{{ gluster_nolog | default('true') | bool }}"
 _gluster_release: "{{ gluster_release | default(gluster_release_default) }}"
+_gluster_client_hostgroup_name: "{{ gluster_client_hostgroup_name | default('gluster_client') }}"

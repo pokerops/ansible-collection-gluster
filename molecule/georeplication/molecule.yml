@@ -55,6 +55,13 @@ platforms:
     groups:
       - gluster
       - gluster_secondary
+  - name: gluster-client-${MOLECULE_SCENARIO_NAME}-01
+    image: "${MOLECULE_KVM_IMAGE}"
+    cpu: 1
+    mem: 2
+    size: 5G
+    groups:
+      - gluster_client
 provisioner:
   name: ansible
   config_options:
@@ -81,7 +88,6 @@ provisioner:
               - a
               - b
               - c
-      gluster_primary:
         gluster_groupset: primary
       gluster_secondary:
         gluster_georeplica_manage: true

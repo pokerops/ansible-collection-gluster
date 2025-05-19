@@ -19,3 +19,6 @@
 
 - name: Run Gluster Geo Replication sessions create
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.create
+
+- name: Deploy Gluster Clients
+  ansible.builtin.import_playbook: pokerops.gluster.client

@@ -168,20 +168,22 @@
         _delete_existing: "{{ _existing | rejectattr('volume', 'in', _volume_names) }}"
 
 - name: Override gluster volumes to change replication direction
-  hosts: "gluster"
+  hosts: "gluster:gluster_client"
   gather_facts: false
   tasks:
-    - name: Set gluster primary volumes
+    - name: Set gluster primary facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: true
         gluster_groupset: "secondary_create"
       when: inventory_hostname in groups['gluster_primary']
 
-    - name: Set gluster volumes
+    - name: Set gluster replica facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: false
         gluster_groupset: "primary_create"
-      when: inventory_hostname in groups['gluster_secondary']
+      when: |
+        inventory_hostname in groups['gluster_secondary'] or
+        inventory_hostname in groups['gluster_client']
 
     - name: Set gluster volumes
       ansible.builtin.set_fact:
