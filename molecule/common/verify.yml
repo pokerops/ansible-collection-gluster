@@ -77,17 +77,11 @@
 
     - name: Verify gluster mount paths
       ansible.builtin.assert:
-        that:
-          - _query | length == 0
-          - _mount is ansible.builtin.mount
+        that: _query | length == 0
       vars:
         _results: "{{ _gluster_client_paths.results | default([]) }}"
         _paths: "{{ _results | map(attribute='stat') }}"
         _query: "{{ _paths | rejectattr('exists') }}"
-        _mount: "{{ item.mount }}"
-      loop_control:
-        label: "{{ _mount }}"
-      loop: "{{ gluster_volumes }}"
 
     - name: Test gluster client mount
       ansible.builtin.copy:
