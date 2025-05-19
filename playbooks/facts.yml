@@ -46,7 +46,7 @@
         - name: Verify gluster georeplication hosts
           ansible.builtin.assert:
             that:
-              - _gluster_server | length > 0
+              - _gluster_primary | length > 0
               - _gluster_replica | length > 0
 
     - name: Set gluster hosts fact
