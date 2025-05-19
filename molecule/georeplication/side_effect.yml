@@ -1,5 +1,5 @@
 ---
-- name: Override gluster volumes
+- name: Override gluster volumes state to stopped
   hosts: "gluster_secondary"
   gather_facts: false
   tasks:
@@ -14,7 +14,41 @@
 - name: Import geo replication stop playbook
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.stop
 
-- name: Override gluster volumes
+- name: Verify gluster volumes status
+  hosts: "gluster_primary"
+  gather_facts: false
+  tasks:
+    - name: Get gluster geo replication status
+      ansible.builtin.shell: |
+        gluster volume geo-replication status | awk \
+        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+      args:
+        chdir: "/usr/sbin/"
+      register: _georeplica_status
+      changed_when: false
+
+    - name: Set georeplication session status
+      ansible.builtin.set_fact:
+        _gluster_georeplica_volumes: "{{ _output }}"
+      vars:
+        _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+
+    - name: Debug gluster geo replication volume status
+      ansible.builtin.debug:
+        msg: "{{ _gluster_georeplica_volumes }}"
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that:
+          - (_existing | length) == (_volumes | length)
+          - (_stop_volumes | length) == (_stop_existing | length)
+      vars:
+        _existing: "{{ _gluster_georeplica_volumes }}"
+        _volumes: "{{ _gluster_volumes }}"
+        _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
+        _stop_existing: "{{ _existing | selectattr('status', 'equalto', 'Stopped') }}"
+
+- name: Override gluster volumes state to present
   hosts: "gluster_secondary"
   gather_facts: false
   tasks:
@@ -28,7 +62,49 @@
 - name: Import geo replication start playbook
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.start
 
-- name: Override gluster volumes
+- name: Verify gluster volumes status
+  hosts: "gluster_primary"
+  gather_facts: false
+  tasks:
+    - name: Get gluster geo replication status
+      ansible.builtin.shell: |
+        gluster volume geo-replication status | awk \
+        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+      args:
+        chdir: "/usr/sbin/"
+      register: _georeplica_status
+      changed_when: false
+
+    - name: Set georeplication session status
+      ansible.builtin.set_fact:
+        _gluster_georeplica_volumes: "{{ _output }}"
+      vars:
+        _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+
+    - name: Debug gluster geo replication volume status
+      ansible.builtin.debug:
+        msg: "{{ _gluster_georeplica_volumes }}"
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that:
+          - (_existing | length) == (_volumes | length)
+          - (_start_volumes | length) == (_start_existing | length)
+      vars:
+        _statuses:
+          - "Active"
+          - "Passive"
+        _existing: "{{ _gluster_georeplica_volumes }}"
+        _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
+        _replica_state_default: "present"
+        _volumes_num: "{{ _volumes | length }}"
+        _replica_state_default_map: "{{ [_replica_state_default] * _volumes_num | int }}"
+        _replica_state_default_dict: "{{ _replica_state_default_map | map(_to_dict, 'state') }}"
+        _volumes_list: "{{ _replica_state_default_dict | zip(_volumes) | map('combine') }}"
+        _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
+        _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
+
+- name: Override gluster volumes state to absent
   hosts: "gluster_secondary"
   gather_facts: false
   tasks:
@@ -42,6 +118,39 @@
 
 - name: Import geo replication delete playbook
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.delete
+
+- name: Verify gluster volumes status
+  hosts: "gluster_primary"
+  gather_facts: false
+  tasks:
+    - name: Get gluster geo replication status
+      ansible.builtin.shell: |
+        gluster volume geo-replication status | awk \
+        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+      args:
+        chdir: "/usr/sbin/"
+      register: _georeplica_status
+      changed_when: false
+
+    - name: Set georeplication session status
+      ansible.builtin.set_fact:
+        _gluster_georeplica_volumes: "{{ _output }}"
+      vars:
+        _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+
+    - name: Debug gluster geo replication volume status
+      ansible.builtin.debug:
+        msg: "{{ _gluster_georeplica_volumes }}"
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that: _delete_existing | length == 0
+      vars:
+        _existing: "{{ _gluster_georeplica_volumes }}"
+        _volumes: "{{ _gluster_volumes }}"
+        _delete_volumes: "{{ _volumes | selectattr('state', 'equalto', 'absent') }}"
+        _volume_names: "{{ _delete_volumes | map(attribute='name') }}"
+        _delete_existing: "{{ _existing | rejectattr('name', 'in', _volume_names) }}"
 
 - name: Override gluster volumes to change replication direction
   hosts: "gluster"
@@ -94,3 +203,45 @@
   vars:
     gluster_georeplica_groupset: "gluster_replication_create"
     gluster_primary_groupset: "gluster_primary_create"
+
+- name: Verify gluster volumes status
+  hosts: "gluster_secondary"
+  gather_facts: false
+  tasks:
+    - name: Get gluster geo replication status
+      ansible.builtin.shell: |
+        gluster volume geo-replication status | awk \
+        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+      args:
+        chdir: "/usr/sbin/"
+      register: _georeplica_status
+      changed_when: false
+
+    - name: Set georeplication session status
+      ansible.builtin.set_fact:
+        _gluster_georeplica_volumes: "{{ _output }}"
+      vars:
+        _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+
+    - name: Debug gluster geo replication volume status
+      ansible.builtin.debug:
+        msg: "{{ _gluster_georeplica_volumes }}"
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that:
+          - (_existing | length) == (_volumes | length)
+          - (_start_volumes | length) == (_start_existing | length)
+      vars:
+        _statuses:
+          - "Active"
+          - "Passive"
+        _existing: "{{ _gluster_georeplica_volumes }}"
+        _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
+        _replica_state_default: "present"
+        _volumes_num: "{{ _volumes | length }}"
+        _replica_state_default_map: "{{ [_replica_state_default] * _volumes_num | int }}"
+        _replica_state_default_dict: "{{ _replica_state_default_map | map(_to_dict, 'state') }}"
+        _volumes_list: "{{ _replica_state_default_dict | zip(_volumes) | map('combine') }}"
+        _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
+        _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
