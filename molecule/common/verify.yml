@@ -99,9 +99,9 @@
   tasks:
     - name: Query gluster mounts
       ansible.builtin.stat:
-        path: "{{ _mount }}/test.log"
+        path: "{{ _mount }}"
       vars:
-        _mount: "{{ item.mount }}"
+        _mount: "{{ item.mount }}/test.log"
       loop_control:
         label: "{{ _mount }}"
       loop: "{{ gluster_volumes }}"
