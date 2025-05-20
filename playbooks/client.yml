@@ -3,6 +3,7 @@
   hosts: "{{ _gluster_client_hostgroup_name }}"
   become: true
   any_errors_fatal: true
+  serial: "{{ _gluster_client_serial }}"
   vars:
     _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
     _gluster_prefix: "{{ gluster_prefix | default('gluster') }}"
@@ -14,16 +15,25 @@
       ansible.builtin.package:
         name: "{{ gluster_client_package_name }}"
 
-    - name: Create gluster client paths
-      ansible.builtin.file:
-        path: "{{ item.mount }}"
-        state: directory
-        owner: "{{ _gluster_client_user }}"
-        group: "{{ _gluster_client_group }}"
-        mode: "{{ _gluster_client_mode }}"
+    - name: Unmount gluster source volume
+      ansible.posix.mount:
+        src: "{{ _server }}:/{{ _name }}"
+        path: "{{ _path }}"
+        fstype: glusterfs
+        opts: "{{ _options }}"
+        state: unmounted
+      vars:
+        _name: "{{ item.name }}"
+        _path: "{{ item.mount }}"
+        _server: "{{ groups[_gluster_name] | first }}"
+        _replica_manage: "{{ _gluster_georeplica_manage }}"
+        _option_default: "{{ item.opts | default('defaults,rw') }}"
+        _options: "{{ 'defaults,ro' if _replica_manage else _option_default }}"
+        _mounts: "{{ ansible_mounts | nephelaiio.plugins.list_to_dict('mount') }}"
       loop_control:
-        label: "{{ item.mount }}"
+        label: "{{ _name }} - {{ _path }}"
       loop: "{{ _gluster_volumes }}"
+      when: _path in _mounts
 
     - name: Mount gluster source volume
       ansible.posix.mount:
@@ -35,8 +45,8 @@
       vars:
         _server: "{{ groups[_gluster_name] | first }}"
         _replica_manage: "{{ _gluster_georeplica_manage }}"
-        _option_default: "{{ item.opts | default('defaults') }}"
-        _options: "{{ 'ro' if _replica_manage else _option_default }}"
+        _option_default: "{{ item.opts | default('defaults,rw') }}"
+        _options: "{{ 'defaults,ro' if _replica_manage else _option_default }}"
       loop_control:
         label: "{{ item.name }} - {{ item.mount }}"
       loop: "{{ _gluster_volumes }}"

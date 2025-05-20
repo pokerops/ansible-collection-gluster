@@ -37,3 +37,4 @@ _gluster_client_hostgroup_name: "{{ gluster_client_hostgroup_name | default('glu
 _gluster_client_user: "{{ gluster_client_user | default('root') }}"
 _gluster_client_group: "{{ gluster_client_group | default('root') }}"
 _gluster_client_mode: "{{ gluster_client_mode | default('644') }}"
+_gluster_client_serial: "{{ gluster_client_serial | default('1') }}"

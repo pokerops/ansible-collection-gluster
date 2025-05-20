@@ -3,7 +3,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
 
 - name: Delete geo replication session tasks
-  hosts: "{{ _gluster_server_primary_groupset }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}"
   gather_facts: false
   any_errors_fatal: true
   become: true

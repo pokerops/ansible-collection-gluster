@@ -66,19 +66,21 @@
       loop: "{{ __gluster_volumes }}"
       tags: skip_ansible_lint
 
-    - name: Mount gluster source volume
+    - name: Manage gluster mount source volume
       ansible.posix.mount:
-        src: "localhost:/{{ item.name }}"
-        path: "{{ item.mount }}"
+        src: "localhost:/{{ _name }}"
+        path: "{{ _path }}"
         fstype: glusterfs
         opts: "{{ _options }}"
-        state: mounted
+        state: "mounted"
       vars:
-        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
-        _option_default: "{{ item.opts | default('defaults') }}"
-        _options: "{{ 'ro' if inventory_hostname in _replicas else _option_default }}"
+        _name: "{{ item.name }}"
+        _path: "{{ item.mount }}"
+        _replica_manage: "{{ _gluster_georeplica_manage }}"
+        _option_default: "{{ item.opts | default('defaults,rw') }}"
+        _options: "{{ 'defaults,ro' if _replica_manage else _option_default }}"
       loop_control:
-        label: "{{ item.name }} - {{ item.mount }}"
+        label: "{{ _name }} - {{ _path }}"
       loop: "{{ __gluster_volumes }}"
 
     - name: Manage subdirectories
