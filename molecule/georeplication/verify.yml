@@ -1,0 +1,161 @@
+---
+- name: Query cluster state
+  hosts: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
+  become: true
+  vars:
+    gluster_service_name: "glusterd.service"
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Verify gluster service status
+      ansible.builtin.assert:
+        that:
+          - gluster_service_name in services
+          - services[gluster_service_name].state | lower == 'running'
+
+    - name: Query pool list
+      ansible.builtin.shell: gluster pool list | awk '{print $2}'
+      args:
+        chdir: "/usr/sbin/"
+      register: _member_query
+      changed_when: false
+      tags: skip_ansible_lint
+
+    - name: Query peer status
+      ansible.builtin.shell: gluster peer status | grep -i state
+      args:
+        chdir: "/usr/sbin/"
+      register: _peer_query
+      changed_when: false
+      tags: skip_ansible_lint
+
+    - name: Verify gluster node membership
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname in _existing_members
+          - (_group | length) == (_existing_members | length)
+      vars:
+        _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
+        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _gluster_group_name: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
+        _group: "{{ groups[_gluster_group_name] }}"
+
+    - name: Verify gluster node status
+      ansible.builtin.assert:
+        that: _query | length == 0
+      vars:
+        _output: "{{ _peer_query.stdout_lines }}"
+        _query: "{{ _output | reject('regex', 'Connected') }}"
+
+    - name: Verify volume statuses
+      ansible.builtin.shell: gluster volume info {{ _volume }} | grep -i status
+      args:
+        chdir: "/usr/sbin/"
+      vars:
+        _volume: "{{ item.name }}"
+        _query: "{{ _member_query.stdout }}"
+        _status: "Status: Started"
+      failed_when: not _status is search(_query)
+      register: _member_query
+      changed_when: false
+      loop_control:
+        label: "{{ _volume }}"
+      loop: "{{ gluster_volumes }}"
+      tags: skip_ansible_lint
+
+- name: Test gluster client connection
+  hosts: "{{ gluster_client_hostgroup_name | default('gluster_client') }}"
+  become: true
+  tasks:
+    - name: Query gluster client mounts
+      ansible.builtin.stat:
+        path: "{{ _mount }}"
+      vars:
+        _mount: "{{ item.mount }}"
+      loop_control:
+        label: "{{ _mount }}"
+      loop: "{{ gluster_volumes }}"
+      register: _gluster_client_paths
+
+    - name: Verify gluster mount paths
+      ansible.builtin.assert:
+        that: _query | length == 0
+      vars:
+        _results: "{{ _gluster_client_paths.results | default([]) }}"
+        _paths: "{{ _results | map(attribute='stat') }}"
+        _query: "{{ _paths | rejectattr('exists') }}"
+
+    - name: Test gluster client mount
+      ansible.builtin.copy:
+        content: "Test file content"
+        dest: "{{ _mount }}/test.log"
+      vars:
+        _mount: "{{ item.mount }}"
+      loop_control:
+        label: "{{ _mount }}"
+      loop: "{{ gluster_volumes }}"
+
+- name: Test gluster file replication
+  hosts: "gluster_server"
+  become: true
+  tasks:
+    - name: Query gluster mounts
+      ansible.builtin.stat:
+        path: "{{ _mount }}"
+      vars:
+        _mount: "{{ item.mount }}/test.log"
+      loop_control:
+        label: "{{ _mount }}"
+      loop: "{{ gluster_volumes }}"
+      register: _gluster_paths
+
+    - name: Verify gluster mount paths
+      ansible.builtin.assert:
+        that: _query | length == 0
+      vars:
+        _results: "{{ _gluster_paths.results | default([]) }}"
+        _paths: "{{ _results | map(attribute='stat') }}"
+        _query: "{{ _paths | rejectattr('exists') }}"
+        _mount: "{{ item.mount }}"
+      loop_control:
+        label: "{{ _mount }}"
+      loop: "{{ gluster_volumes }}"
+
+    - name: Test gluster client mount
+      ansible.builtin.copy:
+        content: "Test file content"
+        dest: "{{ _mount }}/georeplica_test.log"
+      vars:
+        _mount: "{{ item.mount }}"
+      loop_control:
+        label: "{{ _mount }}"
+      loop: "{{ gluster_volumes }}"
+      when: inventory_hostname in groups['gluster_server_primary']
+      run_once: true
+      tags: skip_ansible_lint
+
+    - name: Query file in replica servers
+      when: inventory_hostname in groups['gluster_server_secondary']
+      block:
+        - name: Query gluster mounts
+          ansible.builtin.stat:
+            path: "{{ _mount }}"
+          vars:
+            _mount: "{{ item.mount }}/georeplica_test.log"
+          loop_control:
+            label: "{{ _mount }}"
+          loop: "{{ gluster_volumes }}"
+          register: _gluster_paths
+
+        - name: Verify gluster mount paths
+          ansible.builtin.assert:
+            that: _query | length == 0
+          vars:
+            _results: "{{ _gluster_paths.results | default([]) }}"
+            _paths: "{{ _results | map(attribute='stat') }}"
+            _query: "{{ _paths | rejectattr('exists') }}"
+            _mount: "{{ item.mount }}"
+          loop_control:
+            label: "{{ _mount }}"
+          loop: "{{ gluster_volumes }}"

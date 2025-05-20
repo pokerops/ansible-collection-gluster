@@ -73,7 +73,6 @@ provisioner:
     create: ../common/create.yml
     prepare: ../common/prepare.yml
     converge: ../common/install.yml
-    verify: ../common/verify.yml
     destroy: ../common/destroy.yml
   inventory:
     group_vars:
@@ -108,5 +107,5 @@ scenario:
     - create
     - prepare
     - converge
-    - side_effect
     - verify
+    - side_effect
