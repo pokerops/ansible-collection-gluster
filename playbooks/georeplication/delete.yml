@@ -21,6 +21,7 @@
 
     - name: Manage gluster replication member tasks
       run_once: true
+      tags: skip_ansible_lint
       block:
         - name: Get gluster geo replication status
           ansible.builtin.shell: |

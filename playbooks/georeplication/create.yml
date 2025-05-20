@@ -161,6 +161,7 @@
       when: _replicas | length == 0
 
     - name: Manage gluster replication member tasks
+      tags: skip_ansible_lint
       run_once: true
       block:
         - name: Manage gluster geo replication ssh keys

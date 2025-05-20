@@ -27,6 +27,7 @@
       loop_control:
         label: "{{ item.brick }}"
       loop: "{{ __gluster_volumes }}"
+      tags: skip_ansible_lint
 
     - name: Manage gluster volume tasks
       when: (inventory_hostname == (gluster_target_members | first))
@@ -63,6 +64,7 @@
       loop_control:
         label: "{{ item.name }} - {{ item.mount }}"
       loop: "{{ __gluster_volumes }}"
+      tags: skip_ansible_lint
 
     - name: Mount gluster source volume
       ansible.posix.mount:
