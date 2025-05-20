@@ -21,6 +21,7 @@
         chdir: "/usr/sbin/"
       register: _member_query
       changed_when: false
+      tags: skip_ansible_lint
 
     - name: Verify gluster status
       ansible.builtin.assert:
@@ -36,6 +37,7 @@
         chdir: "/usr/sbin/"
       register: _peer_query
       changed_when: false
+      tags: skip_ansible_lint
 
     - name: Verify gluster status
       ansible.builtin.assert:

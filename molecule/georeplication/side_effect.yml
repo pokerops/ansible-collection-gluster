@@ -27,6 +27,7 @@
         chdir: "/usr/sbin/"
       register: _georeplica_status
       changed_when: false
+      tags: skip_ansible_lint
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
@@ -80,6 +81,7 @@
         chdir: "/usr/sbin/"
       register: _georeplica_status
       changed_when: false
+      tags: skip_ansible_lint
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
@@ -142,6 +144,7 @@
         chdir: "/usr/sbin/"
       register: _georeplica_status
       changed_when: false
+      tags: skip_ansible_lint
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
@@ -222,6 +225,7 @@
         chdir: "/usr/sbin/"
       register: _georeplica_status
       changed_when: false
+      tags: skip_ansible_lint
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:

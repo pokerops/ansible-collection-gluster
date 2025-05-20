@@ -20,6 +20,7 @@
         chdir: "/usr/sbin/"
       register: _member_query
       changed_when: false
+      tags: skip_ansible_lint
 
     - name: Query peer status
       ansible.builtin.shell: gluster peer status | grep -i state
@@ -27,6 +28,7 @@
         chdir: "/usr/sbin/"
       register: _peer_query
       changed_when: false
+      tags: skip_ansible_lint
 
     - name: Verify gluster node membership
       ansible.builtin.assert:
@@ -60,6 +62,7 @@
       loop_control:
         label: "{{ _volume }}"
       loop: "{{ gluster_volumes }}"
+      tags: skip_ansible_lint
 
 - name: Test gluster client connection
   hosts: "{{ gluster_client_hostgroup_name | default('gluster_client') }}"

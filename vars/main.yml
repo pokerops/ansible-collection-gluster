@@ -34,3 +34,6 @@ _gluster_georeplica_manage: "{{ gluster_georeplica_manage | default('false') | b
 _gluster_nolog: "{{ gluster_nolog | default('true') | bool }}"
 _gluster_release: "{{ gluster_release | default(gluster_release_default) }}"
 _gluster_client_hostgroup_name: "{{ gluster_client_hostgroup_name | default('gluster_client') }}"
+_gluster_client_user: "{{ gluster_client_user | default('root') }}"
+_gluster_client_group: "{{ gluster_client_group | default('root') }}"
+_gluster_client_mode: "{{ gluster_client_mode | default('644') }}"

@@ -18,6 +18,9 @@
       ansible.builtin.file:
         path: "{{ item.mount }}"
         state: directory
+        owner: "{{ _gluster_client_user }}"
+        group: "{{ _gluster_client_group }}"
+        mode: "{{ _gluster_client_mode }}"
       loop_control:
         label: "{{ item.mount }}"
       loop: "{{ _gluster_volumes }}"

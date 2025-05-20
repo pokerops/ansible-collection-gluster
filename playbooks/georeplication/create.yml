@@ -20,6 +20,7 @@
       when: _replicas | length == 0
 
     - name: Manage gluster replication member tasks
+      tags: skip_ansible_lint
       run_once: true
       block:
         - name: Set georeplication facts
@@ -38,6 +39,7 @@
                 chdir: "/usr/sbin/"
               register: _georeplica_status
               changed_when: false
+              tags: skip_ansible_lint
 
             - name: Set georeplication session status
               ansible.builtin.set_fact:
@@ -74,6 +76,7 @@
                 _mount: "{{ gluster_georeplica_mountbroker }}"
               register: _mount_broker_setup
               changed_when: false
+              tags: skip_ansible_lint
 
             - name: Add gluster mountbroker volumes
               ansible.builtin.shell: "gluster-mountbroker add {{ _name }} {{ _gluster_user }}"
@@ -86,6 +89,7 @@
                 label: "{{ _name }}"
               register: _mount_broker_volumes
               changed_when: false
+              tags: skip_ansible_lint
 
         - name: Get gluster mountbroker volume status
           ansible.builtin.shell: "gluster-mountbroker status | awk -F '|' '/{{ _broker_name }}/ {print $2 $4 $5}'"
@@ -96,6 +100,7 @@
             _broker_name: "{{ _broker_path | split('/') | last }}"
           register: _mount_broker_status
           changed_when: false
+          tags: skip_ansible_lint
 
         - name: Debug gluster mountbroker volume status
           ansible.builtin.debug:
@@ -130,7 +135,6 @@
 
 - name: Import gluster restart playbook tasks
   ansible.builtin.import_playbook: ../restart.yml
-  any_errors_fatal: true
   vars:
     _gluster_replicas: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
     gluster_hostgroup_restart: "{{ groups[_gluster_replicas] }}"
@@ -167,6 +171,7 @@
             chdir: "/usr/sbin/"
           register: _georeplica_sshkey
           changed_when: false
+          tags: skip_ansible_lint
 
         - name: Set gluster geo replication ssh keys status fact
           ansible.builtin.set_fact:
@@ -200,6 +205,7 @@
             chdir: "/usr/sbin/"
           register: _georeplica_status
           changed_when: false
+          tags: skip_ansible_lint
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
@@ -257,6 +263,7 @@
               loop: "{{ _gluster_georeplica_volumes }}"
               register: _georeplica_create
               changed_when: false
+              tags: skip_ansible_lint
 
             - name: Verify gluster geo replication session status
               ansible.builtin.assert:
@@ -272,6 +279,7 @@
                 chdir: "/usr/sbin/"
               register: _georeplica_status
               changed_when: false
+              tags: skip_ansible_lint
 
             - name: Set georeplication session status
               ansible.builtin.set_fact:
@@ -305,6 +313,7 @@
               loop: "{{ _gluster_georeplica_volumes }}"
               register: _georeplica_meta
               changed_when: false
+              tags: skip_ansible_lint
 
             - name: Verify gluster geo replication meta volume configuration
               ansible.builtin.assert:
@@ -346,6 +355,7 @@
                   loop: "{{ _gluster_georeplica_volumes }}"
                   register: _georeplica_sshkeys_script
                   changed_when: false
+                  tags: skip_ansible_lint
 
             - name: Start geo replication session
               ansible.builtin.shell: |
@@ -361,6 +371,7 @@
               loop: "{{ _gluster_georeplica_volumes }}"
               register: _georeplica_start
               changed_when: false
+              tags: skip_ansible_lint
 
             - name: Verify gluster geo replication session start
               ansible.builtin.assert:

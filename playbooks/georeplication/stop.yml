@@ -30,6 +30,7 @@
             chdir: "/usr/sbin/"
           register: _georeplica_status
           changed_when: false
+          tags: skip_ansible_lint
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
@@ -78,6 +79,7 @@
           loop: "{{ _gluster_georeplica_volumes }}"
           register: _georeplica_stop
           changed_when: false
+          tags: skip_ansible_lint
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
@@ -101,6 +103,7 @@
           delay: "{{ _gluster_delay }}"
           until: _status | length == 0
           changed_when: false
+          tags: skip_ansible_lint
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:

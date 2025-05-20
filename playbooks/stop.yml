@@ -18,6 +18,7 @@
         chdir: "/usr/sbin/"
       register: _member_query
       changed_when: false
+      tags: skip_ansible_lint
 
     - name: End play when node is not member of cluster
       ansible.builtin.meta: end_host

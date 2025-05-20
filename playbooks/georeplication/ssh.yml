@@ -74,7 +74,7 @@
       ansible.builtin.file:
         path: "{{ gluster_ssh_key | dirname }}"
         state: directory
-        mode: 700
+        mode: "0700"
 
     - name: Create SSH keypair
       community.crypto.openssh_keypair:

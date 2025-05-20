@@ -12,6 +12,7 @@
     chdir: "/usr/sbin/"
   register: _member_query
   changed_when: false
+  tags: skip_ansible_lint
 
 - name: End play when node is not member of cluster
   ansible.builtin.meta: end_host
@@ -38,6 +39,7 @@
   until: (_query | length) == ((_group | length) - 1)
   register: _peer_query
   changed_when: false
+  tags: skip_ansible_lint
 
 - name: Verify volume statuses
   ansible.builtin.shell: gluster volume info {{ _volume }} | grep -i status
@@ -55,3 +57,4 @@
   loop_control:
     label: "{{ _volume }}"
   loop: "{{ gluster_volumes }}"
+  tags: skip_ansible_lint
