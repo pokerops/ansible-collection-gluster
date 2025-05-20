@@ -19,7 +19,7 @@ COLLECTION_VERSION = $$(yq -r '.version' < galaxy.yml)
 
 all: install version lint test
 
-test:
+test: lint
 	MOLECULE_KVM_IMAGE=${MOLECULE_KVM_IMAGE} \
 	MOLECULE_DOCKER_COMMAND=${MOLECULE_DOCKER_COMMAND} \
 	MOLECULE_DOCKER_IMAGE=${MOLECULE_DOCKER_IMAGE} \
@@ -29,7 +29,7 @@ install:
 	@sudo ${PKGMAN} install -y $$(if [[ "${HOST_DISTRO}" == "fedora" ]]; then echo libvirt-devel; else echo libvirt-dev; fi)
 	@poetry install --no-root
 
-lint:
+lint: install
 	poetry run yamllint .
 	poetry run ansible-lint -- playbooks/ --exclude roles --exclude .ansible/
 
