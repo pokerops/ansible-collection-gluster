@@ -177,13 +177,13 @@
     - name: Set gluster primary facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: true
-        gluster_groupset: "secondary_create"
+        gluster_groupset: "slave_create"
       when: inventory_hostname in groups['gluster_server_primary']
 
     - name: Set gluster replica facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: false
-        gluster_groupset: "primary_create"
+        gluster_groupset: "master_create"
       when: |
         inventory_hostname in groups['gluster_server_secondary'] or
         inventory_hostname in groups['gluster_client']

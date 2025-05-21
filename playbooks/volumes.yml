@@ -5,7 +5,7 @@
   any_errors_fatal: true
   vars:
     _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
-    _gluster_prefix: "{{ gluster_prefix | default('gluster') }}"
+    _gluster_prefix: "{{ gluster_prefix | default('gluster_server') }}"
     _gluster_name: "{{ _gluster_prefix }}_{{ _gluster_groupset }}"
     _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
     _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
@@ -44,10 +44,8 @@
             options: "{{ _options }}"
           vars:
             _replica_enable: "{{ _gluster_georeplica_manage }}"
-            _options_default:
-              features.read-only: off
-            _options_replica:
-              features.read-only: on
+            _options_default: { features.read-only: "off" }
+            _options_replica: { features.read-only: "on" }
             _options_query: "{{ _options_replica if _replica_enable else _options_default }}"
             _options: "{{ item.options | default(_options_query) }}"
             _brick: "{{ item.brick }}"
