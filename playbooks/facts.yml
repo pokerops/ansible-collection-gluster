@@ -51,50 +51,10 @@
               - _gluster_primaries | length > 0
               - _gluster_replicas | length > 0
 
-    - name: Set volume facts
-      ansible.builtin.set_fact:
-        _gluster_volumes: "{{ _replica_query | ternary(_meta_volumes, _volumes) }}"
-      vars:
-        _volume_defaults:
-          state: present
-        _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
-        _volumes_num: "{{ _volumes | length }}"
-        _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
-        _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
-        _meta_volumes: "{{ [gluster_meta_volume] + _volumes_overwritten }}"
-        _hosts: "{{ inventory_hostname in groups[_gluster_server_primary_groupset] }}"
-        _replica_query: "{{ _hosts and _gluster_georeplica_manage }}"
-
-    - name: Debug gluster volume
-      ansible.builtin.debug:
-        var: _gluster_volumes
-
-    - name: Verify gluster volume facts
-      ansible.builtin.assert:
-        that: _gluster_volumes | length > 0
-
-    - name: Verify gluster meta volume facts
-      ansible.builtin.assert:
-        that:
-          - _volume_query | length == 0
-          - _brick_query | length == 0
-          - _mount_query | length == 0
-        fail_msg: "Gluster volumes cannot use geo replication meta volume facts"
-      vars:
-        _volumes: "{{ _gluster_volumes }}"
-        _meta_volume: "{{ gluster_meta_volume }}"
-        _volume_query: "{{ _volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
-        _brick_query: "{{ _volumes | selectattr('brick', 'equalto', _meta_volume.brick) }}"
-        _mount_query: "{{ _volumes | selectattr('mount', 'equalto', _meta_volume.mount) }}"
-
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
         gluster_target_members: "{{ _gluster_target_members }}"
-        _to_dict: "nephelaiio.plugins.to_dict"
-        _map_format: "nephelaiio.plugins.map_format"
-        _select_attrs: "nephelaiio.plugins.select_attributes"
       vars:
-        _map_format: "nephelaiio.plugins.map_format"
         _gluster_hosts: "{{ groups[_gluster_name] }}"
         _gluster_addrs: "{{ _gluster_hosts | map('extract', hostvars, gluster_address_attrs) }}"
         _gluster_target_members: "{{ _gluster_hosts if _gluster_hosts_manage else _gluster_addrs }}"
@@ -193,3 +153,56 @@
     - name: Debug gluster member removals
       ansible.builtin.debug:
         msg: "Removing {{ _gluster_name }} gluster members: [{{ _gluster_member_del | join(', ') }}]"
+
+- name: Set gluster volumes
+  hosts: "{{ _gluster_server_hostgroup_name }}:{{ _gluster_client_hostgroup_name }}"
+  vars:
+    _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
+    _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
+    _gluster_name: "{{ _gluster_server_prefix }}_{{ _gluster_server_groupset }}"
+    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
+    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: Set volume facts
+      ansible.builtin.set_fact:
+        _gluster_volumes: "{{ _replica_query | ternary(_meta_volumes, _volumes) }}"
+      vars:
+        _volume_defaults:
+          state: present
+        _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
+        _volumes_num: "{{ _volumes | length }}"
+        _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
+        _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
+        _meta_volumes: "{{ [gluster_meta_volume] + _volumes_overwritten }}"
+        _hosts: "{{ inventory_hostname in groups[_gluster_server_primary_groupset] }}"
+        _replica_query: "{{ _hosts and _gluster_georeplica_manage }}"
+
+    - name: Debug gluster volume
+      ansible.builtin.debug:
+        var: _gluster_volumes
+
+    - name: Verify gluster volume facts
+      ansible.builtin.assert:
+        that: _gluster_volumes | length > 0
+
+    - name: Verify gluster meta volume facts
+      ansible.builtin.assert:
+        that:
+          - _volume_query | length == 0
+          - _brick_query | length == 0
+          - _mount_query | length == 0
+        fail_msg: "Gluster volumes cannot use geo replication meta volume facts"
+      vars:
+        _volumes: "{{ _gluster_volumes }}"
+        _meta_volume: "{{ gluster_meta_volume }}"
+        _volume_query: "{{ _volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
+        _brick_query: "{{ _volumes | selectattr('brick', 'equalto', _meta_volume.brick) }}"
+        _mount_query: "{{ _volumes | selectattr('mount', 'equalto', _meta_volume.mount) }}"
+
+    - name: Set gluster facts
+      ansible.builtin.set_fact:
+        _to_dict: "nephelaiio.plugins.to_dict"
+        _map_format: "nephelaiio.plugins.map_format"
+        _select_attrs: "nephelaiio.plugins.select_attributes"
