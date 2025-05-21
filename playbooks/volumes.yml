@@ -12,6 +12,18 @@
   vars_files:
     - ../vars/main.yml
   tasks:
+    - name: Set volume facts
+      ansible.builtin.set_fact:
+        __gluster_volumes: "{{ _hosts | ternary(_meta_volumes, _volumes) }}"
+      vars:
+        _volumes: "{{ _gluster_volumes }}"
+        _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
+        _hosts: "{{ inventory_hostname in groups[_gluster_server_primary_groupset] }}"
+
+    - name: Debug gluster volume
+      ansible.builtin.debug:
+        var: __gluster_volumes
+
     - name: Verify gluster meta volume facts
       ansible.builtin.assert:
         that:
@@ -22,17 +34,9 @@
       vars:
         _volumes: "{{ _gluster_volumes }}"
         _meta_volume: "{{ gluster_meta_volume }}"
-        _volume_query: "{{ _volumes | rejectattr('name', 'equalto', _meta_volume.name) }}"
-        _brick_query: "{{ _volumes | rejectattr('brick', 'equalto', _meta_volume.brick) }}"
-        _mount_query: "{{ _volumes | rejectattr('mount', 'equalto', _meta_volume.mount) }}"
-
-    - name: Set volume facts
-      ansible.builtin.set_fact:
-        __gluster_volumes: "{{ _hosts | ternary(_meta_volumes, _volumes) }}"
-      vars:
-        _volumes: "{{ _gluster_volumes }}"
-        _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
-        _hosts: "{{ inventory_hostname in groups[_gluster_server_primary_groupset] }}"
+        _volume_query: "{{ _volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
+        _brick_query: "{{ _volumes | selectattr('brick', 'equalto', _meta_volume.brick) }}"
+        _mount_query: "{{ _volumes | selectattr('mount', 'equalto', _meta_volume.mount) }}"
 
     - name: Create brick paths
       ansible.builtin.file:
