@@ -41,8 +41,15 @@
             force: true
             replicas: "{{ gluster_target_members | length }}"
             start_on_create: true
-            options: "{{ item.options | default(omit) }}"
+            options: "{{ _options }}"
           vars:
+            _replica_enable: "{{ _gluster_georeplica_manage }}"
+            _options_default:
+              features.read-only: off
+            _options_replica:
+              features.read-only: on
+            _options_query: "{{ _options_replica if _replica_enable else _options_default }}"
+            _options: "{{ item.options | default(_options_query) }}"
             _brick: "{{ item.brick }}"
             _volume: "{{ item.name }}"
           loop_control:
