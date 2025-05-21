@@ -57,7 +57,7 @@
         _replica_regex: "{{ _replica_nodes | map('regex_replace', '.*@', '') }}"
         _replica_dict: "{{ _replica_regex | map(_to_dict, 'replica') }}"
         _replica_combine: "{{ _replica_volumes | zip(_replica_dict) | map('combine') }}"
-        _replica_attrs: "{{ _replica_combine | map(_select_attrs, _attrs) }}"
+        _replica_attrs: "{{ _replica_combine | map(_select_attrs, _attrs) | uniq }}"
         _primary_volumes: "{{ _gluster_replica_volumes | sort(attribute='name') }}"
         _volumes_list: "{{ _replica_attrs | zip(_primary_volumes) | map('combine') }}"
         _volumes: "{{ _volumes_list | selectattr('name', 'in', _replicas) }}"

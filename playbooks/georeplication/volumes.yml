@@ -3,7 +3,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.facts
 
 - name: Get geo replication volume facts
-  hosts: "{{ _gluster_server_replica_groupset }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}"
   gather_facts: false
   vars:
     _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
