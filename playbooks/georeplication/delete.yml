@@ -20,8 +20,7 @@
       when: _replicas | length == 0
 
     - name: Manage gluster replication member tasks
-      run_once: true
-      tags: skip_ansible_lint
+      when: (inventory_hostname == (gluster_target_members | first))
       block:
         - name: Get gluster geo replication status
           ansible.builtin.shell: |
@@ -38,15 +37,18 @@
             _gluster_georeplica_sessions: "{{ _output }}"
             _gluster_user: "{{ _gluster_georeplica_user.name }}"
             _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
-            _gluster_georeplica_volumes: "{{ _delete_volumes }}"
+            _gluster_georeplica_volumes: "{{ _georeplica_volumes }}"
           vars:
             _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
-            _existing_replicas: "{{ _output | map(attribute='volume') | unique }}"
+            _replica: "{{ _gluster_georeplica_manage }}"
+            _replica_query: "{{ (not _replica | bool) and (_output | length > 0) }}"
+            _replicas: "{{ _output | map(attribute='volume') | unique }}"
             _replica_volumes: "{{ hostvars['localhost']['_gluster_replica_volumes'] | sort(attribute='name') }}"
             _primary_volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
             _volumes_list: "{{ _replica_volumes | zip(_primary_volumes) | map('combine') }}"
-            _volumes: "{{ _volumes_list | selectattr('name', 'in', _existing_replicas) }}"
+            _volumes: "{{ _volumes_list | selectattr('name', 'in', _replicas) }}"
             _delete_volumes: "{{ _volumes | selectattr('state', 'equalto', 'absent') }}"
+            _georeplica_volumes: "{{ _replica_volumes if _replica_query else _delete_volumes }}"
 
         - name: Debug gluster geo replication status
           ansible.builtin.debug:
