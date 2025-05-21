@@ -100,6 +100,18 @@
   hosts: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
   become: true
   tasks:
+    - name: Set volume facts
+      ansible.builtin.set_fact:
+        _gluster_volumes: "{{ _volumes_filter }}"
+      vars:
+        _volume_defaults:
+          state: present
+        _volumes: "{{ gluster_volumes | sort(attribute='name') }}"
+        _volumes_num: "{{ _volumes | length }}"
+        _volumes_default: "{{ [_volume_defaults] * _volumes_num }}"
+        _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
+        _volumes_filter: "{{ _volumes_overwritten | rejectattr('state', 'equalto', 'absent') }}"
+
     - name: Query gluster mounts
       ansible.builtin.stat:
         path: "{{ _mount }}"
@@ -107,7 +119,7 @@
         _mount: "{{ item.mount }}/test.log"
       loop_control:
         label: "{{ _mount }}"
-      loop: "{{ gluster_volumes }}"
+      loop: "{{ _gluster_volumes }}"
       register: _gluster_paths
 
     - name: Verify gluster mount paths
@@ -120,4 +132,4 @@
         _mount: "{{ item.mount }}"
       loop_control:
         label: "{{ _mount }}"
-      loop: "{{ gluster_volumes }}"
+      loop: "{{ _gluster_volumes }}"

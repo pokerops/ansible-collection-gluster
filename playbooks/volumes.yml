@@ -12,40 +12,13 @@
   vars_files:
     - ../vars/main.yml
   tasks:
-    - name: Set volume facts
-      ansible.builtin.set_fact:
-        __gluster_volumes: "{{ _replica_query | ternary(_meta_volumes, _volumes) }}"
-      vars:
-        _volumes: "{{ _gluster_volumes }}"
-        _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
-        _hosts: "{{ inventory_hostname in groups[_gluster_server_primary_groupset] }}"
-        _replica_query: "{{ _hosts and _gluster_georeplica_manage }}"
-
-    - name: Debug gluster volume
-      ansible.builtin.debug:
-        var: __gluster_volumes
-
-    - name: Verify gluster meta volume facts
-      ansible.builtin.assert:
-        that:
-          - _volume_query | length == 0
-          - _brick_query | length == 0
-          - _mount_query | length == 0
-        fail_msg: "Gluster volumes cannot use geo replication meta volume facts"
-      vars:
-        _volumes: "{{ _gluster_volumes }}"
-        _meta_volume: "{{ gluster_meta_volume }}"
-        _volume_query: "{{ _volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
-        _brick_query: "{{ _volumes | selectattr('brick', 'equalto', _meta_volume.brick) }}"
-        _mount_query: "{{ _volumes | selectattr('mount', 'equalto', _meta_volume.mount) }}"
-
     - name: Create brick paths
       ansible.builtin.file:
         path: "{{ item.brick }}"
         state: directory
       loop_control:
         label: "{{ item.brick }}"
-      loop: "{{ __gluster_volumes }}"
+      loop: "{{ _gluster_volumes }}"
       tags: skip_ansible_lint
 
     - name: Manage gluster volume tasks
@@ -72,7 +45,7 @@
             _volume: "{{ item.name }}"
           loop_control:
             label: "{{ _volume }}"
-          loop: "{{ __gluster_volumes }}"
+          loop: "{{ _gluster_volumes }}"
 
         - name: Prune stale gluster peer members
           gluster.gluster.gluster_peer:
@@ -88,7 +61,7 @@
         state: directory
       loop_control:
         label: "{{ item.name }} - {{ item.mount }}"
-      loop: "{{ __gluster_volumes }}"
+      loop: "{{ _gluster_volumes }}"
       tags: skip_ansible_lint
 
     - name: Create gluster mount source volume
@@ -106,7 +79,7 @@
         _options: "{{ 'defaults,ro' if _replica_manage else _option_default }}"
       loop_control:
         label: "{{ _name }} - {{ _path }}"
-      loop: "{{ __gluster_volumes }}"
+      loop: "{{ _gluster_volumes }}"
 
     - name: Manage subdirectories
       ansible.builtin.file:
@@ -120,7 +93,7 @@
         path: "{{ item.1 }}"
       loop_control:
         label: "{{ volume.mount }} - {{ path }}"
-      loop: "{{ __gluster_volumes | subelements('paths', skip_missing='yes') }}"
+      loop: "{{ _gluster_volumes | subelements('paths', skip_missing='yes') }}"
       when: inventory_hostname in groups[_gluster_server_primary_groupset]
 
     - name: Set delete gluster volumes facts
@@ -128,8 +101,7 @@
         _gluster_volumes_delete: "{{ _volumes_delete }}"
       vars:
         _volumes: "{{ _gluster_volumes }}"
-        _volumes_state: "{{ _volumes | selectattr('state', 'defined') }}"
-        _volumes_delete: "{{ _volumes_state | selectattr('state', 'equalto', 'absent') }}"
+        _volumes_delete: "{{ _volumes | selectattr('state', 'equalto', 'absent') }}"
 
     - name: End play when there are no gluster volumes to delete
       ansible.builtin.meta: end_play

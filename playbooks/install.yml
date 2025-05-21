@@ -14,9 +14,7 @@
 - name: Remove Gluster Client mount points
   ansible.builtin.import_playbook: pokerops.gluster.client
   vars:
-    _volumes: "{{ _gluster_volumes }}"
-    _volumes_state: "{{ _volumes | selectattr('state', 'defined') }}"
-    _gluster_client_volumes: "{{ _volumes_state | selectattr('state', 'equalto', 'absent') }}"
+    _gluster_client_volumes: "{{ _gluster_volumes | selectattr('state', 'equalto', 'absent') }}"
   when: _gluster_client_volumes | length > 0
 
 - name: Deploy Gluster volumes
@@ -31,4 +29,4 @@
 - name: Deploy Gluster Clients
   ansible.builtin.import_playbook: pokerops.gluster.client
   vars:
-    _gluster_client_volumes: "{{ _gluster_volumes }}"
+    _gluster_client_volumes: "{{ _gluster_volumes | selectattr('state', 'equalto', 'present') }}"

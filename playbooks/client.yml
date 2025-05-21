@@ -15,7 +15,7 @@
       ansible.builtin.package:
         name: "{{ gluster_client_package_name }}"
 
-    - name: Mount gluster source volume
+    - name: Manage gluster client volume mounts
       ansible.posix.mount:
         src: "{{ _server }}:/{{ item.name }}"
         path: "{{ item.mount }}"
