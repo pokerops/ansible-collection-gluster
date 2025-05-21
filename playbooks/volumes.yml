@@ -12,6 +12,20 @@
   vars_files:
     - ../vars/main.yml
   tasks:
+    - name: Verify gluster meta volume facts
+      ansible.builtin.assert:
+        that:
+          - _volume_query | length == 0
+          - _brick_query | length == 0
+          - _mount_query | length == 0
+        fail_msg: "Gluster volumes cannot use geo replication meta volume facts"
+      vars:
+        _volumes: "{{ _gluster_volumes }}"
+        _meta_volume: "{{ gluster_meta_volume }}"
+        _volume_query: "{{ _volumes | rejectattr('name', 'equalto', _meta_volume.name) }}"
+        _brick_query: "{{ _volumes | rejectattr('brick', 'equalto', _meta_volume.brick) }}"
+        _mount_query: "{{ _volumes | rejectattr('mount', 'equalto', _meta_volume.mount) }}"
+
     - name: Set volume facts
       ansible.builtin.set_fact:
         __gluster_volumes: "{{ _hosts | ternary(_meta_volumes, _volumes) }}"
@@ -32,7 +46,7 @@
     - name: Manage gluster volume tasks
       when: (inventory_hostname == (gluster_target_members | first))
       block:
-        - name: Manage gluster volumes
+        - name: Create gluster volumes
           gluster.gluster.gluster_volume:
             state: present
             name: "{{ _volume }}"
@@ -44,9 +58,10 @@
             options: "{{ _options }}"
           vars:
             _replica_enable: "{{ _gluster_georeplica_manage }}"
+            _volume_query: "{{ (_volume != gluster_meta_volume.name) and (_replica_enable) }}"
             _options_default: { features.read-only: "off" }
             _options_replica: { features.read-only: "on" }
-            _options_query: "{{ _options_replica if _replica_enable else _options_default }}"
+            _options_query: "{{ _options_replica if _volume_query else _options_default }}"
             _options: "{{ item.options | default(_options_query) }}"
             _brick: "{{ item.brick }}"
             _volume: "{{ item.name }}"
@@ -71,7 +86,7 @@
       loop: "{{ __gluster_volumes }}"
       tags: skip_ansible_lint
 
-    - name: Manage gluster mount source volume
+    - name: Create gluster mount source volume
       ansible.posix.mount:
         src: "localhost:/{{ _name }}"
         path: "{{ _path }}"
@@ -102,3 +117,38 @@
         label: "{{ volume.mount }} - {{ path }}"
       loop: "{{ __gluster_volumes | subelements('paths', skip_missing='yes') }}"
       when: inventory_hostname in groups[_gluster_server_primary_groupset]
+
+    - name: Set delete gluster volumes facts
+      ansible.builtin.set_fact:
+        _gluster_volumes_delete: "{{ _volumes_delete }}"
+      vars:
+        _volumes: "{{ _gluster_volumes }}"
+        _volumes_state: "{{ _volumes | selectattr('state', 'defined') }}"
+        _volumes_delete: "{{ _volumes_state | selectattr('state', 'equalto', 'absent') }}"
+
+    - name: End play when there are no gluster volumes to delete
+      ansible.builtin.meta: end_play
+      when: _gluster_volumes_delete | length == 0
+
+    - name: Remove gluster mount source volume
+      ansible.posix.mount:
+        src: "localhost:/{{ _name }}"
+        path: "{{ _path }}"
+        fstype: glusterfs
+        state: "absent"
+      vars:
+        _name: "{{ item.name }}"
+        _path: "{{ item.mount }}"
+      loop_control:
+        label: "{{ _name }} - {{ _path }}"
+      loop: "{{ _gluster_volumes_delete }}"
+
+    - name: Delete gluster volumes
+      gluster.gluster.gluster_volume:
+        state: absent
+        name: "{{ _volume }}"
+      vars:
+        _volume: "{{ item.name }}"
+      loop_control:
+        label: "{{ _volume }}"
+      loop: "{{ _gluster_volumes_delete }}"

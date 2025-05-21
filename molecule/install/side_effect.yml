@@ -1,0 +1,28 @@
+---
+- name: Override gluster volume facts
+  hosts: gluster_server
+  tasks:
+    - name: Set gluster volume fact
+      ansible.builtin.set_fact:
+        gluster_volumes:
+          - name: test
+            brick: /data/test
+            mount: /mnt/test
+            paths:
+              - a
+              - b
+              - c
+          - name: bla
+            brick: /data/bla
+            mount: /mnt/bla
+            paths:
+              - a
+              - b
+              - c
+            state: absent
+
+- name: Import install playbook
+  ansible.builtin.import_playbook: pokerops.gluster.install
+
+- name: Import verify playbook
+  ansible.builtin.import_playbook: ../common/verify.yml
