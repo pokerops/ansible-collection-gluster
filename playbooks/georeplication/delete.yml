@@ -50,7 +50,7 @@
           - volume
           - replica
         _sessions: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
-        _replica_query: "{{ _gluster_georeplica_manage and (_output | length > 0) }}"
+        _replica_query: "{{ _gluster_georeplica_manage and (_sessions | length > 0) }}"
         _replicas: "{{ _sessions | map(attribute='volume') | unique }}"
         _replica_volumes: "{{ _sessions | sort(attribute='volume') }}"
         _replica_nodes: "{{ _replica_volumes | map(attribute='replica') }}"
