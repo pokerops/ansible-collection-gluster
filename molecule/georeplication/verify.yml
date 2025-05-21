@@ -5,8 +5,8 @@
   vars:
     gluster_service_name: "glusterd.service"
     _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
-    _gluster_prefix: "{{ gluster_prefix | default('gluster_server') }}"
-    _gluster_name: "{{ _gluster_prefix }}_{{ _gluster_groupset }}"
+    _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
+    _gluster_name: "{{ _gluster_server_prefix }}_{{ _gluster_groupset }}"
   tasks:
     - name: Gather service facts
       ansible.builtin.service_facts:
