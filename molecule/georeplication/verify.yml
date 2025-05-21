@@ -1,7 +1,6 @@
 ---
 - name: Query cluster state
   hosts: "gluster_server"
-  gather_facts: false
   become: true
   vars:
     gluster_service_name: "glusterd.service"
