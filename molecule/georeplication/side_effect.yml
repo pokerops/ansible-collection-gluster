@@ -170,24 +170,10 @@
         _volume_names: "{{ _delete_volumes | map(attribute='name') }}"
         _delete_existing: "{{ _existing | rejectattr('volume', 'in', _volume_names) }}"
 
-- name: Override gluster volumes to change replication direction
+- name: Override gluster volumes facts
   hosts: "gluster_server:gluster_client"
   gather_facts: false
   tasks:
-    - name: Set gluster primary facts
-      ansible.builtin.set_fact:
-        gluster_georeplica_manage: true
-        gluster_groupset: "slave_create"
-      when: inventory_hostname in groups['gluster_server_primary']
-
-    - name: Set gluster replica facts
-      ansible.builtin.set_fact:
-        gluster_georeplica_manage: false
-        gluster_groupset: "master_create"
-      when: |
-        inventory_hostname in groups['gluster_server_secondary'] or
-        inventory_hostname in groups['gluster_client']
-
     - name: Set gluster volumes
       ansible.builtin.set_fact:
         gluster_volumes:
@@ -205,6 +191,27 @@
               - a
               - b
               - c
+
+- name: Import geo replication install playbook
+  ansible.builtin.import_playbook: pokerops.gluster.install
+
+- name: Test gluster failover to a different site
+  hosts: "gluster_server:gluster_client"
+  gather_facts: false
+  tasks:
+    - name: Set gluster primary facts
+      ansible.builtin.set_fact:
+        gluster_georeplica_manage: true
+        gluster_groupset: "slave_create"
+      when: inventory_hostname in groups['gluster_server_primary']
+
+    - name: Set gluster replica facts
+      ansible.builtin.set_fact:
+        gluster_georeplica_manage: false
+        gluster_groupset: "master_create"
+      when: |
+        inventory_hostname in groups['gluster_server_secondary'] or
+        inventory_hostname in groups['gluster_client']
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
