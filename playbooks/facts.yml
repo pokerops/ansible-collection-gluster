@@ -167,7 +167,7 @@
   tasks:
     - name: Set volume facts
       ansible.builtin.set_fact:
-        _gluster_volumes: "{{ _replica_query | ternary(_meta_volumes, _volumes) }}"
+        _gluster_volumes: "{{ _replica_query | ternary(_meta_volumes, _volumes_overwritten) }}"
       vars:
         _volume_defaults:
           state: present
