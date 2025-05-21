@@ -31,5 +31,3 @@
         _volume_dict: "{{ _volume_format | map(_to_dict, 'replica_name') }}"
         _volumes_combine: "{{ _volumes | zip(_volume_dict) | map('combine') }}"
         _volumes_list: "{{ _replica_state_default_dict | zip(_volumes_combine) | map('combine') }}"
-      delegate_facts: true
-      delegate_to: localhost

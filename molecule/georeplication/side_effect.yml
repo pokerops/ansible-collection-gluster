@@ -264,4 +264,3 @@
   ansible.builtin.import_playbook: ./verify.yml
   vars:
     gluster_log_file: "bla.log"
-    gluster_replica_log_file: "georeplica_bla.log"

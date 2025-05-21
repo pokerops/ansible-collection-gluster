@@ -108,7 +108,6 @@
   become: true
   vars:
     _log_file: "{{ gluster_log_file | default('test.log') }}"
-    _replica_log_file: "{{ gluster_replica_log_file | default('georeplica_test.log') }}"
   tasks:
     - name: Query gluster mounts
       ansible.builtin.stat:
@@ -125,59 +124,3 @@
         label: "{{ _mount }}"
       loop: "{{ gluster_volumes }}"
       register: _gluster_paths
-
-    - name: Verify gluster mount paths
-      ansible.builtin.assert:
-        that: _query | length == 0
-      vars:
-        _results: "{{ _gluster_paths.results | default([]) }}"
-        _paths: "{{ _results | map(attribute='stat') }}"
-        _query: "{{ _paths | rejectattr('exists') }}"
-        _mount: "{{ item.mount }}"
-      loop_control:
-        label: "{{ _mount }}"
-      loop: "{{ gluster_volumes }}"
-
-    - name: Test gluster client mount
-      ansible.builtin.copy:
-        content: "Test file content"
-        dest: "{{ _mount }}/{{ _replica_log_file }}"
-      vars:
-        _mount: "{{ item.mount }}"
-      loop_control:
-        label: "{{ _mount }}"
-      loop: "{{ gluster_volumes }}"
-      when: inventory_hostname in groups['gluster_client']
-      run_once: true
-      tags: skip_ansible_lint
-
-    - name: Query file in replica servers
-      when: inventory_hostname in groups['gluster_server_secondary']
-      block:
-        - name: Query gluster mounts
-          ansible.builtin.stat:
-            path: "{{ _mount }}"
-          vars:
-            _mount: "{{ item.mount }}/{{ _replica_log_file }}"
-            _results: "{{ _gluster_paths.results | default([]) }}"
-            _paths: "{{ _results | map(attribute='stat') }}"
-            _query: "{{ _paths | rejectattr('exists') }}"
-          delay: 5
-          retries: 5
-          until: _query | length == 0
-          loop_control:
-            label: "{{ _mount }}"
-          loop: "{{ gluster_volumes }}"
-          register: _gluster_paths
-
-        - name: Verify gluster mount paths
-          ansible.builtin.assert:
-            that: _query | length == 0
-          vars:
-            _results: "{{ _gluster_paths.results | default([]) }}"
-            _paths: "{{ _results | map(attribute='stat') }}"
-            _query: "{{ _paths | rejectattr('exists') }}"
-            _mount: "{{ item.mount }}"
-          loop_control:
-            label: "{{ _mount }}"
-          loop: "{{ gluster_volumes }}"

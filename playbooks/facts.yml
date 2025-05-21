@@ -56,6 +56,7 @@
         gluster_target_members: "{{ _gluster_target_members }}"
         _to_dict: "nephelaiio.plugins.to_dict"
         _map_format: "nephelaiio.plugins.map_format"
+        _select_attrs: "nephelaiio.plugins.select_attributes"
       vars:
         _map_format: "nephelaiio.plugins.map_format"
         _gluster_hosts: "{{ groups[_gluster_name] }}"
