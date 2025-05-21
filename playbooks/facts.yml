@@ -12,42 +12,6 @@
     - ../vars/main.yml
   any_errors_fatal: true
   tasks:
-    - name: Set volume facts
-      ansible.builtin.set_fact:
-        _gluster_volumes: "{{ _replica_query | ternary(_meta_volumes, _volumes) }}"
-      vars:
-        _volume_defaults:
-          state: present
-        _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
-        _volumes_num: "{{ _volumes | length }}"
-        _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
-        _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
-        _meta_volumes: "{{ [gluster_meta_volume] + _volumes_overwritten }}"
-        _hosts: "{{ inventory_hostname in groups[_gluster_server_primary_groupset] }}"
-        _replica_query: "{{ _hosts and _gluster_georeplica_manage }}"
-
-    - name: Debug gluster volume
-      ansible.builtin.debug:
-        var: _gluster_volumes
-
-    - name: Verify gluster volume facts
-      ansible.builtin.assert:
-        that: _gluster_volumes | length > 0
-
-    - name: Verify gluster meta volume facts
-      ansible.builtin.assert:
-        that:
-          - _volume_query | length == 0
-          - _brick_query | length == 0
-          - _mount_query | length == 0
-        fail_msg: "Gluster volumes cannot use geo replication meta volume facts"
-      vars:
-        _volumes: "{{ _gluster_volumes }}"
-        _meta_volume: "{{ gluster_meta_volume }}"
-        _volume_query: "{{ _volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
-        _brick_query: "{{ _volumes | selectattr('brick', 'equalto', _meta_volume.brick) }}"
-        _mount_query: "{{ _volumes | selectattr('mount', 'equalto', _meta_volume.mount) }}"
-
     - name: Group gluster members
       ansible.builtin.group_by:
         key: "{{ _gluster_name }}"
@@ -86,6 +50,42 @@
             that:
               - _gluster_primaries | length > 0
               - _gluster_replicas | length > 0
+
+    - name: Set volume facts
+      ansible.builtin.set_fact:
+        _gluster_volumes: "{{ _replica_query | ternary(_meta_volumes, _volumes) }}"
+      vars:
+        _volume_defaults:
+          state: present
+        _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
+        _volumes_num: "{{ _volumes | length }}"
+        _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
+        _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
+        _meta_volumes: "{{ [gluster_meta_volume] + _volumes_overwritten }}"
+        _hosts: "{{ inventory_hostname in groups[_gluster_server_primary_groupset] }}"
+        _replica_query: "{{ _hosts and _gluster_georeplica_manage }}"
+
+    - name: Debug gluster volume
+      ansible.builtin.debug:
+        var: _gluster_volumes
+
+    - name: Verify gluster volume facts
+      ansible.builtin.assert:
+        that: _gluster_volumes | length > 0
+
+    - name: Verify gluster meta volume facts
+      ansible.builtin.assert:
+        that:
+          - _volume_query | length == 0
+          - _brick_query | length == 0
+          - _mount_query | length == 0
+        fail_msg: "Gluster volumes cannot use geo replication meta volume facts"
+      vars:
+        _volumes: "{{ _gluster_volumes }}"
+        _meta_volume: "{{ gluster_meta_volume }}"
+        _volume_query: "{{ _volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
+        _brick_query: "{{ _volumes | selectattr('brick', 'equalto', _meta_volume.brick) }}"
+        _mount_query: "{{ _volumes | selectattr('mount', 'equalto', _meta_volume.mount) }}"
 
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
