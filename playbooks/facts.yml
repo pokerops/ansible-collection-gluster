@@ -4,7 +4,7 @@
   become: true
   vars:
     _gluster_groupset: "{{ gluster_groupset | default('cluster') }}"
-    _gluster_prefix: "{{ gluster_prefix | default('gluster_client') }}"
+    _gluster_prefix: "{{ gluster_prefix | default('gluster_server') }}"
     _gluster_name: "{{ _gluster_prefix }}_{{ _gluster_groupset }}"
     _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
     _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
