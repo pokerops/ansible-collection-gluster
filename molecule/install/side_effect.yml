@@ -1,6 +1,6 @@
 ---
 - name: Override gluster volume facts
-  hosts: gluster_server
+  hosts: all
   tasks:
     - name: Set gluster volume fact
       ansible.builtin.set_fact:
