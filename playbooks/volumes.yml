@@ -14,11 +14,12 @@
   tasks:
     - name: Set volume facts
       ansible.builtin.set_fact:
-        __gluster_volumes: "{{ _hosts | ternary(_meta_volumes, _volumes) }}"
+        __gluster_volumes: "{{ _replica_query | ternary(_meta_volumes, _volumes) }}"
       vars:
         _volumes: "{{ _gluster_volumes }}"
         _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
         _hosts: "{{ inventory_hostname in groups[_gluster_server_primary_groupset] }}"
+        _replica_query: "{{ _hosts and _gluster_georeplica_manage }}"
 
     - name: Debug gluster volume
       ansible.builtin.debug:
