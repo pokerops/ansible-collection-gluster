@@ -220,7 +220,7 @@
           - _mount_query | length == 0
         fail_msg: "Gluster volumes cannot use geo replication meta volume facts"
       vars:
-        _volumes: "{{ _gluster_volumes }}"
+        _volumes: "{{ _gluster_volumes_list }}"
         _meta_volume: "{{ gluster_meta_volume }}"
         _volume_query: "{{ _volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
         _brick_query: "{{ _volumes | selectattr('brick', 'equalto', _meta_volume.brick) }}"
