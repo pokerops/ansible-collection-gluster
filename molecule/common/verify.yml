@@ -84,23 +84,13 @@
   hosts: "{{ gluster_client_hostgroup_name | default('gluster_client') }}"
   become: true
   tasks:
-    - name: Query gluster client mounts
-      ansible.builtin.stat:
-        path: "{{ _mount }}"
-      vars:
-        _mount: "{{ item.mount }}"
-      loop_control:
-        label: "{{ _mount }}"
-      loop: "{{ _gluster_volumes }}"
-      register: _gluster_client_paths
-
     - name: Verify gluster mount paths
       ansible.builtin.assert:
-        that: _query | length == 0
+        that: _query | length == _defined_mounts | length
       vars:
-        _results: "{{ _gluster_client_paths.results | default([]) }}"
-        _paths: "{{ _results | map(attribute='stat') }}"
-        _query: "{{ _paths | rejectattr('exists') }}"
+        _defined_mounts: "{{ _gluster_volumes | map(attribute='mount') }}"
+        _existing_mounts: "{{ ansible_mounts | map(attribute='mount') }}"
+        _query: "{{ _defined_mounts | select('in', _existing_mounts) }}"
 
     - name: Test gluster client mount
       ansible.builtin.copy:
@@ -113,16 +103,18 @@
       loop: "{{ _gluster_volumes }}"
 
 - name: Test gluster file replication
-  hosts: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
+  hosts: "gluster_server"
   become: true
+  vars:
+    _log_file: "{{ gluster_log_file | default('test.log') }}"
   tasks:
-    - name: Query gluster mounts
+    - name: Get gluster file status
       ansible.builtin.stat:
-        path: "{{ _mount }}"
+        path: "{{ _file }}"
       vars:
-        _mount: "{{ item.mount }}/test.log"
+        _file: "{{ item.mount }}/{{ _log_file }}"
       loop_control:
-        label: "{{ _mount }}"
+        label: "{{ _file }}"
       loop: "{{ _gluster_volumes }}"
       register: _gluster_paths
 
@@ -133,7 +125,11 @@
         _results: "{{ _gluster_paths.results | default([]) }}"
         _paths: "{{ _results | map(attribute='stat') }}"
         _query: "{{ _paths | rejectattr('exists') }}"
-        _mount: "{{ item.mount }}"
-      loop_control:
-        label: "{{ _mount }}"
-      loop: "{{ _gluster_volumes }}"
+
+    - name: Verify gluster mount paths
+      ansible.builtin.assert:
+        that: _query | length == _defined_mounts | length
+      vars:
+        _defined_mounts: "{{ _gluster_volumes | map(attribute='mount') }}"
+        _existing_mounts: "{{ ansible_mounts | map(attribute='mount') }}"
+        _query: "{{ _defined_mounts | select('in', _existing_mounts) }}"
