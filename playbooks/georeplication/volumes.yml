@@ -18,7 +18,7 @@
 
     - name: Set gluster replica volumes
       ansible.builtin.set_fact:
-        _gluster_replica_volumes: "{{ _volumes_overwritten | rejectattr('name', 'equalto', _meta_volume) }}"
+        _gluster_target_volumes: "{{ _volumes_overwritten | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
         _replica_member: "{{ groups[_gluster_server_replica_groupset] | sort | first }}"
         _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
