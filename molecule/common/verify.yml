@@ -1,6 +1,7 @@
 ---
 - name: Set gluster volume fact
   hosts: "all"
+  gather_facts: false
   tasks:
     - name: Set volume facts
       ansible.builtin.set_fact:
@@ -76,7 +77,7 @@
       changed_when: false
       loop_control:
         label: "{{ _volume }}"
-      loop: "{{ gluster_volumes }}"
+      loop: "{{ _gluster_volumes }}"
       tags: skip_ansible_lint
 
 - name: Test gluster client connection
@@ -90,7 +91,7 @@
         _mount: "{{ item.mount }}"
       loop_control:
         label: "{{ _mount }}"
-      loop: "{{ gluster_volumes }}"
+      loop: "{{ _gluster_volumes }}"
       register: _gluster_client_paths
 
     - name: Verify gluster mount paths
@@ -109,7 +110,7 @@
         _mount: "{{ item.mount }}"
       loop_control:
         label: "{{ _mount }}"
-      loop: "{{ gluster_volumes }}"
+      loop: "{{ _gluster_volumes }}"
 
 - name: Test gluster file replication
   hosts: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
