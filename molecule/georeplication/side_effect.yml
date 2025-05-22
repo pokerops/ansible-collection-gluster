@@ -11,8 +11,10 @@
             mount: /mnt/test
             state: stopped
 
-- name: Import geo replication stop playbook
-  ansible.builtin.import_playbook: pokerops.gluster.georeplication.stop
+- name: Import geo replication install playbook
+  ansible.builtin.import_playbook: pokerops.gluster.install
+  vars:
+    gluster_facts_manage: true
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_primary"
@@ -65,8 +67,10 @@
             brick: /data/test
             mount: /mnt/test
 
-- name: Import geo replication start playbook
-  ansible.builtin.import_playbook: pokerops.gluster.georeplication.start
+- name: Import geo replication install playbook
+  ansible.builtin.import_playbook: pokerops.gluster.install
+  vars:
+    gluster_facts_manage: true
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_primary"
@@ -128,8 +132,10 @@
             mount: /mnt/test
             state: absent
 
-- name: Import geo replication delete playbook
-  ansible.builtin.import_playbook: pokerops.gluster.georeplication.delete
+- name: Import geo replication install playbook
+  ansible.builtin.import_playbook: pokerops.gluster.install
+  vars:
+    gluster_facts_manage: true
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_primary"

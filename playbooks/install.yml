@@ -10,8 +10,6 @@
 
 - name: Run Gluster Geo Replication delete
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.delete
-  vars:
-    gluster_facts_manage: false
 
 - name: Remove Gluster Client mount points
   ansible.builtin.import_playbook: pokerops.gluster.client
@@ -27,6 +25,12 @@
 
 - name: Run Gluster Geo Replication sessions create
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.create
+
+- name: Run Gluster Geo Replication sessions start
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.start
+
+- name: Run Gluster Geo Replication sessions stop
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.stop
 
 - name: Deploy Gluster Clients
   ansible.builtin.import_playbook: pokerops.gluster.client
