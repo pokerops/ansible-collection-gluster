@@ -51,6 +51,25 @@
               - _gluster_primaries | length > 0
               - _gluster_replicas | length > 0
 
+        - name: Get gluster version
+          ansible.builtin.shell: |
+            gluster --version | head -1 | awk '{print $2}'
+          args:
+            chdir: "/usr/sbin/"
+          register: _gluster_version
+          changed_when: false
+          loop: "{{ play_hosts }}"
+          delegate_to: "{{ item }}"
+          tags: skip_ansible_lint
+
+        - name: Verify gluster version across geo replication members
+          ansible.builtin.assert:
+            that: _versions | length == 1
+            fail_msg: "Gluster version must be the same across members"
+          vars:
+            _output: "{{ _gluster_version.results | default([]) }}"
+            _versions: "{{ _output | map(attribute='stdout') | unique }}"
+
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
         gluster_target_members: "{{ _gluster_target_members }}"
