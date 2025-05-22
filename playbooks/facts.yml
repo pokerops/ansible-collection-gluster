@@ -17,12 +17,6 @@
         key: "{{ _gluster_name }}"
       changed_when: false
 
-    - name: Group gluster primary site members
-      ansible.builtin.group_by:
-        key: "{{ _gluster_server_primary_groupset }}"
-      changed_when: false
-      when: not _gluster_georeplica_manage
-
     - name: Gather service facts
       ansible.builtin.service_facts:
 
@@ -67,14 +61,25 @@
             _output: "{{ _gluster_version.results | default([]) }}"
             _versions: "{{ _output | map(attribute='stdout') | unique }}"
 
+    - name: Group gluster replica site members
+      ansible.builtin.group_by:
+        key: "{{ _gluster_server_replica_groupset }}"
+      changed_when: false
+      when: _gluster_georeplica_manage
+
+    - name: Group gluster primary site members
+      ansible.builtin.group_by:
+        key: "{{ _gluster_server_primary_groupset }}"
+      vars:
+        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
+      changed_when: false
+      when:
+        - _replicas | length > 0
+        - not _gluster_georeplica_manage
+
     - name: Get gluster georeplication members
       when: _gluster_georeplica_manage
       block:
-        - name: Group gluster replica site members
-          ansible.builtin.group_by:
-            key: "{{ _gluster_server_replica_groupset }}"
-          changed_when: false
-
         - name: Set gluster replica members fact
           ansible.builtin.set_fact:
             _gluster_replicas: "{{ _replica_hosts }}"
@@ -186,7 +191,7 @@
   tasks:
     - name: Set volume facts
       ansible.builtin.set_fact:
-        _gluster_volumes: "{{ _replica_query | ternary(_meta_volumes, _volumes_overwritten) }}"
+        _gluster_volumes: "{{ _replica_manage | ternary(_meta_volumes, _volumes_overwritten) }}"
       vars:
         _volume_defaults:
           state: present
@@ -195,8 +200,9 @@
         _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
         _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
         _meta_volumes: "{{ [gluster_meta_volume] + _volumes_overwritten }}"
-        _hosts: "{{ inventory_hostname in groups[_gluster_server_primary_groupset] }}"
-        _replica_query: "{{ _hosts and _gluster_georeplica_manage }}"
+        _primaries: "{{ groups[_gluster_server_primary_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
+        _replica_manage: "{{ inventory_hostname in _primaries }}"
 
     - name: Debug gluster volume
       ansible.builtin.debug:
