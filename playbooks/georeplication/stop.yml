@@ -41,16 +41,17 @@
         _gluster_georeplica_volumes: "{{ _stop_volumes }}"
       vars:
         _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
-        _existing_replicas: "{{ _output | map(attribute='name') | unique }}"
+        _replicas: "{{ _output | rejectattr('status', 'equalto', 'Stopped') }}"
+        _replica_names: "{{ _replicas | map(attribute='name') | unique }}"
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
-        _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_replicas) }}"
+        _volumes: "{{ _target_volumes | selectattr('name', 'in', _replica_names) }}"
         _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
 
-    - name: Debug gluster geo replication status
+    - name: Debug current gluster geo replication status
       ansible.builtin.debug:
         msg: "{{ _gluster_georeplica_sessions }}"
 
-    - name: Debug gluster geo replication volumes to stop a session
+    - name: Debug gluster geo replication target volumes to stop sessions
       ansible.builtin.debug:
         msg: "{{ _gluster_georeplica_volumes }}"
 

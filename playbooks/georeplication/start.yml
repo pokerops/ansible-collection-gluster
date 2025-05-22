@@ -44,9 +44,10 @@
         _gluster_georeplica_volumes: "{{ _start_volumes }}"
       vars:
         _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
-        _existing_replicas: "{{ _output | map(attribute='name') | unique }}"
+        _replicas: "{{ _output | rejectattr('status', 'in', _gluster_volumes_statuses) }}"
+        _replica_names: "{{ _replicas | map(attribute='name') | unique }}"
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
-        _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_replicas) }}"
+        _volumes: "{{ _target_volumes | selectattr('name', 'in', _replica_names) }}"
         _start_volumes: "{{ _volumes | selectattr('state', 'equalto', 'present') }}"
 
     - name: Debug gluster geo replication status
