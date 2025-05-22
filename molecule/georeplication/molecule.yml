@@ -87,7 +87,7 @@ provisioner:
               - a
               - b
               - c
-            options: { nfs.disable: "off" }
+            options: { performance.quick-read: "on" }
         gluster_server_groupset: primary
       gluster_server_secondary:
         gluster_georeplica_manage: true
