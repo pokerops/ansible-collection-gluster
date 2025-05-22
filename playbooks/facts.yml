@@ -200,7 +200,7 @@
         _primaries: "{{ groups[_gluster_server_primary_groupset] | default([]) }}"
         _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
         _replica_manage: "{{ inventory_hostname in _primaries }}"
-        _target_volumes: "{{ _replica_manage | ternary(_meta_volumes, _volumes_overwritten) }}"
+        _target_volumes: "{{ _replica_manage | ternary(_meta_volumes, _volumes) }}"
         _volumes_num: "{{ _target_volumes | length }}"
         _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
         _target_volumes_overwritten: "{{ _volumes_default | zip(_target_volumes) | map('combine') }}"
