@@ -65,26 +65,21 @@
             _output: "{{ _gluster_version.results | default([]) }}"
             _versions: "{{ _output | map(attribute='stdout') | unique }}"
 
-    - name: Group gluster replica site members
-      ansible.builtin.group_by:
-        key: "{{ _gluster_server_slave_group }}"
-      changed_when: false
-      when: _gluster_georeplica_manage
-
-    - name: Group gluster primary site members
+    - name: Group gluster server master members
       ansible.builtin.group_by:
         key: "{{ _gluster_server_master_group }}"
-      vars:
-        _replicas: "{{ groups[_gluster_server_slave_group] | default([]) }}"
       changed_when: false
-      when:
-        - _replicas | length > 0
-        - not _gluster_georeplica_manage
+      when: not _gluster_georeplica_manage
 
     - name: Get gluster georeplication members
       when: _gluster_georeplica_manage
       block:
-        - name: Set gluster replica members fact
+        - name: Group gluster server slave members
+          ansible.builtin.group_by:
+            key: "{{ _gluster_server_slave_group }}"
+          changed_when: false
+
+        - name: Set gluster geo replication member facts
           ansible.builtin.set_fact:
             _gluster_slaves: "{{ _replica_hosts }}"
             _gluster_masters: "{{ _primary_hosts }}"
