@@ -1,7 +1,4 @@
 ---
-- name: Run Gluster facts
-  ansible.builtin.import_playbook: pokerops.gluster.facts
-
 - name: Manage geo replication mount broker tasks
   hosts: "{{ _gluster_server_replica_groupset }}"
   gather_facts: false
@@ -122,14 +119,14 @@
 
     - name: Set gluster replica volumes
       ansible.builtin.set_fact:
-        _gluster_replica_volumes: "{{ _volumes_list }}"
+        _gluster_target_volumes: "{{ _volumes_list }}"
         _gluster_georeplica_volumes: "{{ _gluster_georeplica_volumes }}"
       vars:
         _replica_member: "{{ groups[_gluster_server_replica_groupset] | sort | first }}"
         _volumes: "{{ _gluster_georeplica_volumes | sort(attribute='name') }}"
         _volume_names: "{{ _volumes | map(attribute='name') }}"
         _volume_format: "{{ _volume_names | map(_map_format, _replica_member + '::%s') }}"
-        _volume_dict: "{{ _volume_format | map(_to_dict, 'name') }}"
+        _volume_dict: "{{ _volume_format | map(_to_dict, '_replica_name') }}"
         _volumes_list: "{{ _volumes | zip(_volume_dict) | map('combine') }}"
       delegate_facts: true
       delegate_to: localhost
@@ -140,6 +137,7 @@
     _gluster_replicas: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
     gluster_hostgroup_restart: "{{ groups[_gluster_replicas] }}"
     _gluster_georeplica_volumes: "{{ hostvars['localhost']['_gluster_georeplica_volumes'] }}"
+    gluster_facts_manage: false
   when:
     - _gluster_georeplica_manage
     - _gluster_georeplica_volumes | length > 0
@@ -234,14 +232,8 @@
       vars:
         _sessions: "{{ _gluster_georeplica_sessions }}"
         _existing_replicas: "{{ _sessions | map(attribute='name') | unique }}"
-        _primary_member: "{{ groups[_gluster_server_primary_groupset] | sort | first }}"
-        _replica_volumes: "{{ hostvars['localhost']['_gluster_replica_volumes'] | sort(attribute='name') }}"
-        _replica_names: "{{ _replica_volumes | map(attribute='name') }}"
-        _replica_names_dict: "{{ _replica_names | map(_to_dict, 'replica_name') }}"
-        _replicas_combine: "{{ _replica_volumes | zip(_replica_names_dict) | map('combine') }}"
-        _primary_volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
-        _volumes_list: "{{ _replicas_combine | zip(_primary_volumes) | map('combine') }}"
-        _volumes: "{{ _volumes_list | rejectattr('name', 'in', _existing_replicas) }}"
+        _volumes: "{{ hostvars['localhost']['_gluster_target_volumes'] | sort(attribute='name') }}"
+        _target_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_replicas) }}"
         _meta_volume: "{{ gluster_meta_volume.name }}"
 
     - name: Debug gluster geo replication volumes to create a session
