@@ -96,7 +96,7 @@
       vars:
         _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
-        _query_volumes: "{{ _results | selectattr('volume', 'in', _volumes) }}"
+        _query_volumes: "{{ _results | selectattr('name', 'in', _volumes) }}"
         _status: "{{ _query_volumes | rejectattr('status', 'in', _gluster_volumes_statuses) }}"
       args:
         chdir: "/usr/sbin/"
