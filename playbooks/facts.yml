@@ -23,6 +23,50 @@
       changed_when: false
       when: not _gluster_georeplica_manage
 
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Manage gluster status check tasks
+      when: gluster_service_name in services
+      block:
+        - name: Verify gluster service status
+          ansible.builtin.assert:
+            that: services[gluster_service_name].state | lower == 'running'
+
+        - name: Query peer status
+          ansible.builtin.shell: gluster peer status | grep -i state
+          args:
+            chdir: "/usr/sbin/"
+          register: _peer_query
+          changed_when: false
+          tags: skip_ansible_lint
+
+        - name: Verify gluster node status
+          ansible.builtin.assert:
+            that: _query | length == 0
+          vars:
+            _output: "{{ _peer_query.stdout_lines | default('') }}"
+            _query: "{{ _output | reject('regex', 'Connected') }}"
+
+        - name: Get gluster version
+          ansible.builtin.shell: |
+            gluster --version | head -1 | awk '{print $2}'
+          args:
+            chdir: "/usr/sbin/"
+          register: _gluster_version
+          changed_when: false
+          loop: "{{ play_hosts }}"
+          delegate_to: "{{ item }}"
+          tags: skip_ansible_lint
+
+        - name: Verify gluster version across geo replication members
+          ansible.builtin.assert:
+            that: _versions | length == 1
+            fail_msg: "Gluster version must be the same across members"
+          vars:
+            _output: "{{ _gluster_version.results | default([]) }}"
+            _versions: "{{ _output | map(attribute='stdout') | unique }}"
+
     - name: Get gluster georeplication members
       when: _gluster_georeplica_manage
       block:
@@ -51,25 +95,6 @@
               - _gluster_primaries | length > 0
               - _gluster_replicas | length > 0
 
-        - name: Get gluster version
-          ansible.builtin.shell: |
-            gluster --version | head -1 | awk '{print $2}'
-          args:
-            chdir: "/usr/sbin/"
-          register: _gluster_version
-          changed_when: false
-          loop: "{{ play_hosts }}"
-          delegate_to: "{{ item }}"
-          tags: skip_ansible_lint
-
-        - name: Verify gluster version across geo replication members
-          ansible.builtin.assert:
-            that: _versions | length == 1
-            fail_msg: "Gluster version must be the same across members"
-          vars:
-            _output: "{{ _gluster_version.results | default([]) }}"
-            _versions: "{{ _output | map(attribute='stdout') | unique }}"
-
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
         gluster_target_members: "{{ _gluster_target_members }}"
@@ -83,31 +108,6 @@
         that: _members_num | length > 1
       vars:
         _members_num: "{{ gluster_target_members }}"
-
-    - name: Gather service facts
-      ansible.builtin.service_facts:
-
-    - name: Manage gluster status check tasks
-      when: gluster_service_name in services
-      block:
-        - name: Verify gluster service status
-          ansible.builtin.assert:
-            that: services[gluster_service_name].state | lower == 'running'
-
-        - name: Query peer status
-          ansible.builtin.shell: gluster peer status | grep -i state
-          args:
-            chdir: "/usr/sbin/"
-          register: _peer_query
-          changed_when: false
-          tags: skip_ansible_lint
-
-        - name: Verify gluster node status
-          ansible.builtin.assert:
-            that: _query | length == 0
-          vars:
-            _output: "{{ _peer_query.stdout_lines | default('') }}"
-            _query: "{{ _output | reject('regex', 'Connected') }}"
 
     - name: Query pool list
       ansible.builtin.shell: gluster pool list | awk '{print $2}'
