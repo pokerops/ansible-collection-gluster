@@ -12,13 +12,20 @@
   vars_files:
     - ../vars/main.yml
   tasks:
+    - name: Set gluster volumes facts
+      ansible.builtin.set_fact:
+        _gluster_volumes_present: "{{ _volumes_present }}"
+      vars:
+        _volumes: "{{ _gluster_volumes }}"
+        _volumes_present: "{{ _volumes | selectattr('state', 'equalto', 'present') }}"
+
     - name: Create brick paths
       ansible.builtin.file:
         path: "{{ item.brick }}"
         state: directory
       loop_control:
         label: "{{ item.brick }}"
-      loop: "{{ _gluster_volumes }}"
+      loop: "{{ _gluster_volumes_present }}"
       tags: skip_ansible_lint
 
     - name: Manage gluster volume tasks
@@ -45,7 +52,7 @@
             _volume: "{{ item.name }}"
           loop_control:
             label: "{{ _volume }}"
-          loop: "{{ _gluster_volumes }}"
+          loop: "{{ _gluster_volumes_present }}"
 
         - name: Prune stale gluster peer members
           gluster.gluster.gluster_peer:
@@ -61,7 +68,7 @@
         state: directory
       loop_control:
         label: "{{ item.name }} - {{ item.mount }}"
-      loop: "{{ _gluster_volumes }}"
+      loop: "{{ _gluster_volumes_present }}"
       tags: skip_ansible_lint
 
     - name: Create gluster mount source volume
@@ -79,7 +86,7 @@
         _options: "{{ 'defaults,ro' if _replica_manage else _option_default }}"
       loop_control:
         label: "{{ _name }} - {{ _path }}"
-      loop: "{{ _gluster_volumes }}"
+      loop: "{{ _gluster_volumes_present }}"
 
     - name: Manage subdirectories
       ansible.builtin.file:
@@ -93,7 +100,7 @@
         path: "{{ item.1 }}"
       loop_control:
         label: "{{ volume.mount }} - {{ path }}"
-      loop: "{{ _gluster_volumes | subelements('paths', skip_missing='yes') }}"
+      loop: "{{ _gluster_volumes_present | subelements('paths', skip_missing='yes') }}"
       when: inventory_hostname in groups[_gluster_server_primary_groupset]
 
     - name: Set delete gluster volumes facts
