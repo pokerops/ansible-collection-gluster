@@ -100,7 +100,7 @@
           vars:
             _slave_hosts: "{{ groups[_gluster_server_slave_group] | default([]) }}"
             _master_group: "{{ hostvars['localhost']['_gluster_server_master_group'] }}"
-            _master_hosts: "{{ _master_group | default([]) }}"
+            _master_hosts: "{{ groups[_master_group] | default([]) }}"
 
         - name: Debug gluster geo replication slave members
           ansible.builtin.debug:
