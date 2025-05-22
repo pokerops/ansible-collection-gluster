@@ -44,7 +44,8 @@
           vars:
             _replica_enable: "{{ _gluster_georeplica_manage }}"
             _volume_query: "{{ (_volume != gluster_meta_volume.name) and (_replica_enable) }}"
-            _read_write_option: { features.read-only: "off" }
+            _read_write_option:
+              { features.read-only: "off", changelog.changelog: "on" }
             _read_only_option: { features.read-only: "on" }
             _options_default: "{{ _read_only_option if _volume_query else _read_write_option }}"
             _options: "{{ _options_default | combine(item.options | default({})) }}"
