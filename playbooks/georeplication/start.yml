@@ -29,7 +29,7 @@
     - name: Get gluster geo replication status
       ansible.builtin.shell: |
         gluster volume geo-replication status | awk \
-        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+        'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
       args:
         chdir: "/usr/sbin/"
       register: _georeplica_status
@@ -44,7 +44,7 @@
         _gluster_georeplica_volumes: "{{ _start_volumes }}"
       vars:
         _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
-        _existing_replicas: "{{ _output | map(attribute='volume') | unique }}"
+        _existing_replicas: "{{ _output | map(attribute='name') | unique }}"
         _replica_volumes: "{{ _gluster_replica_volumes | sort(attribute='name') }}"
         _primary_volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
         _volumes_list: "{{ _replica_volumes | zip(_primary_volumes) | map('combine') }}"
@@ -94,7 +94,7 @@
     - name: Get gluster geo replication status
       ansible.builtin.shell: |
         gluster volume geo-replication status | awk \
-        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+        'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
       vars:
         _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
@@ -127,5 +127,5 @@
         _volumes: "{{ _gluster_georeplica_volumes }}"
         _volume_names: "{{ _volumes | map(attribute='name') }}"
         _volumes_status: "{{ _sessions | selectattr('status', 'in', _gluster_volumes_statuses) }}"
-        _volume_status_names: "{{ _volumes_status | map(attribute='volume') }}"
+        _volume_status_names: "{{ _volumes_status | map(attribute='name') }}"
         _start_volumes: "{{ _volumes | selectattr('name', 'in', _volume_status_names) }}"

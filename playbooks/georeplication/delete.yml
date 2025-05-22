@@ -51,7 +51,7 @@
           - replica_name
         _sessions: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
         _replica_query: "{{ _gluster_georeplica_manage and (_sessions | length > 0) }}"
-        _replicas: "{{ _sessions | map(attribute='volume') | unique }}"
+        _replicas: "{{ _sessions | map(attribute='name') | unique }}"
         _replica_volumes: "{{ _sessions | sort(attribute='name') }}"
         _replica_nodes: "{{ _replica_volumes | map(attribute='replica_name') }}"
         _replica_regex: "{{ _replica_nodes | map('regex_replace', '.*@', '') }}"
