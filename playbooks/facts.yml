@@ -65,13 +65,21 @@
             _output: "{{ _gluster_version.results | default([]) }}"
             _versions: "{{ _output | map(attribute='stdout') | unique }}"
 
-    - name: Group gluster server master members
-      ansible.builtin.group_by:
-        key: "{{ _gluster_server_master_group }}"
-      changed_when: false
+    - name: Manage gluster geo replication master fact
       when: not _gluster_georeplica_manage
+      block:
+        - name: Set gluster geo replication member facts
+          ansible.builtin.set_fact:
+            _gluster_server_master_group: "{{ _gluster_server_master_group }}"
+          delegate_to: localhost
+          delegate_facts: true
 
-    - name: Get gluster georeplication members
+        - name: Group gluster server master members
+          ansible.builtin.group_by:
+            key: "{{ _gluster_server_master_group }}"
+          changed_when: false
+
+    - name: Get gluster geo replication members
       when: _gluster_georeplica_manage
       block:
         - name: Group gluster server slave members
@@ -81,11 +89,12 @@
 
         - name: Set gluster geo replication member facts
           ansible.builtin.set_fact:
-            _gluster_slaves: "{{ _replica_hosts }}"
-            _gluster_masters: "{{ _primary_hosts }}"
+            _gluster_slaves: "{{ _slave_hosts }}"
+            _gluster_masters: "{{ _master_hosts }}"
           vars:
-            _replica_hosts: "{{ groups[_gluster_server_slave_group] | default([]) }}"
-            _primary_hosts: "{{ groups[_gluster_server_master_group] | default([]) }}"
+            _slave_hosts: "{{ groups[_gluster_server_slave_group] | default([]) }}"
+            _master_group: "{{ hostvars['localhost']['_gluster_server_master_group'] }}"
+            _master_hosts: "{{ _master_group | default([]) }}"
 
         - name: Debug gluster geo replication slave members
           ansible.builtin.debug:
