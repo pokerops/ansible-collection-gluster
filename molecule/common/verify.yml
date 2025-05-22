@@ -108,7 +108,7 @@
           state: present
         _volumes: "{{ gluster_volumes | sort(attribute='name') }}"
         _volumes_num: "{{ _volumes | length }}"
-        _volumes_default: "{{ [_volume_defaults] * _volumes_num }}"
+        _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
         _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
         _volumes_filter: "{{ _volumes_overwritten | rejectattr('state', 'equalto', 'absent') }}"
 
