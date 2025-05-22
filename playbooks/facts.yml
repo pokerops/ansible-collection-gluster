@@ -68,7 +68,7 @@
     - name: Manage gluster geo replication master fact
       when: not _gluster_georeplica_manage
       block:
-        - name: Set gluster geo replication member facts
+        - name: Delegate gluster geo replication master fact
           ansible.builtin.set_fact:
             _gluster_server_master_group: "{{ _gluster_server_master_group }}"
           delegate_to: localhost
@@ -86,6 +86,12 @@
           ansible.builtin.group_by:
             key: "{{ _gluster_server_slave_group }}"
           changed_when: false
+
+        - name: Delegate gluster geo replication slave facts
+          ansible.builtin.set_fact:
+            _gluster_server_slave_group: "{{ _gluster_server_slave_group }}"
+          delegate_to: localhost
+          delegate_facts: true
 
         - name: Set gluster geo replication member facts
           ansible.builtin.set_fact:
@@ -207,15 +213,14 @@
         _gluster_server_slave_group: "{{ _slave_group }}"
         _gluster_server_master_group: "{{ _master_group }}"
       vars:
-        _slave_group: "{{ _gluster_name }}_slave"
-        _master_group: "{{ _gluster_name }}_master"
+        _slave_group: "{{ hostvars['localhost']['_gluster_server_slave_group'] | default('gluster_server_slave') }}"
+        _master_group: "{{ hostvars['localhost']['_gluster_server_master_group'] | default('gluster_server_master') }}"
         _volume_defaults:
           state: present
         _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
         _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
-        _primaries: "{{ groups[_gluster_server_master_group] | default([]) }}"
-        _replicas: "{{ groups[_gluster_server_slave_group] | default([]) }}"
-        _replica_manage: "{{ inventory_hostname in _primaries }}"
+        _masters: "{{ groups[_master_group] | default([]) }}"
+        _replica_manage: "{{ inventory_hostname in _masters }}"
         _target_volumes: "{{ _replica_manage | ternary(_meta_volumes, _volumes) }}"
         _volumes_num: "{{ _target_volumes | length }}"
         _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
