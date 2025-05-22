@@ -13,7 +13,7 @@
   any_errors_fatal: true
   tasks:
     - name: End play when facts are not required
-      ansible.builtin.meta: end_play
+      ansible.builtin.meta: end_host
       when: not gluster_facts_manage | default('true') | bool
 
     - name: Group gluster members

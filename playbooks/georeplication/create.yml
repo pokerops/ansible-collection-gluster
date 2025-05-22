@@ -126,7 +126,7 @@
         _volumes: "{{ _gluster_georeplica_volumes | sort(attribute='name') }}"
         _volume_names: "{{ _volumes | map(attribute='name') }}"
         _volume_format: "{{ _volume_names | map(_map_format, _replica_member + '::%s') }}"
-        _volume_dict: "{{ _volume_format | map(_to_dict, '_replica_name') }}"
+        _volume_dict: "{{ _volume_format | map(_to_dict, 'replica_name') }}"
         _volumes_list: "{{ _volumes | zip(_volume_dict) | map('combine') }}"
       delegate_facts: true
       delegate_to: localhost
