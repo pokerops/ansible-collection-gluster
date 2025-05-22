@@ -94,7 +94,7 @@
 
         - name: Debug gluster geo replication slave members
           ansible.builtin.debug:
-            msg: "Gluster server slave {{ _members: [{{ _gluster_slaves | join(', ') }}]"
+            msg: "Gluster server slave {{ _members }} members: [{{ _gluster_slaves | join(', ') }}]"
           vars:
             _members: "{{ _gluster_server_slave_group }}"
 
