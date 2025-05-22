@@ -3,7 +3,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.facts
 
 - name: Update gluster server members
-  hosts: "{{ _gluster_server_hostgroup_name }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}:!{{ _gluster_update_skip_hostgroup }}"
   become: true
   serial: 1
   any_errors_fatal: true
@@ -64,7 +64,7 @@
         gluster_service_state: started
 
 - name: Update gluster client members
-  hosts: "{{ _gluster_client_hostgroup_name }}"
+  hosts: "{{ _gluster_client_hostgroup_name }}:!{{ _gluster_update_skip_hostgroup }}"
   become: true
   serial: 1
   any_errors_fatal: true
@@ -79,3 +79,11 @@
     - name: Reboot node
       ansible.builtin.reboot:
         reboot_timeout: "{{ gluster_reboot_timeout | default(300) }}"
+
+    - name: Verify gluster mount paths
+      ansible.builtin.assert:
+        that: _query | length == _defined_mounts | length
+      vars:
+        _defined_mounts: "{{ _gluster_volumes | map(attribute='mount') }}"
+        _existing_mounts: "{{ ansible_mounts | map(attribute='mount') }}"
+        _query: "{{ _defined_mounts | select('in', _existing_mounts) }}"
