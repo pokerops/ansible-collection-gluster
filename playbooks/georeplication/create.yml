@@ -1,19 +1,16 @@
 ---
 - name: Manage geo replication mount broker tasks
-  hosts: "{{ _gluster_server_replica_groupset }}"
+  hosts: "{{ _gluster_server_slave_group }}"
   gather_facts: false
   become: true
   any_errors_fatal: true
-  vars:
-    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
-    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_slave_group] | default([]) }}"
       when: _replicas | length == 0
 
     - name: Manage gluster replication member tasks
@@ -26,7 +23,7 @@
             _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
 
         - name: Verify existing gluster geo replication sessions
-          delegate_to: "{{ groups[_gluster_server_primary_groupset] | first }}"
+          delegate_to: "{{ groups[_gluster_server_master_group] | first }}"
           block:
             - name: Get gluster geo replication status
               ansible.builtin.shell: |
@@ -122,7 +119,7 @@
         _gluster_target_volumes: "{{ _volumes_list }}"
         _gluster_georeplica_volumes: "{{ _gluster_georeplica_volumes }}"
       vars:
-        _replica_member: "{{ groups[_gluster_server_replica_groupset] | sort | first }}"
+        _replica_member: "{{ groups[_gluster_server_slave_group] | sort | first }}"
         _volumes: "{{ _gluster_georeplica_volumes | sort(attribute='name') }}"
         _volume_names: "{{ _volumes | map(attribute='name') }}"
         _volume_format: "{{ _volume_names | map(_map_format, _replica_member + '::%s') }}"
@@ -134,29 +131,25 @@
 - name: Import gluster restart playbook tasks
   ansible.builtin.import_playbook: ../restart.yml
   vars:
-    _gluster_replicas: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
-    gluster_hostgroup_restart: "{{ groups[_gluster_replicas] }}"
     _gluster_georeplica_volumes: "{{ hostvars['localhost']['_gluster_georeplica_volumes'] }}"
+    gluster_hostgroup_restart: "{{ _gluster_server_slave_group }}"
     gluster_facts_manage: false
   when:
     - _gluster_georeplica_manage
     - _gluster_georeplica_volumes | length > 0
 
 - name: Create geo replication session tasks
-  hosts: "{{ _gluster_server_primary_groupset }}"
+  hosts: "{{ _gluster_server_master_group }}"
   gather_facts: false
   any_errors_fatal: true
   become: true
-  vars:
-    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
-    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_slave_group] | default([]) }}"
       when: _replicas | length == 0
 
     - name: End play for unrequired gluster geo replication nodes
@@ -317,7 +310,7 @@
             _status: "{{ _georeplica_meta.results | default([]) }}"
 
         - name: Manage gluster geo replication common key tasks
-          delegate_to: "{{ groups[_gluster_server_replica_groupset] | first }}"
+          delegate_to: "{{ groups[_gluster_server_slave_group] | first }}"
           block:
             - name: Wait for gluster common key replication
               ansible.builtin.stat:

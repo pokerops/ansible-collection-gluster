@@ -3,16 +3,13 @@
   hosts: "{{ _gluster_server_hostgroup_name }}"
   gather_facts: false
   become: true
-  vars:
-    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
-    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_slave_group] | default([]) }}"
       when: _replicas | length == 0
 
     - name: Create geo replication group
@@ -58,16 +55,13 @@
   gather_facts: false
   become: true
   serial: 1
-  vars:
-    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
-    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_slave_group] | default([]) }}"
       when: _replicas | length == 0
 
     - name: Create SSH directory

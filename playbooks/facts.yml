@@ -6,8 +6,8 @@
     _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
     _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
     _gluster_name: "{{ _gluster_server_prefix }}_{{ _gluster_server_groupset }}"
-    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
-    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
+    _gluster_server_slave_group: "{{ _gluster_name }}_slave"
+    _gluster_server_master_group: "{{ _gluster_name }}_master"
   vars_files:
     - ../vars/main.yml
   any_errors_fatal: true
@@ -67,15 +67,15 @@
 
     - name: Group gluster replica site members
       ansible.builtin.group_by:
-        key: "{{ _gluster_server_replica_groupset }}"
+        key: "{{ _gluster_server_slave_group }}"
       changed_when: false
       when: _gluster_georeplica_manage
 
     - name: Group gluster primary site members
       ansible.builtin.group_by:
-        key: "{{ _gluster_server_primary_groupset }}"
+        key: "{{ _gluster_server_master_group }}"
       vars:
-        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_slave_group] | default([]) }}"
       changed_when: false
       when:
         - _replicas | length > 0
@@ -86,23 +86,29 @@
       block:
         - name: Set gluster replica members fact
           ansible.builtin.set_fact:
-            _gluster_replicas: "{{ _replica_hosts }}"
-            _gluster_primaries: "{{ _primary_hosts }}"
+            _gluster_slaves: "{{ _replica_hosts }}"
+            _gluster_masters: "{{ _primary_hosts }}"
           vars:
-            _replica_hosts: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
-            _primary_hosts: "{{ groups[_gluster_server_primary_groupset] | default([]) }}"
+            _replica_hosts: "{{ groups[_gluster_server_slave_group] | default([]) }}"
+            _primary_hosts: "{{ groups[_gluster_server_master_group] | default([]) }}"
 
-        - name: Debug gluster geo replication members
+        - name: Debug gluster geo replication slave members
           ansible.builtin.debug:
-            msg: "Gluster replica {{ _groupset }} members: [{{ _gluster_replicas | join(', ') }}]"
+            msg: "Gluster server slave {{ _members: [{{ _gluster_slaves | join(', ') }}]"
           vars:
-            _groupset: "{{ _gluster_server_replica_groupset }}"
+            _members: "{{ _gluster_server_slave_group }}"
+
+        - name: Debug gluster geo replication master members
+          ansible.builtin.debug:
+            msg: "Gluster server master {{ _members }} members: [{{ _gluster_masters | join(', ') }}]"
+          vars:
+            _members: "{{ _gluster_server_master_group }}"
 
         - name: Verify gluster georeplication hosts
           ansible.builtin.assert:
             that:
-              - _gluster_primaries | length > 0
-              - _gluster_replicas | length > 0
+              - _gluster_masters | length > 0
+              - _gluster_slaves | length > 0
 
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
@@ -188,21 +194,23 @@
     _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
     _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
     _gluster_name: "{{ _gluster_server_prefix }}_{{ _gluster_server_groupset }}"
-    _gluster_server_replica_groupset: "{{ gluster_server_replica_groupset | default('gluster_server_replica') }}"
-    _gluster_server_primary_groupset: "{{ gluster_server_primary_groupset | default('gluster_server_primary') }}"
   vars_files:
     - ../vars/main.yml
   tasks:
     - name: Set volume facts
       ansible.builtin.set_fact:
         _gluster_volumes: "{{ _target_volumes_overwritten }}"
+        _gluster_server_slave_group: "{{ _slave_group }}"
+        _gluster_server_master_group: "{{ _master_group }}"
       vars:
+        _slave_group: "{{ _gluster_name }}_slave"
+        _master_group: "{{ _gluster_name }}_master"
         _volume_defaults:
           state: present
         _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
         _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
-        _primaries: "{{ groups[_gluster_server_primary_groupset] | default([]) }}"
-        _replicas: "{{ groups[_gluster_server_replica_groupset] | default([]) }}"
+        _primaries: "{{ groups[_gluster_server_master_group] | default([]) }}"
+        _replicas: "{{ groups[_gluster_server_slave_group] | default([]) }}"
         _replica_manage: "{{ inventory_hostname in _primaries }}"
         _target_volumes: "{{ _replica_manage | ternary(_meta_volumes, _volumes) }}"
         _volumes_num: "{{ _target_volumes | length }}"
