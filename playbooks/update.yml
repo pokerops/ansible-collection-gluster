@@ -2,7 +2,7 @@
 - name: Run Gluster facts
   ansible.builtin.import_playbook: pokerops.gluster.facts
 
-- name: Update gluster members
+- name: Update gluster server members
   hosts: "{{ _gluster_server_hostgroup_name }}"
   become: true
   serial: 1
@@ -62,3 +62,20 @@
       ansible.builtin.include_tasks: tasks/service.yml
       vars:
         gluster_service_state: started
+
+- name: Update gluster client members
+  hosts: "{{ _gluster_client_hostgroup_name }}"
+  become: true
+  serial: 1
+  any_errors_fatal: true
+  vars_files:
+    - ../vars/main.yml
+  vars:
+    update_reboot: false
+    update_cache_valid_time: 1
+  roles:
+    - pokerops.gluster.update
+  tasks:
+    - name: Reboot node
+      ansible.builtin.reboot:
+        reboot_timeout: "{{ gluster_reboot_timeout | default(300) }}"
