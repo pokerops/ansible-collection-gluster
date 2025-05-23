@@ -87,3 +87,7 @@
         _defined_mounts: "{{ _gluster_volumes | map(attribute='mount') }}"
         _existing_mounts: "{{ ansible_mounts | map(attribute='mount') }}"
         _query: "{{ _defined_mounts | select('in', _existing_mounts) }}"
+      register: _gluster_client_mounts
+      retries: "{{ _gluster_retries }}"
+      delay: "{{ _gluster_delay }}"
+      until: _gluster_client_mounts is success
