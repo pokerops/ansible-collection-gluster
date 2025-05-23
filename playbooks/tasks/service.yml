@@ -56,5 +56,5 @@
   changed_when: false
   loop_control:
     label: "{{ _volume }}"
-  loop: "{{ gluster_volumes }}"
+  loop: "{{ _gluster_volumes }}"
   tags: skip_ansible_lint
