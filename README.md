@@ -1,28 +1,45 @@
-# pokerops.gluster
+# Ansible Collection - pokerops.gluster
 
 [![Build Status](https://github.com/pokerops/ansible-colllection-gluster/actions/workflows/molecule.yml/badge.svg)](https://github.com/pokerops/ansible-colllection-gluster/actions/wofklows/molecule.yml)
-[![Ansible Galaxy](http://img.shields.io/badge/ansible--galaxy-pokerops.gluster.vim-blue.svg)](https://galaxy.ansible.com/pokerops/gluster/)
+[![Ansible Galaxy](http://img.shields.io/badge/ansible--galaxy-pokerops.gluster.vim-blue.svg)](https://galaxy.ansible.com/ui/repo/published/pokerops/gluster/)
 
-<!--
-[![Ansible Galaxy](https://img.shields.io/badge/dynamic/json?color=blueviolet&label=pokerops/gluster&query=%24.summary_fields.versions%5B0%5D.name&url=https%3A%2F%2Fgalaxy.ansible.com%2Fapi%2Fv1%2Froles%2F<galaxy_id>%2F%3Fformat%3Djson)](https://galaxy.ansible.com/pokerops/gluster/)
- -->
+An [ansible collection](https://galaxy.ansible.com/ui/repo/published/pokerops/gluster) to install and configure [glusterfs](https://docs.gluster.org/en/main/)
 
-An [ansible role](https://galaxy.ansible.com/pokerops/gluster) to install and configure gluster
+## Collection hostgroups
 
-## Role Variables
+| Hostgroup                     |               Default | Description                  |
+| :---------------------------- | --------------------: | :--------------------------- |
+| gluster_server_hostgroup_name |      'gluster_server' | Gluster server hosts         |
+| gluster_client_hostgroup_name |      'gluster_client' | Gluster client hosts         |
+| gluster_update_skip_hostgroup | 'gluster_update_skip' | Gluster update exclude hosts |
 
-Please refer to the [defaults file](/defaults/main.yml) for an up to date list of input parameters.
+## Collection variables
 
-## Dependencies
+The following is the list of parameters intended for end-user manipulation:
 
-By default this role does not depend on any external roles. If any such dependency is required please [add them](/meta/main.yml) according to [the documentation](http://docs.ansible.com/ansible/playbooks_roles.html#role-dependencies)
+Cluster wide parameters
 
-## Example Playbook
+| Parameter                 |    Default | Description                                                             | Required |
+| :------------------------ | ---------: | :---------------------------------------------------------------------- | :------- |
+| gluster_release           |         11 | Target Gluster release                                                  | false    |
+| gluster_volumes           |         [] | Gluster volumes to manage                                               | true     |
+| gluster_owner_user        |       root | Owner user for gluster server volume paths                              | false    |
+| gluster_owner_group       |       root | Owner group for gluster server volume paths                             | false    |
+| gluster_directory_mode    |       0740 | ACL value for gluster volume paths                                      | false    |
+| gluster_retries           |          5 | Number of retries for ansible tasks                                     | false    |
+| gluster_delay             |          5 | Time in seconds for retries in ansible tasks                            | false    |
+| gluster_georeplica_user   | georeplica | Gluster geo replication user to establish a session                     | false    |
+| gluster_georeplica_group  | georeplica | Gluster geo replication group to establish a session                    | false    |
+| gluster_georeplica_manage |      false | Gluster geo replication variable to assign secondary clusters as slaves | false    |
+| gluster_nolog             |       true | Allow to output logs for ansible tasks                                  | false    |
+| gluster_client_user       |       root | Owner group for gluster client mount paths                              | false    |
+| gluster_client_group      |       root | Owner group for gluster client mount paths                              | false    |
+| gluster_client_mode       |       0644 | ACL value for gluster client mount paths                                | false    |
+| gluster_client_serial     |          1 | Number of gluster client nodes to execute in tasks                      | false    |
 
-- hosts: servers
-  roles:
-     - role: pokerops.gluster
-       gluster_package_state: latest
+## Collection playbooks
+
+- pokerops.gluster.install: Install gluster server and client. Also manage geo replication sessions
 
 ## Testing
 
@@ -30,12 +47,11 @@ Please make sure your environment has [docker](https://www.docker.com) installed
 
 Role is tested against the following distributions (docker images):
 
-  * Ubuntu Focal
-  * Ubuntu Jammy
-  * Debian Buster
-  * Debian Bullseye
+- Ubuntu Focal
+- Ubuntu Jammy
+- Debian Bullseye
 
-You can test the role directly from sources using command ` molecule test `
+You can test the role directly from sources using command `molecule test`
 
 ## License
 
