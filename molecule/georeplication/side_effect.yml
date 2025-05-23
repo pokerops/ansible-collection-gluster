@@ -1,4 +1,7 @@
 ---
+- name: Import gluster update playbook
+  ansible.builtin.import_playbook: pokerops.gluster.update
+
 - name: Override gluster volumes state to stopped
   hosts: "gluster_server:gluster_client"
   gather_facts: false
