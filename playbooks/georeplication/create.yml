@@ -227,7 +227,7 @@
       ansible.builtin.set_fact:
         _gluster_user: "{{ _gluster_georeplica_user.name }}"
         _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
-        _gluster_georeplica_volumes: "{{ _volumes | rejectattr('name', 'equalto', _meta_volume) }}"
+        _gluster_sessions_create: "{{ _target_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
         _sessions: "{{ _gluster_georeplica_sessions }}"
         _existing_replicas: "{{ _sessions | map(attribute='name') | unique }}"
@@ -237,11 +237,11 @@
 
     - name: Debug gluster geo replication volumes to create a session
       ansible.builtin.debug:
-        msg: "{{ _gluster_georeplica_volumes }}"
+        msg: "{{ _gluster_sessions_create }}"
 
     - name: End play when there are no geo replications to create
       ansible.builtin.meta: end_host
-      when: _gluster_georeplica_volumes | length == 0
+      when: _gluster_sessions_create | length == 0
 
     - name: Create geo replication session
       ansible.builtin.shell: |
@@ -255,7 +255,7 @@
         _replica: "{{ item.replica_name }}"
       loop_control:
         label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-      loop: "{{ _gluster_georeplica_volumes }}"
+      loop: "{{ _gluster_sessions_create }}"
       register: _georeplica_create
       changed_when: false
       tags: skip_ansible_lint
@@ -305,7 +305,7 @@
         _replica: "{{ item.replica_name }}"
       loop_control:
         label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-      loop: "{{ _gluster_georeplica_volumes }}"
+      loop: "{{ _gluster_sessions_create }}"
       register: _georeplica_meta
       changed_when: false
       tags: skip_ansible_lint
@@ -332,7 +332,7 @@
             _query: "{{ _status | rejectattr('exists') }}"
           loop_control:
             label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-          loop: "{{ _gluster_georeplica_volumes }}"
+          loop: "{{ _gluster_sessions_create }}"
           retries: "{{ _gluster_retries }}"
           delay: "{{ _gluster_delay }}"
           until: _query | length == 0
@@ -347,7 +347,7 @@
             _replica: "{{ item.replica_name | split('::') | last }}"
           loop_control:
             label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-          loop: "{{ _gluster_georeplica_volumes }}"
+          loop: "{{ _gluster_sessions_create }}"
           register: _georeplica_sshkeys_script
           changed_when: false
           tags: skip_ansible_lint
@@ -363,7 +363,7 @@
         _replica: "{{ item.replica_name }}"
       loop_control:
         label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-      loop: "{{ _gluster_georeplica_volumes }}"
+      loop: "{{ _gluster_sessions_create }}"
       register: _georeplica_start
       changed_when: false
       tags: skip_ansible_lint
