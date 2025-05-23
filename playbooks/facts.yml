@@ -65,28 +65,23 @@
             _output: "{{ _gluster_version.results | default([]) }}"
             _versions: "{{ _output | map(attribute='stdout') | unique }}"
 
-    - name: Manage gluster geo replication master fact
-      when: not _gluster_georeplica_manage
-      block:
-        - name: Delegate gluster geo replication master fact
-          ansible.builtin.set_fact:
-            _gluster_server_master_group: "{{ _gluster_server_master_group }}"
-          delegate_to: localhost
-          delegate_facts: true
+    - name: Group gluster server master members
+      ansible.builtin.group_by:
+        key: "{{ _gluster_name }}_{{ 'slave' if _replica_manage else 'master' }}"
+      vars:
+        _replica_manage: "{{ _gluster_georeplica_manage }}"
+      changed_when: false
 
-        - name: Group gluster server master members
-          ansible.builtin.group_by:
-            key: "{{ _gluster_server_master_group }}"
-          changed_when: false
+    - name: Delegate gluster geo replication master fact
+      ansible.builtin.set_fact:
+        _gluster_server_master_group: "{{ _gluster_server_master_group }}"
+      delegate_to: localhost
+      delegate_facts: true
+      when: not _gluster_georeplica_manage
 
     - name: Get gluster geo replication members
       when: _gluster_georeplica_manage
       block:
-        - name: Group gluster server slave members
-          ansible.builtin.group_by:
-            key: "{{ _gluster_server_slave_group }}"
-          changed_when: false
-
         - name: Delegate gluster geo replication slave facts
           ansible.builtin.set_fact:
             _gluster_server_slave_group: "{{ _gluster_server_slave_group }}"
