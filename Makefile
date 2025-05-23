@@ -26,8 +26,10 @@ test: requirements
 	poetry run molecule $@ -s ${MOLECULE_SCENARIO}
 
 install:
-	@sudo ${PKGMAN} install -y $$(if [[ "${HOST_DISTRO}" == "fedora" ]]; then echo libvirt-devel; else echo libvirt-dev; fi)
-	@poetry install --no-root
+	@type poetry >/dev/null || pip3 install poetry
+	@type yq >/dev/null || sudo apt-get install -y yq
+	@sudo apt-get install -y libvirt-dev network-manager
+	@poetry install
 
 lint: requirements
 	poetry run yamllint .
