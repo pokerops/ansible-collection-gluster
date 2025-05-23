@@ -126,6 +126,40 @@
       vars:
         gluster_service_state: started
 
+    - name: End play when there are no gluster slaves
+      ansible.builtin.meta: end_play
+      vars:
+        _slave_group: "{{ gluster_server_prefix | default('gluster_server') }}_update_slave }}"
+        _slaves: "{{ groups[_slave_group] | default([]) }}"
+      when: _slaves | length == 0
+
+    - name: Get gluster geo replication status
+      ansible.builtin.shell: |
+        gluster volume geo-replication status | awk \
+        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+      args:
+        chdir: "/usr/sbin/"
+      register: _georeplica_status
+      changed_when: false
+      tags: skip_ansible_lint
+
+    - name: Set georeplication session status
+      ansible.builtin.set_fact:
+        _gluster_georeplica_sessions: "{{ _output | map('from_json') }}"
+      vars:
+        _output: "{{ _georeplica_status.stdout_lines | default([]) }}"
+
+    - name: Debug gluster geo replication status
+      ansible.builtin.debug:
+        msg: "{{ _gluster_georeplica_sessions }}"
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that: _failing | length == 0
+      vars:
+        _sessions: "{{ _gluster_georeplica_sessions }}"
+        _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
+
 - name: Update gluster client members
   hosts: "{{ _gluster_client_hostgroup_name }}:!{{ _gluster_update_skip_hostgroup }}"
   become: true
