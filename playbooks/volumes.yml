@@ -132,3 +132,4 @@
         label: "{{ _volume }}"
       loop: "{{ _gluster_volumes_delete }}"
       run_once: true
+      tags: skip_ansible_lint
