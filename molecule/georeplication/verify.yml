@@ -15,18 +15,11 @@
         _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
         _volumes_filter: "{{ _volumes_overwritten | rejectattr('state', 'equalto', 'absent') }}"
 
-- name: Load Gluster facts
-  ansible.builtin.import_playbook: pokerops.gluster.facts
-  vars:
-    gluster_server_groupset: verify
-
 - name: Query cluster state
   hosts: "gluster_server"
   become: true
   vars:
     gluster_service_name: "glusterd.service"
-    _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
-    _gluster_name: "{{ _gluster_server_prefix }}_verify"
   tasks:
     - name: Gather service facts
       ansible.builtin.service_facts:
@@ -61,7 +54,12 @@
       vars:
         _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _group: "{{ groups[_gluster_name] }}"
+        _master_group: "{{ _gluster_masters | default('gluster_server_primary') }}"
+        _masters: "{{ groups[_master_group] }}"
+        _slave_group: "{{ _gluster_slaves | default('gluster_server_secondary') }}"
+        _slaves: "{{ groups[_slave_group] }}"
+        _group_name: "{{ _master_group if inventory_hostname in _masters else _slave_group }}"
+        _group: "{{ groups[_group_nameo] }}"
 
     - name: Verify gluster node status
       ansible.builtin.assert:

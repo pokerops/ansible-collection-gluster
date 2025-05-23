@@ -212,7 +212,7 @@
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
   vars:
-    gluster_server_prefix: gluster_server_georeplication
+    gluster_server_groupset: georeplication
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_secondary"
@@ -266,3 +266,5 @@
   ansible.builtin.import_playbook: ./verify.yml
   vars:
     gluster_log_file: "bla.log"
+    gluster_masters: gluster_server_georeplication_master
+    gluster_slaves: gluster_server_georeplication_slave
