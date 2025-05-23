@@ -59,7 +59,7 @@
         _slave_group: "{{ _gluster_slaves | default('gluster_server_secondary') }}"
         _slaves: "{{ groups[_slave_group] }}"
         _group_name: "{{ _master_group if inventory_hostname in _masters else _slave_group }}"
-        _group: "{{ groups[_group_nameo] }}"
+        _group: "{{ groups[_group_name] }}"
 
     - name: Verify gluster node status
       ansible.builtin.assert:
