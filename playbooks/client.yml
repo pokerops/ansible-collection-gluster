@@ -25,9 +25,12 @@
       vars:
         _server: "{{ groups[_gluster_name] | first }}"
         _replica_manage: "{{ _gluster_georeplica_manage }}"
-        _option_default: "{{ item.opts | default('defaults,rw') }}"
-        _options: "{{ 'defaults,ro' if _replica_manage else _option_default }}"
-        _state: "{{ 'mounted' if item.state == 'present' else item.state }}"
+        _options: "{{ item.opts | default('defaults,rw') }}"
+        _state_defaults:
+          - "present"
+          - "stopped"
+          - "started"
+        _state: "{{ 'mounted' if item.state in _state_defaults else item.state }}"
       loop_control:
         label: "{{ item.name }} - {{ item.mount }}"
       loop: "{{ _gluster_client_volumes }}"

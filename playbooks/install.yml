@@ -35,4 +35,4 @@
 - name: Deploy Gluster Clients
   ansible.builtin.import_playbook: pokerops.gluster.client
   vars:
-    _gluster_client_volumes: "{{ _gluster_volumes | selectattr('state', 'equalto', 'present') }}"
+    _gluster_client_volumes: "{{ _gluster_volumes | rejectattr('state', 'equalto', 'absent') }}"
