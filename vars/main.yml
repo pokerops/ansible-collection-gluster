@@ -18,6 +18,9 @@ gluster_meta_volume:
   brick: /data/gluster-shared-storage
   mount: /var/run/gluster/shared_storage/
   paths: []
+gluster_georeplica_volumes_status:
+  - "Active"
+  - "Passive"
 
 # Overridable values
 _gluster_server_hostgroup_name: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"

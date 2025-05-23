@@ -139,8 +139,14 @@
         'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
       args:
         chdir: "/usr/sbin/"
+      vars:
+        _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+        _status: "{{ _results | rejectattr('status', 'in', gluster_georeplica_volumes_status) }}"
       register: _georeplica_status
       changed_when: false
+      retries: "{{ _gluster_retries }}"
+      delay: "{{ _gluster_delay }}"
+      until: _status | length == 0
       tags: skip_ansible_lint
 
     - name: Set georeplication session status

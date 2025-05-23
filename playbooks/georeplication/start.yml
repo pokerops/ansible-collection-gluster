@@ -12,10 +12,6 @@
   gather_facts: false
   any_errors_fatal: true
   become: true
-  vars:
-    _gluster_volumes_statuses:
-      - "Active"
-      - "Passive"
   vars_files:
     - ../../vars/main.yml
   tasks:
@@ -47,7 +43,7 @@
         _gluster_georeplica_volumes: "{{ _start_volumes }}"
       vars:
         _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
-        _replicas: "{{ _output | rejectattr('status', 'in', _gluster_volumes_statuses) }}"
+        _replicas: "{{ _output | rejectattr('status', 'in', gluster_georeplica_volumes_status) }}"
         _replica_names: "{{ _replicas | map(attribute='name') | unique }}"
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _replica_names) }}"
@@ -101,7 +97,7 @@
         _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
         _query_volumes: "{{ _results | selectattr('name', 'in', _volumes) }}"
-        _status: "{{ _query_volumes | rejectattr('status', 'in', _gluster_volumes_statuses) }}"
+        _status: "{{ _query_volumes | rejectattr('status', 'in', gluster_georeplica_volumes_status) }}"
       args:
         chdir: "/usr/sbin/"
       register: _georeplica_status
@@ -128,6 +124,6 @@
         _sessions: "{{ _gluster_georeplica_sessions }}"
         _volumes: "{{ _gluster_georeplica_volumes }}"
         _volume_names: "{{ _volumes | map(attribute='name') }}"
-        _volumes_status: "{{ _sessions | selectattr('status', 'in', _gluster_volumes_statuses) }}"
+        _volumes_status: "{{ _sessions | selectattr('status', 'in', gluster_georeplica_volumes_status) }}"
         _volume_status_names: "{{ _volumes_status | map(attribute='name') }}"
         _start_volumes: "{{ _volumes | selectattr('name', 'in', _volume_status_names) }}"
