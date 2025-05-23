@@ -65,7 +65,7 @@
             _output: "{{ _gluster_version.results | default([]) }}"
             _versions: "{{ _output | map(attribute='stdout') | unique }}"
 
-    - name: Group gluster server master members
+    - name: Group gluster server geo replication members
       ansible.builtin.group_by:
         key: "{{ _gluster_name }}_{{ 'slave' if _replica_manage else 'master' }}"
       vars:
@@ -107,7 +107,7 @@
           ansible.builtin.debug:
             msg: "Gluster server master {{ _members }} members: [{{ _gluster_masters | join(', ') }}]"
           vars:
-            _members: "{{ _gluster_server_master_group }}"
+            _members: "{{ hostvars['localhost']['_gluster_server_master_group'] }}"
 
         - name: Verify gluster georeplication hosts
           ansible.builtin.assert:
