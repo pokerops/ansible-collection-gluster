@@ -61,4 +61,4 @@
     _gluster_package: "{{ packages[gluster_server_package_name] }}"
     _gluster_installed: "{{ gluster_server_installed | bool }}"
     _gluster_installed_target: "{{ _gluster_package | map(attribute='version') | first }}"
-    _changed: "{{ _gluster_installed_target != gluster_package_version_target | bool }}"
+    _changed: "{{ _gluster_installed_target != gluster_package_version_target }}"
