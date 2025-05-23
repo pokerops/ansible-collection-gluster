@@ -60,7 +60,7 @@
 - name: Manage gluster service
   ansible.builtin.service:
     name: "{{ gluster_service_name }}"
-    state: "{{ 'restarted' if _changed else 'present' }}"
+    state: "{{ 'restarted' if _changed else 'started' }}"
   vars:
     _gluster_package: "{{ packages[gluster_server_package_name] }}"
     _gluster_installed: "{{ gluster_server_installed | bool }}"
