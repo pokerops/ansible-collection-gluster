@@ -14,7 +14,7 @@
 
     - name: Set installed gluster package version fact
       ansible.builtin.set_fact:
-        gluster_package_version_installed: "{{ gluster_server_package_query.stdout | split('.') | first }}"
+        gluster_package_version_installed: "{{ gluster_server_package_query.stdout }}"
         gluster_server_installed: true
 
     - name: Debug installed gluster server package
@@ -32,7 +32,7 @@
 
     - name: Set available gluster package version fact
       ansible.builtin.set_fact:
-        gluster_package_version_target: "{{ gluster_server_package_query.stdout | split('.') | first }}"
+        gluster_package_version_target: "{{ gluster_server_package_query.stdout }}"
         gluster_server_installed: false
 
     - name: Debug available gluster server package for first installations
@@ -51,13 +51,19 @@
   ansible.builtin.package_facts:
     manager: auto
 
+- name: Debug installed gluster server package
+  ansible.builtin.debug:
+    msg: "{{ _gluster_package | map(attribute='version') | first }}"
+  vars:
+    _gluster_package: "{{ packages[gluster_server_package_name] }}"
+
 - name: Manage gluster service
   ansible.builtin.service:
     name: "{{ gluster_service_name }}"
-    state: "{{ 'restarted' if _installed else 'present' }}"
+    state: "{{ 'restarted' if _changed else 'present' }}"
   vars:
     _gluster_package: "{{ packages[gluster_server_package_name] }}"
     _gluster_installed: "{{ gluster_server_installed | bool }}"
     _gluster_package_version: "{{ gluster_package_version_installed if _gluster_installed else gluster_package_version_target }}"
     _gluster_installed_target: "{{ _gluster_package | map(attribute='version') | first }}"
-    _installed: "{{ _gluster_package_version != _gluster_installed_target | bool }}"
+    _changed: "{{ _gluster_package_version != _gluster_installed_target | bool }}"
