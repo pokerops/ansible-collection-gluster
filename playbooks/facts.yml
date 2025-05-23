@@ -203,7 +203,7 @@
         _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
         _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
         _masters: "{{ groups[_master_group] | default([]) }}"
-        _slaves: "{{ groups[_slaves_group] | default([]) }}"
+        _slaves: "{{ groups[_slave_group] | default([]) }}"
         _replica_manage: "{{ inventory_hostname in _masters }}"
         _target_volumes: "{{ _replica_manage | ternary(_meta_volumes, _volumes) }}"
         _volumes_num: "{{ _target_volumes | length }}"
