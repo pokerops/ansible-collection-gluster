@@ -240,7 +240,7 @@
         msg: "{{ _gluster_georeplica_volumes }}"
 
     - name: End play when there are no geo replications to create
-      ansible.builtin.meta: end_hosts
+      ansible.builtin.meta: end_host
       when: _gluster_georeplica_volumes | length == 0
 
     - name: Create geo replication session
