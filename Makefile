@@ -29,7 +29,7 @@ install:
 	@type poetry >/dev/null || pip3 install poetry
 	@type yq >/dev/null || sudo apt-get install -y yq
 	@sudo apt-get install -y libvirt-dev network-manager
-	@poetry install
+	@poetry install --no-root
 
 lint: requirements
 	poetry run yamllint .
