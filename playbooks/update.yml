@@ -126,8 +126,8 @@
       vars:
         gluster_service_state: started
 
-    - name: End play when there are no gluster slaves
-      ansible.builtin.meta: end_play
+    - name: End play when there are no gluster server slaves
+      ansible.builtin.meta: end_host
       vars:
         _slave_group: "{{ gluster_server_prefix | default('gluster_server') }}_update_slave }}"
         _slaves: "{{ groups[_slave_group] | default([]) }}"

@@ -36,6 +36,7 @@ Cluster wide parameters
 | gluster_client_group      |       root | Owner group for gluster client mount paths                              | false    |
 | gluster_client_mode       |       0644 | ACL value for gluster client mount paths                                | false    |
 | gluster_client_serial     |          1 | Number of gluster client nodes to execute in tasks                      | false    |
+| gluster_reboot_timeout    |        300 | Time in seconds for gluster update reboot tasks                         | false    |
 
 ## Collection playbooks
 
