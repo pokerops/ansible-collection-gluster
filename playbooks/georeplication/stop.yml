@@ -1,23 +1,24 @@
 ---
+- name: Load Gluster facts
+  ansible.builtin.import_playbook: pokerops.gluster.facts
+  vars:
+    gluster_server_groupset: replica_stop
+
 - name: Get existing gluster geo replication volumes
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
 
 - name: Stop geo replication session tasks
-  hosts: "{{ _gluster_name }}_master"
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_stop_master"
   gather_facts: false
   any_errors_fatal: true
   become: true
-  vars:
-    _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
-    _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
-    _gluster_name: "{{ _gluster_server_prefix }}_{{ _gluster_server_groupset }}"
   vars_files:
     - ../../vars/main.yml
   tasks:
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ groups[_gluster_server_slave_group] | default([]) }}"
+        _replicas: "{{ _gluster_server_slaves | default([]) }}"
       when: _replicas | length == 0
 
     - name: End play for unrequired gluster geo replication nodes

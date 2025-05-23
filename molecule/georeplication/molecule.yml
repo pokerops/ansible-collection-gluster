@@ -87,10 +87,8 @@ provisioner:
               - a
               - b
               - c
-        gluster_server_groupset: primary
       gluster_server_secondary:
         gluster_georeplica_manage: true
-        gluster_server_groupset: secondary
 verifier:
   name: ansible
 scenario:

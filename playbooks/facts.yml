@@ -6,8 +6,6 @@
     _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
     _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
     _gluster_name: "{{ _gluster_server_prefix }}_{{ _gluster_server_groupset }}"
-    _gluster_server_slave_group: "{{ _gluster_name }}_slave"
-    _gluster_server_master_group: "{{ _gluster_name }}_master"
   vars_files:
     - ../vars/main.yml
   any_errors_fatal: true
@@ -72,48 +70,34 @@
         _replica_manage: "{{ _gluster_georeplica_manage }}"
       changed_when: false
 
-    - name: Delegate gluster geo replication master fact
+    - name: Set gluster geo replication member facts
       ansible.builtin.set_fact:
-        _gluster_server_master_group: "{{ _gluster_server_master_group }}"
-      delegate_to: localhost
-      delegate_facts: true
-      when: not _gluster_georeplica_manage
+        _gluster_server_masters: "{{ groups[_master_group] }}"
+        _gluster_server_slaves: "{{ groups[_slave_group] }}"
+      vars:
+        _master_group: "{{ _gluster_name }}_master"
+        _slave_group: "{{ _gluster_name }}_slave"
 
-    - name: Get gluster geo replication members
+    - name: Debug gluster geo replication slave members
+      ansible.builtin.debug:
+        msg: "Gluster server slave {{ _slave_group }} members: [{{ _members | join(', ') }}]"
+      vars:
+        _members: "{{ _gluster_server_slaves }}"
+        _slave_group: "{{ _gluster_name }}_slave"
+
+    - name: Debug gluster geo replication master members
+      ansible.builtin.debug:
+        msg: "Gluster server master {{ _members }} members: [{{ _members | join(', ') }}]"
+      vars:
+        _members: "{{ _gluster_server_masters }}"
+        _master_group: "{{ _master_name }}_slave"
+
+    - name: Verify gluster georeplication hosts
+      ansible.builtin.assert:
+        that:
+          - _gluster_server_masters | length > 0
+          - _gluster_server_slaves | length > 0
       when: _gluster_georeplica_manage
-      block:
-        - name: Delegate gluster geo replication slave facts
-          ansible.builtin.set_fact:
-            _gluster_server_slave_group: "{{ _gluster_server_slave_group }}"
-          delegate_to: localhost
-          delegate_facts: true
-
-        - name: Set gluster geo replication member facts
-          ansible.builtin.set_fact:
-            _gluster_slaves: "{{ _slave_hosts }}"
-            _gluster_masters: "{{ _master_hosts }}"
-          vars:
-            _slave_hosts: "{{ groups[_gluster_server_slave_group] | default([]) }}"
-            _master_group: "{{ hostvars['localhost']['_gluster_server_master_group'] }}"
-            _master_hosts: "{{ groups[_master_group] | default([]) }}"
-
-        - name: Debug gluster geo replication slave members
-          ansible.builtin.debug:
-            msg: "Gluster server slave {{ _members }} members: [{{ _gluster_slaves | join(', ') }}]"
-          vars:
-            _members: "{{ _gluster_server_slave_group }}"
-
-        - name: Debug gluster geo replication master members
-          ansible.builtin.debug:
-            msg: "Gluster server master {{ _members }} members: [{{ _gluster_masters | join(', ') }}]"
-          vars:
-            _members: "{{ hostvars['localhost']['_gluster_server_master_group'] }}"
-
-        - name: Verify gluster georeplication hosts
-          ansible.builtin.assert:
-            that:
-              - _gluster_masters | length > 0
-              - _gluster_slaves | length > 0
 
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
@@ -205,11 +189,11 @@
     - name: Set volume facts
       ansible.builtin.set_fact:
         _gluster_volumes: "{{ _target_volumes_overwritten }}"
-        _gluster_server_slave_group: "{{ _slave_group }}"
-        _gluster_server_master_group: "{{ _master_group }}"
+        _gluster_server_slaves: "{{ groups[_slave_group] }}"
+        _gluster_server_masters: "{{ groups[_master_group] }}"
       vars:
-        _slave_group: "{{ hostvars['localhost']['_gluster_server_slave_group'] | default('gluster_server_slave') }}"
-        _master_group: "{{ hostvars['localhost']['_gluster_server_master_group'] | default('gluster_server_master') }}"
+        _slave_group: "{{ _gluster_name }}_slave"
+        _master_group: "{{ _gluster_name }}_master"
         _volume_defaults:
           state: present
         _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"

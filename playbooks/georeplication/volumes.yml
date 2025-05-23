@@ -8,14 +8,14 @@
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ groups[_gluster_server_slave_group] | default([]) }}"
+        _replicas: "{{ _gluster_server_slaves | default([]) }}"
       when: _replicas | length == 0
 
     - name: Set gluster replica volumes
       ansible.builtin.set_fact:
         _gluster_target_volumes: "{{ _volumes_overwritten | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
-        _replica_member: "{{ groups[_gluster_server_slave_group] | sort | first }}"
+        _replica_member: "{{ _gluster_server_slaves | sort | first }}"
         _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
         _volume_names: "{{ _volumes | map(attribute='name') }}"
         _volume_format: "{{ _volume_names | map(_map_format, _replica_member + '::%s') }}"
