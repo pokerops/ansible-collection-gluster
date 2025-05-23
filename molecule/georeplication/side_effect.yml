@@ -13,8 +13,6 @@
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
-  vars:
-    gluster_facts_manage: true
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_primary"
@@ -69,8 +67,6 @@
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
-  vars:
-    gluster_facts_manage: true
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_primary"
@@ -134,8 +130,6 @@
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
-  vars:
-    gluster_facts_manage: true
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_primary"
@@ -200,8 +194,6 @@
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
-  vars:
-    gluster_facts_manage: true
 
 - name: Test gluster failover to a different site
   hosts: "gluster_server:gluster_client"
@@ -210,21 +202,17 @@
     - name: Set gluster primary facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: true
-        gluster_server_groupset: "slave_create"
       when: inventory_hostname in groups['gluster_server_primary']
 
     - name: Set gluster replica facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: false
-        gluster_server_groupset: "master_create"
-      when: |
-        inventory_hostname in groups['gluster_server_secondary'] or
-        inventory_hostname in groups['gluster_client']
+      when: inventory_hostname in groups['gluster_server_secondary']
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
   vars:
-    gluster_facts_manage: true
+    gluster_server_prefix: gluster_server_georeplication
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_secondary"

@@ -23,6 +23,8 @@
 
 - name: Import install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
+  vars:
+    gluster_server_prefix: gluster_server_install
 
 - name: Import verify playbook
   ansible.builtin.import_playbook: ../common/verify.yml
