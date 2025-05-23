@@ -34,13 +34,12 @@ lint: requirements
 	poetry run ansible-lint -- playbooks/ --exclude roles --exclude .ansible/
 
 requirements: install
-	@rm -rf ${ROLE_DIR}/*
-	@if [ -f ${ROLE_FILE} ]; then \
-		poetry run ansible-galaxy role install \
-			--force --no-deps \
-			--roles-path ${ROLE_DIR} \
-			--role-file ${ROLE_FILE} ; \
-	fi
+	@yq '.roles[].name' -r < roles.yml | xargs -I {} rm -rf roles/{}
+	@python --version
+	@poetry run ansible-galaxy role install \
+		--force --no-deps \
+		--roles-path ${ROLE_DIR} \
+		--role-file ${ROLE_FILE}
 	@poetry run ansible-galaxy collection install \
 		--force-with-deps .
 	@\find ./ -name "*.ymle*" -delete
