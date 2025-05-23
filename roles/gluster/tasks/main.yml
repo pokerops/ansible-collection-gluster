@@ -32,7 +32,7 @@
 
     - name: Set available gluster package version fact
       ansible.builtin.set_fact:
-        gluster_package_version_target: "{{ gluster_server_package_query.stdout }}"
+        gluster_package_version_target: "{{ gluster_server_package_query.stdout | split('.') | first }}"
         gluster_server_installed: false
 
     - name: Debug available gluster server package for first installations
