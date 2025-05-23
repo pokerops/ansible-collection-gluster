@@ -1,6 +1,6 @@
 ---
 # Defaults
-gluster_package_name: "glusterfs-server"
+gluster_server_package_name: "glusterfs-server"
 gluster_client_package_name: "glusterfs-client"
 gluster_service_name: "glusterd.service"
 gluster_address_attrs: ["ansible_default_ipv4", "address"]

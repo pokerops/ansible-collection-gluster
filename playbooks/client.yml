@@ -1,13 +1,14 @@
 ---
+- name: Load Gluster facts
+  ansible.builtin.import_playbook: pokerops.gluster.facts
+  vars:
+    gluster_server_groupset: client
+
 - name: Manage gluster clients
   hosts: "{{ _gluster_client_hostgroup_name }}"
   become: true
   any_errors_fatal: true
   serial: "{{ _gluster_client_serial }}"
-  vars:
-    _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
-    _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
-    _gluster_name: "{{ _gluster_server_prefix }}_{{ _gluster_server_groupset }}"
   vars_files:
     - ../vars/main.yml
   tasks:
@@ -23,7 +24,10 @@
         opts: "{{ _options }}"
         state: "{{ _state }}"
       vars:
-        _server: "{{ groups[_gluster_name] | first }}"
+        _slaves: "{{ _gluster_server_slaves }}"
+        _masters: "{{ _gluster_server_masters }}"
+        _server_group: "{{ _slaves if _replica_manage else _masters }}"
+        _server: "{{ groups[_server_group] | first }}"
         _replica_manage: "{{ _gluster_georeplica_manage }}"
         _options: "{{ item.opts | default('defaults,rw') }}"
         _state_defaults:

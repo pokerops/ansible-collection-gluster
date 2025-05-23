@@ -74,8 +74,8 @@
 
     - name: Set gluster geo replication member facts
       ansible.builtin.set_fact:
-        _gluster_server_masters: "{{ groups[_master_group] }}"
-        _gluster_server_slaves: "{{ groups[_slave_group] }}"
+        _gluster_server_masters: "{{ groups[_master_group] | default([]) }}"
+        _gluster_server_slaves: "{{ groups[_slave_group] | default([]) }}"
       vars:
         _master_group: "{{ _gluster_name }}_master"
         _slave_group: "{{ _gluster_name }}_slave"
@@ -193,8 +193,8 @@
     - name: Set volume facts
       ansible.builtin.set_fact:
         _gluster_volumes: "{{ _target_volumes_overwritten }}"
-        _gluster_server_slaves: "{{ groups[_slave_group] }}"
-        _gluster_server_masters: "{{ groups[_master_group] }}"
+        _gluster_server_slaves: "{{ _slaves }}"
+        _gluster_server_masters: "{{ _masters }}"
       vars:
         _slave_group: "{{ _gluster_name }}_slave"
         _master_group: "{{ _gluster_name }}_master"
@@ -203,6 +203,7 @@
         _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
         _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
         _masters: "{{ groups[_master_group] | default([]) }}"
+        _slaves: "{{ groups[_slaves_group] | default([]) }}"
         _replica_manage: "{{ inventory_hostname in _masters }}"
         _target_volumes: "{{ _replica_manage | ternary(_meta_volumes, _volumes) }}"
         _volumes_num: "{{ _target_volumes | length }}"
