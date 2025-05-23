@@ -103,7 +103,9 @@
       ansible.builtin.set_fact:
         gluster_target_members: "{{ _gluster_target_members }}"
       vars:
-        _gluster_hosts: "{{ groups[_gluster_name] }}"
+        _replica_manage: "{{ _gluster_georeplica_manage }}"
+        _target_group: "{{ _gluster_name }}_{{ 'slave' if _replica_manage else 'master' }}"
+        _gluster_hosts: "{{ groups[_target_group] }}"
         _gluster_addrs: "{{ _gluster_hosts | map('extract', hostvars, gluster_address_attrs) }}"
         _gluster_target_members: "{{ _gluster_hosts if _gluster_hosts_manage else _gluster_addrs }}"
 
