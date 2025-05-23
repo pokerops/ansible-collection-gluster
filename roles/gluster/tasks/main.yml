@@ -4,7 +4,7 @@
     manager: auto
 
 - name: Get gluster server installation status
-  when: gluster_server_package_name in packages | bool
+  when: gluster_server_package_name in packages
   block:
     - name: Query installed gluster server package version
       ansible.builtin.shell:
@@ -18,7 +18,7 @@
         gluster_server_installed: true
 
 - name: Get target gluster server package version
-  when: not gluster_server_package_name in packages | bool
+  when: not gluster_server_package_name in packages
   block:
     - name: Query available gluster server package
       ansible.builtin.shell:
