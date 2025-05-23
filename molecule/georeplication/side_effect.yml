@@ -1,6 +1,6 @@
 ---
 - name: Override gluster volumes state to stopped
-  hosts: "gluster_server"
+  hosts: "gluster_server:gluster_client"
   gather_facts: false
   tasks:
     - name: Set gluster volumes
@@ -9,6 +9,10 @@
           - name: test
             brick: /data/test
             mount: /mnt/test
+            paths:
+              - a
+              - b
+              - c
             state: stopped
 
 - name: Import geo replication install playbook
@@ -55,7 +59,7 @@
         _query_volumes: "{{ _stop_existing | rejectattr('volume', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to present
-  hosts: "gluster_server"
+  hosts: "gluster_server:gluster_client"
   gather_facts: false
   tasks:
     - name: Set gluster volumes
@@ -64,6 +68,10 @@
           - name: test
             brick: /data/test
             mount: /mnt/test
+            paths:
+              - a
+              - b
+              - c
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
@@ -117,7 +125,7 @@
         _query_volumes: "{{ _start_existing | rejectattr('volume', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to absent
-  hosts: "gluster_server"
+  hosts: "gluster_server:gluster_client"
   gather_facts: false
   tasks:
     - name: Set gluster volumes
@@ -126,6 +134,10 @@
           - name: test
             brick: /data/test
             mount: /mnt/test
+            paths:
+              - a
+              - b
+              - c
             state: absent
 
 - name: Import geo replication install playbook

@@ -51,8 +51,10 @@
             chdir: "/usr/sbin/"
           register: _gluster_version
           changed_when: false
+          run_once: true
           loop: "{{ play_hosts }}"
           delegate_to: "{{ item }}"
+          delegate_facts: true
           tags: skip_ansible_lint
 
         - name: Verify gluster version across geo replication members
