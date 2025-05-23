@@ -27,7 +27,7 @@
         _slaves: "{{ _gluster_server_slaves }}"
         _masters: "{{ _gluster_server_masters }}"
         _server_group: "{{ _slaves if _replica_manage else _masters }}"
-        _server: "{{ groups[_server_group] | first }}"
+        _server: "{{ _server_group | first }}"
         _replica_manage: "{{ _gluster_georeplica_manage }}"
         _options: "{{ item.opts | default('defaults,rw') }}"
         _state_defaults:

@@ -17,6 +17,10 @@
         gluster_package_version_installed: "{{ gluster_server_package_query.stdout }}"
         gluster_server_installed: true
 
+    - name: Debug installed gluster server package
+      ansible.builtin.debug:
+        var: gluster_package_version_installed
+
 - name: Get target gluster server package version
   when: not gluster_server_package_name in packages
   block:
@@ -26,10 +30,18 @@
       changed_when: false
       register: gluster_server_package_query
 
-    - name: Set installed gluster package version fact
+    - name: Set available gluster package version fact
       ansible.builtin.set_fact:
         gluster_package_version_target: "{{ gluster_server_package_query.stdout }}"
         gluster_server_installed: false
+
+    - name: Debug available gluster server package for first installations
+      ansible.builtin.debug:
+        var: gluster_package_version_target
+
+- name: Debug gluster server release
+  ansible.builtin.debug:
+    var: _gluster_release
 
 - name: Install gluster server
   ansible.builtin.package:
