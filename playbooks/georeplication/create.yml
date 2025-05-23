@@ -61,7 +61,7 @@
             _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
             _existing_volumes: "{{ _sessions | map(attribute='replica') }}"
             _existing_split: "{{ _existing_volumes | map('split', '::') | map('last') | flatten }}"
-            _volumes: "{{ _gluster_volumes }}"
+            _volumes: "{{ _gluster_volumes | rejectattr('state', 'equalto', 'absent') }}"
             _missing_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_split) }}"
             _meta_volume: "{{ gluster_meta_volume.name }}"
 
@@ -126,7 +126,8 @@
       vars:
         _replica_member: "{{ _gluster_server_slaves | sort | first }}"
         _volumes: "{{ _gluster_georeplica_volumes | sort(attribute='name') }}"
-        _volume_names: "{{ _volumes | map(attribute='name') }}"
+        _volumes_present: "{{ _volumes | selectattr('state', 'equalto', 'present') }}"
+        _volume_names: "{{ _volumes_present | map(attribute='name') }}"
         _volume_format: "{{ _volume_names | map(_map_format, _replica_member + '::%s') }}"
         _volume_dict: "{{ _volume_format | map(_to_dict, 'replica_name') }}"
         _volumes_list: "{{ _volumes | zip(_volume_dict) | map('combine') }}"
@@ -238,136 +239,137 @@
       ansible.builtin.debug:
         msg: "{{ _gluster_georeplica_volumes }}"
 
-    - name: Manage geo replication session creation tasks
-      when: _gluster_georeplica_volumes | length > 0
+    - name: End play when there are no geo replications to create
+      ansible.builtin.meta: end_hosts
+      when: _gluster_georeplica_volumes | length == 0
+
+    - name: Create geo replication session
+      ansible.builtin.shell: |
+        gluster volume geo-replication {{ _primary }} \
+        {{ _gluster_user }}@{{ _replica }} \
+        create push-pem force
+      args:
+        chdir: "/usr/sbin/"
+      vars:
+        _primary: "{{ item.name }}"
+        _replica: "{{ item.replica_name }}"
+      loop_control:
+        label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+      loop: "{{ _gluster_georeplica_volumes }}"
+      register: _georeplica_create
+      changed_when: false
+      tags: skip_ansible_lint
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that: _status | rejectattr('stdout', 'match', '.*has been successful.*') | length == 0
+      vars:
+        _status: "{{ _georeplica_create.results | default([]) }}"
+
+    - name: Get gluster geo replication status
+      ansible.builtin.shell: |
+        gluster volume geo-replication status | awk \
+        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+      args:
+        chdir: "/usr/sbin/"
+      register: _georeplica_status
+      changed_when: false
+      tags: skip_ansible_lint
+
+    - name: Set georeplication session status
+      ansible.builtin.set_fact:
+        _gluster_georeplica_sessions: "{{ _output | map('from_json') }}"
+      vars:
+        _output: "{{ _georeplica_status.stdout_lines | default([]) }}"
+
+    - name: Debug gluster geo replication status
+      ansible.builtin.debug:
+        msg: "{{ _gluster_georeplica_sessions }}"
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that: _failing | length == 0
+      vars:
+        _sessions: "{{ _gluster_georeplica_sessions }}"
+        _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
+
+    - name: Configure geo replication meta volume
+      ansible.builtin.shell: |
+        gluster volume geo-replication {{ _primary }} \
+        {{ _gluster_user }}@{{ _replica }} config \
+        use-meta-volume true
+      args:
+        chdir: "/usr/sbin/"
+      vars:
+        _primary: "{{ item.name }}"
+        _replica: "{{ item.replica_name }}"
+      loop_control:
+        label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+      loop: "{{ _gluster_georeplica_volumes }}"
+      register: _georeplica_meta
+      changed_when: false
+      tags: skip_ansible_lint
+
+    - name: Verify gluster geo replication meta volume configuration
+      ansible.builtin.assert:
+        that: _status | rejectattr('stdout', 'match', '.*config updated successfully.*') | length == 0
+      vars:
+        _status: "{{ _georeplica_meta.results | default([]) }}"
+
+    - name: Manage gluster geo replication common key tasks
+      delegate_to: "{{ _gluster_server_slaves | first }}"
       block:
-        - name: Create geo replication session
-          ansible.builtin.shell: |
-            gluster volume geo-replication {{ _primary }} \
-            {{ _gluster_user }}@{{ _replica }} \
-            create push-pem force
-          args:
-            chdir: "/usr/sbin/"
+        - name: Wait for gluster common key replication
+          ansible.builtin.stat:
+            path: "{{ _path }}"
           vars:
+            _home: "/home/{{ _gluster_user }}"
+            _path: "{{ _home }}/{{ _primary }}_{{ _replica }}_common_secret.pem.pub"
             _primary: "{{ item.name }}"
             _replica: "{{ item.replica_name }}"
+            _results: "{{ _georeplica_common_key.results | default([]) | map(attribute='stat') }}"
+            _status: "{{ _results | map(attribute='stat') }}"
+            _query: "{{ _status | rejectattr('exists') }}"
           loop_control:
             label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
           loop: "{{ _gluster_georeplica_volumes }}"
-          register: _georeplica_create
-          changed_when: false
-          tags: skip_ansible_lint
+          retries: "{{ _gluster_retries }}"
+          delay: "{{ _gluster_delay }}"
+          until: _query | length == 0
+          register: _georeplica_common_key
 
-        - name: Verify gluster geo replication session status
-          ansible.builtin.assert:
-            that: _status | rejectattr('stdout', 'match', '.*has been successful.*') | length == 0
-          vars:
-            _status: "{{ _georeplica_create.results | default([]) }}"
-
-        - name: Get gluster geo replication status
+        - name: Execute gluster geo replication pem keys script
           ansible.builtin.shell: |
-            gluster volume geo-replication status | awk \
-            'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
-          args:
-            chdir: "/usr/sbin/"
-          register: _georeplica_status
-          changed_when: false
-          tags: skip_ansible_lint
-
-        - name: Set georeplication session status
-          ansible.builtin.set_fact:
-            _gluster_georeplica_sessions: "{{ _output | map('from_json') }}"
+            {{ _script }} {{ _gluster_user }} {{ _primary }} {{ _replica }}
           vars:
-            _output: "{{ _georeplica_status.stdout_lines | default([]) }}"
-
-        - name: Debug gluster geo replication status
-          ansible.builtin.debug:
-            msg: "{{ _gluster_georeplica_sessions }}"
-
-        - name: Verify gluster geo replication session status
-          ansible.builtin.assert:
-            that: _failing | length == 0
-          vars:
-            _sessions: "{{ _gluster_georeplica_sessions }}"
-            _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
-
-        - name: Configure geo replication meta volume
-          ansible.builtin.shell: |
-            gluster volume geo-replication {{ _primary }} \
-            {{ _gluster_user }}@{{ _replica }} config \
-            use-meta-volume true
-          args:
-            chdir: "/usr/sbin/"
-          vars:
+            _script: "{{ gluster_georeplication_keys_script }}"
             _primary: "{{ item.name }}"
-            _replica: "{{ item.replica_name }}"
+            _replica: "{{ item.replica_name | split('::') | last }}"
           loop_control:
             label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
           loop: "{{ _gluster_georeplica_volumes }}"
-          register: _georeplica_meta
+          register: _georeplica_sshkeys_script
           changed_when: false
           tags: skip_ansible_lint
 
-        - name: Verify gluster geo replication meta volume configuration
-          ansible.builtin.assert:
-            that: _status | rejectattr('stdout', 'match', '.*config updated successfully.*') | length == 0
-          vars:
-            _status: "{{ _georeplica_meta.results | default([]) }}"
+    - name: Start geo replication session
+      ansible.builtin.shell: |
+        gluster volume geo-replication {{ _primary }} \
+        {{ _gluster_user }}@{{ _replica }} start
+      args:
+        chdir: "/usr/sbin/"
+      vars:
+        _primary: "{{ item.name }}"
+        _replica: "{{ item.replica_name }}"
+      loop_control:
+        label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+      loop: "{{ _gluster_georeplica_volumes }}"
+      register: _georeplica_start
+      changed_when: false
+      tags: skip_ansible_lint
 
-        - name: Manage gluster geo replication common key tasks
-          delegate_to: "{{ _gluster_server_slaves | first }}"
-          block:
-            - name: Wait for gluster common key replication
-              ansible.builtin.stat:
-                path: "{{ _path }}"
-              vars:
-                _home: "/home/{{ _gluster_user }}"
-                _path: "{{ _home }}/{{ _primary }}_{{ _replica }}_common_secret.pem.pub"
-                _primary: "{{ item.name }}"
-                _replica: "{{ item.replica_name }}"
-                _results: "{{ _georeplica_common_key.results | default([]) | map(attribute='stat') }}"
-                _status: "{{ _results | map(attribute='stat') }}"
-                _query: "{{ _status | rejectattr('exists') }}"
-              loop_control:
-                label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-              loop: "{{ _gluster_georeplica_volumes }}"
-              retries: "{{ _gluster_retries }}"
-              delay: "{{ _gluster_delay }}"
-              until: _query | length == 0
-              register: _georeplica_common_key
-
-            - name: Execute gluster geo replication pem keys script
-              ansible.builtin.shell: |
-                {{ _script }} {{ _gluster_user }} {{ _primary }} {{ _replica }}
-              vars:
-                _script: "{{ gluster_georeplication_keys_script }}"
-                _primary: "{{ item.name }}"
-                _replica: "{{ item.replica_name | split('::') | last }}"
-              loop_control:
-                label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-              loop: "{{ _gluster_georeplica_volumes }}"
-              register: _georeplica_sshkeys_script
-              changed_when: false
-              tags: skip_ansible_lint
-
-        - name: Start geo replication session
-          ansible.builtin.shell: |
-            gluster volume geo-replication {{ _primary }} \
-            {{ _gluster_user }}@{{ _replica }} start
-          args:
-            chdir: "/usr/sbin/"
-          vars:
-            _primary: "{{ item.name }}"
-            _replica: "{{ item.replica_name }}"
-          loop_control:
-            label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-          loop: "{{ _gluster_georeplica_volumes }}"
-          register: _georeplica_start
-          changed_when: false
-          tags: skip_ansible_lint
-
-        - name: Verify gluster geo replication session start
-          ansible.builtin.assert:
-            that: _status | rejectattr('stdout', 'match', '.*has been successful.*') | length == 0
-          vars:
-            _status: "{{ _georeplica_start.results | default([]) }}"
+    - name: Verify gluster geo replication session start
+      ansible.builtin.assert:
+        that: _status | rejectattr('stdout', 'match', '.*has been successful.*') | length == 0
+      vars:
+        _status: "{{ _georeplica_start.results | default([]) }}"
