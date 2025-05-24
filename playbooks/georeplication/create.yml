@@ -5,7 +5,7 @@
     gluster_server_groupset: replica_create
 
 - name: Manage geo replication mount broker tasks
-  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave"
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_{{ _gluster_server_slave_groupset | default('slave') }}"
   gather_facts: false
   become: true
   any_errors_fatal: true
@@ -145,7 +145,7 @@
     - _gluster_georeplica_volumes | length > 0
 
 - name: Create geo replication session tasks
-  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_master"
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_{{ _gluster_server_master_groupset | default('master') }}"
   gather_facts: false
   any_errors_fatal: true
   become: true

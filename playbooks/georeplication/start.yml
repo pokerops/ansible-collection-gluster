@@ -8,7 +8,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
 
 - name: Start geo replication session tasks
-  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_start_master"
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_master_{{ _gluster_server_master_groupset | default('master') }}"
   gather_facts: false
   any_errors_fatal: true
   become: true

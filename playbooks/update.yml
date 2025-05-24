@@ -5,7 +5,7 @@
     gluster_server_groupset: update
 
 - name: Update gluster server slave members
-  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_update_slave:!{{ _gluster_update_skip_hostgroup }}"
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_update_{{ _gluster_server_slave_groupset | default('slave') }}:!{{ _gluster_update_skip_hostgroup }}"
   become: true
   serial: 1
   any_errors_fatal: true
@@ -66,7 +66,7 @@
         gluster_service_state: started
 
 - name: Update gluster server master members
-  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_update_master:!{{ _gluster_update_skip_hostgroup }}"
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_update_{{ _gluster_server_master_groupset | default('master') }}:!{{ _gluster_update_skip_hostgroup }}"
   become: true
   serial: 1
   any_errors_fatal: true
@@ -129,7 +129,8 @@
     - name: End play when there are no gluster server slaves
       ansible.builtin.meta: end_host
       vars:
-        _slave_group: "{{ gluster_server_prefix | default('gluster_server') }}_update_slave"
+        _slave: "{{ _gluster_server_slave_groupset | default('slave') }}"
+        _slave_group: "{{ gluster_server_prefix | default('gluster_server') }}_update_{{ _slave }}"
         _slaves: "{{ groups[_slave_group] | default([]) }}"
       when: _slaves | length == 0
 

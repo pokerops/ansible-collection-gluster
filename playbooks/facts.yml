@@ -4,6 +4,8 @@
   become: true
   vars:
     _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
+    _gluster_server_slave_groupset: "{{ gluster_server_slave_groupset | default('slave') }}"
+    _gluster_server_master_groupset: "{{ gluster_server_master_groupset | default('master') }}"
     _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
     _gluster_name: "{{ _gluster_server_prefix }}_{{ _gluster_server_groupset }}"
   vars_files:
@@ -67,8 +69,10 @@
 
     - name: Group gluster server geo replication members
       ansible.builtin.group_by:
-        key: "{{ _gluster_name }}_{{ 'slave' if _replica_manage else 'master' }}"
+        key: "{{ _gluster_name }}_{{ _slave if _replica_manage else _master }}"
       vars:
+        _slave: "{{ _gluster_server_slave_groupset }}"
+        _master: "{{ _gluster_server_master_groupset }}"
         _replica_manage: "{{ _gluster_georeplica_manage }}"
       changed_when: false
 
@@ -77,22 +81,26 @@
         _gluster_server_masters: "{{ groups[_master_group] | default([]) }}"
         _gluster_server_slaves: "{{ groups[_slave_group] | default([]) }}"
       vars:
-        _master_group: "{{ _gluster_name }}_master"
-        _slave_group: "{{ _gluster_name }}_slave"
+        _slave: "{{ _gluster_server_slave_groupset }}"
+        _master: "{{ _gluster_server_master_groupset }}"
+        _master_group: "{{ _gluster_name }}_{{ _master }}"
+        _slave_group: "{{ _gluster_name }}_{{ _slave }}"
 
     - name: Debug gluster geo replication slave members
       ansible.builtin.debug:
         msg: "Gluster server slave {{ _slave_group }} members: [{{ _members | join(', ') }}]"
       vars:
+        _slave: "{{ _gluster_server_slave_groupset }}"
         _members: "{{ _gluster_server_slaves }}"
-        _slave_group: "{{ _gluster_name }}_slave"
+        _slave_group: "{{ _gluster_name }}_{{ _slave }}"
 
     - name: Debug gluster geo replication master members
       ansible.builtin.debug:
         msg: "Gluster server master {{ _master_group }} members: [{{ _members | join(', ') }}]"
       vars:
+        _master: "{{ _gluster_server_master_groupset }}"
         _members: "{{ _gluster_server_masters }}"
-        _master_group: "{{ _gluster_name }}_master"
+        _master_group: "{{ _gluster_name }}_{{ _master }}"
 
     - name: Verify gluster georeplication hosts
       ansible.builtin.assert:
@@ -105,8 +113,10 @@
       ansible.builtin.set_fact:
         gluster_target_members: "{{ _gluster_target_members }}"
       vars:
+        _master: "{{ _gluster_server_master_groupset }}"
+        _members: "{{ _gluster_server_masters }}"
         _replica_manage: "{{ _gluster_georeplica_manage }}"
-        _target_group: "{{ _gluster_name }}_{{ 'slave' if _replica_manage else 'master' }}"
+        _target_group: "{{ _gluster_name }}_{{ _slave if _replica_manage else _master }}"
         _gluster_hosts: "{{ groups[_target_group] }}"
         _gluster_addrs: "{{ _gluster_hosts | map('extract', hostvars, gluster_address_attrs) }}"
         _gluster_target_members: "{{ _gluster_hosts if _gluster_hosts_manage else _gluster_addrs }}"
@@ -185,6 +195,8 @@
   hosts: "{{ _gluster_server_hostgroup_name }}:{{ _gluster_client_hostgroup_name }}"
   vars:
     _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
+    _gluster_server_slave_groupset: "{{ gluster_server_slave_groupset | default('slave') }}"
+    _gluster_server_master_groupset: "{{ gluster_server_master_groupset | default('master') }}"
     _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
     _gluster_name: "{{ _gluster_server_prefix }}_{{ _gluster_server_groupset }}"
   vars_files:
@@ -196,8 +208,10 @@
         _gluster_server_slaves: "{{ _slaves }}"
         _gluster_server_masters: "{{ _masters }}"
       vars:
-        _slave_group: "{{ _gluster_name }}_slave"
-        _master_group: "{{ _gluster_name }}_master"
+        _slave: "{{ _gluster_server_slave_groupset }}"
+        _master: "{{ _gluster_server_master_groupset }}"
+        _slave_group: "{{ _gluster_name }}_{{ _slave }}"
+        _master_group: "{{ _gluster_name }}_{{ _master }}"
         _volume_defaults:
           state: present
         _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
