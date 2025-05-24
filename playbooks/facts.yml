@@ -76,17 +76,28 @@
         _replica_manage: "{{ _gluster_georeplica_manage }}"
       changed_when: false
 
+    - name: Group gluster server geo replication by member type
+      ansible.builtin.group_by:
+        key: "{{ _gluster_name }}_{{ 'slave' if _replica_manage else 'master' }}_all"
+      vars:
+        _replica_manage: "{{ _gluster_georeplica_manage }}"
+      changed_when: false
+
     - name: Set gluster geo replication member facts
       ansible.builtin.set_fact:
         _gluster_server_masters: "{{ groups[_master_group] | default([]) }}"
         _gluster_server_slaves: "{{ groups[_slave_group] | default([]) }}"
+        _gluster_server_slaves_all: "{{ groups[_slave_all_group] | default([]) }}"
+        _gluster_server_masters_all: "{{ groups[_master_all_group] | default([]) }}"
       vars:
         _slave: "{{ _gluster_server_slave_groupset }}"
         _master: "{{ _gluster_server_master_groupset }}"
         _master_group: "{{ _gluster_name }}_{{ _master }}"
         _slave_group: "{{ _gluster_name }}_{{ _slave }}"
+        _master_all_group: "{{ _gluster_name }}_master_all"
+        _slave_all_group: "{{ _gluster_name }}_slave_all"
 
-    - name: Debug gluster geo replication slave members
+    - name: Debug gluster geo replication slave members by group
       ansible.builtin.debug:
         msg: "Gluster server slave {{ _slave_group }} members: [{{ _members | join(', ') }}]"
       vars:
@@ -94,7 +105,7 @@
         _members: "{{ _gluster_server_slaves }}"
         _slave_group: "{{ _gluster_name }}_{{ _slave }}"
 
-    - name: Debug gluster geo replication master members
+    - name: Debug gluster geo replication master members by group
       ansible.builtin.debug:
         msg: "Gluster server master {{ _master_group }} members: [{{ _members | join(', ') }}]"
       vars:
@@ -102,11 +113,23 @@
         _members: "{{ _gluster_server_masters }}"
         _master_group: "{{ _gluster_name }}_{{ _master }}"
 
+    - name: Debug gluster geo replication all slave members
+      ansible.builtin.debug:
+        msg: "Gluster server all slave members: [{{ _members | join(', ') }}]"
+      vars:
+        _members: "{{ _gluster_server_slaves_all }}"
+
+    - name: Debug gluster geo replication all master members
+      ansible.builtin.debug:
+        msg: "Gluster server all master members: [{{ _members | join(', ') }}]"
+      vars:
+        _members: "{{ _gluster_server_masters_all }}"
+
     - name: Verify gluster georeplication hosts
       ansible.builtin.assert:
         that:
-          - _gluster_server_masters | length > 0
-          - _gluster_server_slaves | length > 0
+          - _gluster_server_masters_all | length > 0
+          - _gluster_server_slaves_all | length > 0
       when: _gluster_georeplica_manage
 
     - name: Set gluster hosts fact
@@ -208,6 +231,8 @@
         _gluster_volumes: "{{ _target_volumes_overwritten }}"
         _gluster_server_slaves: "{{ _slaves }}"
         _gluster_server_masters: "{{ _masters }}"
+        _gluster_server_slaves_all: "{{ _gluster_name }}_slave_all"
+        _gluster_server_masters_all: "{{ _gluster_name }}_master_all"
       vars:
         _slave: "{{ _gluster_server_slave_groupset }}"
         _master: "{{ _gluster_server_master_groupset }}"

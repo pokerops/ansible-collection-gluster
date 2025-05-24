@@ -5,7 +5,7 @@
     gluster_server_groupset: replica_create
 
 - name: Manage geo replication mount broker tasks
-  hosts: "{{ _gluster_server_hostgroup_name }}"
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
   gather_facts: false
   become: true
   any_errors_fatal: true
@@ -15,12 +15,8 @@
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ _gluster_server_slaves | default([]) }}"
+        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
       when: _replicas | length == 0
-
-    - name: End play when gluster georeplication host is not slave
-      ansible.builtin.meta: end_host
-      when: inventory_hostname not in _gluster_server_slaves
 
     - name: Manage gluster replication member tasks
       tags: skip_ansible_lint
@@ -149,7 +145,7 @@
     - _gluster_georeplica_volumes | length > 0
 
 - name: Create geo replication session tasks
-  hosts: "{{ _gluster_server_hostgroup_name }}"
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_master_all"
   gather_facts: false
   any_errors_fatal: true
   become: true
@@ -159,16 +155,12 @@
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ _gluster_server_slaves | default([]) }}"
+        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
       when: _replicas | length == 0
-
-    - name: End play when gluster georeplication host is not master
-      ansible.builtin.meta: end_host
-      when: inventory_hostname not in _gluster_server_masters
 
     - name: End play for unrequired gluster geo replication nodes
       ansible.builtin.meta: end_host
-      when: (not inventory_hostname == (play_hosts | first))
+      when: (not inventory_hostname == (gluster_target_members | first))
 
     - name: Manage gluster geo replication ssh keys
       ansible.builtin.shell: |

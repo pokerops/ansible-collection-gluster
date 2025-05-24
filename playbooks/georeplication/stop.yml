@@ -18,16 +18,12 @@
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ _gluster_server_slaves | default([]) }}"
+        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
       when: _replicas | length == 0
-
-    - name: End play when gluster georeplication host is not master
-      ansible.builtin.meta: end_host
-      when: inventory_hostname not in _gluster_server_masters
 
     - name: End play for unrequired gluster geo replication nodes
       ansible.builtin.meta: end_host
-      when: (not inventory_hostname == (play_hosts | first))
+      when: (not inventory_hostname == (gluster_target_members | first))
 
     - name: Get gluster geo replication status
       ansible.builtin.shell: |

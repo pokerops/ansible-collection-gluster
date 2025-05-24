@@ -5,7 +5,7 @@
     gluster_server_groupset: update
 
 - name: Update gluster server slave members
-  hosts: "{{ _gluster_server_hostgroup_name }}"
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_update_slave_all:!{{ _gluster_update_skip_hostgroup }}"
   become: true
   serial: 1
   any_errors_fatal: true
@@ -17,12 +17,6 @@
   roles:
     - pokerops.gluster.update
   pre_tasks:
-    - name: End play when gluster georeplication host is not slave
-      ansible.builtin.meta: end_host
-      vars:
-        _slaves: "{{ _gluster_server_slaves | default([]) }}"
-      when: inventory_hostname not in _slaves
-
     - name: Query pool list
       ansible.builtin.shell: gluster pool list | awk '{print $2}'
       args:
@@ -72,7 +66,7 @@
         gluster_service_state: started
 
 - name: Update gluster server master members
-  hosts: "{{ _gluster_server_hostgroup_name }}"
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_update_master_all:!{{ _gluster_update_skip_hostgroup }}"
   become: true
   serial: 1
   any_errors_fatal: true
@@ -84,12 +78,6 @@
   roles:
     - pokerops.gluster.update
   pre_tasks:
-    - name: End play when gluster georeplication host is not master
-      ansible.builtin.meta: end_host
-      vars:
-        _masters: "{{ _gluster_server_masters | default([]) }}"
-      when: inventory_hostname not in _masters
-
     - name: Query pool list
       ansible.builtin.shell: gluster pool list | awk '{print $2}'
       args:
@@ -140,9 +128,7 @@
 
     - name: End play when there are no gluster server slaves
       ansible.builtin.meta: end_host
-      vars:
-        _slaves: "{{ _gluster_server_slaves | default([]) }}"
-      when: _slaves | length == 0
+      when: _gluster_server_slaves_all | length == 0
 
     - name: Get gluster geo replication status
       ansible.builtin.shell: |

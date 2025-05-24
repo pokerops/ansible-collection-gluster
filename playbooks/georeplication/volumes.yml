@@ -8,7 +8,7 @@
     - name: End play when gluster georeplication is not required
       ansible.builtin.meta: end_play
       vars:
-        _replicas: "{{ _gluster_server_slaves | default([]) }}"
+        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
       when: _replicas | length == 0
 
     - name: Set gluster replica volumes
