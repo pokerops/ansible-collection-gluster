@@ -92,7 +92,7 @@
         msg: "Gluster server master {{ _master_group }} members: [{{ _members | join(', ') }}]"
       vars:
         _members: "{{ _gluster_server_masters }}"
-        _master_group: "{{ _master_name }}_slave"
+        _master_group: "{{ _gluster_name }}_master"
 
     - name: Verify gluster georeplication hosts
       ansible.builtin.assert:
