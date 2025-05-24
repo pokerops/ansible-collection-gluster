@@ -10,79 +10,79 @@ platforms:
   - name: gluster-server-${MOLECULE_SCENARIO_NAME}-primary-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
-    mem: 4
-    size: 30G
+    mem: 1
+    size: 5G
     groups:
       - gluster_server
       - gluster_server_primary
   - name: gluster-server-${MOLECULE_SCENARIO_NAME}-primary-02
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
-    mem: 4
-    size: 30G
+    mem: 1
+    size: 5G
     groups:
       - gluster_server
       - gluster_server_primary
   - name: gluster-server-${MOLECULE_SCENARIO_NAME}-primary-03
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
-    mem: 4
-    size: 30G
+    mem: 1
+    size: 5G
     groups:
       - gluster_server
       - gluster_server_primary
   - name: gluster-server-${MOLECULE_SCENARIO_NAME}-secondary-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
-    mem: 4
-    size: 30G
+    mem: 1
+    size: 5G
     groups:
       - gluster_server
       - gluster_server_secondary
   - name: gluster-server-${MOLECULE_SCENARIO_NAME}-secondary-02
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
-    mem: 4
-    size: 30G
+    mem: 1
+    size: 5G
     groups:
       - gluster_server
       - gluster_server_secondary
   - name: gluster-server-${MOLECULE_SCENARIO_NAME}-secondary-03
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
-    mem: 4
-    size: 30G
+    mem: 1
+    size: 5G
     groups:
       - gluster_server
       - gluster_server_secondary
   - name: gluster-server-${MOLECULE_SCENARIO_NAME}-tertiary-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
-    mem: 4
-    size: 30G
+    mem: 1
+    size: 5G
     groups:
       - gluster_server
       - gluster_server_tertiary
   - name: gluster-server-${MOLECULE_SCENARIO_NAME}-tertiary-02
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
-    mem: 4
-    size: 30G
+    mem: 1
+    size: 5G
     groups:
       - gluster_server
       - gluster_server_tertiary
   - name: gluster-server-${MOLECULE_SCENARIO_NAME}-tertiary-03
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
-    mem: 4
-    size: 30G
+    mem: 1
+    size: 5G
     groups:
       - gluster_server
       - gluster_server_tertiary
   - name: gluster-client-${MOLECULE_SCENARIO_NAME}-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
-    mem: 2
+    mem: 1
     size: 5G
     groups:
       - gluster_client
