@@ -5,7 +5,7 @@
     gluster_server_groupset: update
 
 - name: Update gluster server slave members
-  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_update_{{ _gluster_server_slave_groupset | default('slave') }}:!{{ _gluster_update_skip_hostgroup }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}"
   become: true
   serial: 1
   any_errors_fatal: true
@@ -17,6 +17,12 @@
   roles:
     - pokerops.gluster.update
   pre_tasks:
+    - name: End play when gluster georeplication host is not slave
+      ansible.builtin.meta: end_host
+      vars:
+        _slaves: "{{ _gluster_server_slaves | default([]) }}"
+      when: inventory_hostname not in _slaves
+
     - name: Query pool list
       ansible.builtin.shell: gluster pool list | awk '{print $2}'
       args:
@@ -66,7 +72,7 @@
         gluster_service_state: started
 
 - name: Update gluster server master members
-  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_update_{{ _gluster_server_master_groupset | default('master') }}:!{{ _gluster_update_skip_hostgroup }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}"
   become: true
   serial: 1
   any_errors_fatal: true
@@ -78,6 +84,12 @@
   roles:
     - pokerops.gluster.update
   pre_tasks:
+    - name: End play when gluster georeplication host is not master
+      ansible.builtin.meta: end_host
+      vars:
+        _masters: "{{ _gluster_server_masters | default([]) }}"
+      when: inventory_hostname not in _masters
+
     - name: Query pool list
       ansible.builtin.shell: gluster pool list | awk '{print $2}'
       args:
@@ -129,9 +141,7 @@
     - name: End play when there are no gluster server slaves
       ansible.builtin.meta: end_host
       vars:
-        _slave: "{{ _gluster_server_slave_groupset | default('slave') }}"
-        _slave_group: "{{ gluster_server_prefix | default('gluster_server') }}_update_{{ _slave }}"
-        _slaves: "{{ groups[_slave_group] | default([]) }}"
+        _slaves: "{{ _gluster_server_slaves | default([]) }}"
       when: _slaves | length == 0
 
     - name: Get gluster geo replication status

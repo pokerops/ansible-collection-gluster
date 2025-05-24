@@ -8,7 +8,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
 
 - name: Start geo replication session tasks
-  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_master_{{ _gluster_server_master_groupset | default('master') }}"
+  hosts: "{{ _gluster_server_hostgroup_name }}"
   gather_facts: false
   any_errors_fatal: true
   become: true
@@ -20,6 +20,10 @@
       vars:
         _replicas: "{{ _gluster_server_slaves | default([]) }}"
       when: _replicas | length == 0
+
+    - name: End play when gluster georeplication host is not master
+      ansible.builtin.meta: end_host
+      when: inventory_hostname not in _gluster_server_masters
 
     - name: End play for unrequired gluster geo replication nodes
       ansible.builtin.meta: end_host
