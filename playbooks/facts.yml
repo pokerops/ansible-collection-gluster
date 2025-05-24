@@ -114,6 +114,7 @@
         gluster_target_members: "{{ _gluster_target_members }}"
       vars:
         _master: "{{ _gluster_server_master_groupset }}"
+        _slave: "{{ _gluster_server_slave_groupset }}"
         _members: "{{ _gluster_server_masters }}"
         _replica_manage: "{{ _gluster_georeplica_manage }}"
         _target_group: "{{ _gluster_name }}_{{ _slave if _replica_manage else _master }}"
