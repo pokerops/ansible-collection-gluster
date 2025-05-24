@@ -270,6 +270,11 @@
       ansible.builtin.shell: |
         gluster volume geo-replication status | awk \
         'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+      vars:
+        _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+        _volumes: "{{ _gluster_sessions_create | map(attribute='name') }}"
+        _query_volumes: "{{ _results | selectattr('name', 'in', _volumes) }}"
+        _status: "{{ _query_volumes | rejectattr('status', 'in', gluster_georeplica_volumes_status) }}"
       args:
         chdir: "/usr/sbin/"
       register: _georeplica_status

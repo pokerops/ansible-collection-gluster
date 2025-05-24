@@ -211,7 +211,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.install
 
 - name: Test gluster failover to a different site
-  hosts: "gluster_server:gluster_client"
+  hosts: "gluster_server"
   gather_facts: false
   tasks:
     - name: Set gluster primary facts
@@ -227,7 +227,7 @@
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
   vars:
-    gluster_server_groupset: georeplication
+    gluster_server_prefix: georeplication
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_secondary"

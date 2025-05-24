@@ -89,7 +89,7 @@
 
     - name: Debug gluster geo replication master members
       ansible.builtin.debug:
-        msg: "Gluster server master {{ _members }} members: [{{ _members | join(', ') }}]"
+        msg: "Gluster server master {{ _master_group }} members: [{{ _members | join(', ') }}]"
       vars:
         _members: "{{ _gluster_server_masters }}"
         _master_group: "{{ _master_name }}_slave"
