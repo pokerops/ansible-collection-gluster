@@ -58,10 +58,9 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == (_slaves_num)
+            that: _query_volumes | length == _slaves_num | length
           vars:
             _slaves: "{{ groups['gluster_slaves_delete'] }}"
-            _slaves_num: "{{ _slaves | length }}"
             _existing: "{{ _gluster_georeplica_volumes }}"
             _volumes: "{{ gluster_volumes }}"
             _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
@@ -127,10 +126,9 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == (_slaves_num)
+            that: _query_volumes | length == _slaves_num } length
           vars:
             _slaves: "{{ groups['gluster_slaves_start'] }}"
-            _slaves_num: "{{ _slaves | length }}"
             _statuses:
               - "Active"
               - "Passive"
@@ -302,10 +300,9 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == (_slaves_num)
+            that: _query_volumes | length == _slaves | length
           vars:
             _slaves: "{{ groups['gluster_slaves_failover'] }}"
-            _slaves_num: "{{ _slaves | length }}"
             _statuses:
               - "Active"
               - "Passive"
@@ -374,10 +371,9 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == (_slaves_num)
+            that: _query_volumes | length == _slaves | length
           vars:
             _slaves: "{{ groups['gluster_slaves_scaledown_test'] }}"
-            _slaves_num: "{{ _slaves | length }}"
             _statuses:
               - "Active"
               - "Passive"
