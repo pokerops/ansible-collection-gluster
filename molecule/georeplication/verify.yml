@@ -106,9 +106,11 @@
         dest: "{{ _mount }}/{{ _log_file }}"
       vars:
         _mount: "{{ item.mount }}"
+        _group: "{{ gluster_client_hostgroup | default('gluster_client_primary') }}"
       loop_control:
         label: "{{ _mount }}"
       loop: "{{ gluster_volumes }}"
+      delegate_to: "{{ groups[_group] | first }}"
 
 - name: Test gluster file replication
   hosts: "gluster_server"

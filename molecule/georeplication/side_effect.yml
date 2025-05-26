@@ -389,3 +389,4 @@
     gluster_masters: "gluster_server_scaledown_{{ gluster_server_master_groupset | default('master') }}"
     gluster_slaves: "gluster_server_scaledown_{{ gluster_server_slave_groupset | default('slave') }}"
     gluster_server_hostgroup: gluster_server_scaledown
+    gluster_client_hostgroup: gluster_client_secondary
