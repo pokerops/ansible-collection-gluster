@@ -125,12 +125,18 @@
       vars:
         _members: "{{ _gluster_server_masters_all }}"
 
-    - name: Verify gluster georeplication hosts
+    - name: Verify gluster georeplication slave hosts
+      ansible.builtin.assert:
+        that:
+          - _gluster_server_slaves_all | length > 0
+      when: _gluster_georeplica_manage
+
+    - name: Verify gluster georeplication master hosts
       ansible.builtin.assert:
         that:
           - _gluster_server_masters_all | length > 0
-          - _gluster_server_slaves_all | length > 0
-      when: _gluster_georeplica_manage
+          - (_gluster_server_masters_all | length) == (_gluster_server_masters | length)
+      when: not _gluster_georeplica_manage
 
     - name: Set gluster hosts fact
       ansible.builtin.set_fact:
