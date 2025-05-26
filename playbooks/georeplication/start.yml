@@ -49,7 +49,7 @@
         _replica_regex: "{{ _replica_names | map('regex_replace', '.*@', '') }}"
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _volume_names) }}"
-        _replica_targets: "{{ _volumes | selectattr('replica', 'in', _replica_regex) }}"
+        _replica_targets: "{{ _volumes | selectattr('replica_name', 'in', _replica_regex) }}"
         _start_volumes: "{{ _replica_targets | selectattr('state', 'equalto', 'present') }}"
 
     - name: Debug gluster geo replication status
