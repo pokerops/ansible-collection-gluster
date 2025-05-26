@@ -16,7 +16,7 @@
         _volumes_filter: "{{ _volumes_overwritten | rejectattr('state', 'equalto', 'absent') }}"
 
 - name: Query cluster state
-  hosts: "gluster_server"
+  hosts: "{{ gluster_server_hostgroup | default('gluster_server') }}"
   become: true
   vars:
     gluster_service_name: "glusterd.service"
@@ -54,9 +54,9 @@
       vars:
         _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _master_group: "{{ _gluster_masters | default('gluster_server_primary') }}"
+        _master_group: "{{ gluster_masters | default('gluster_server_primary') }}"
         _masters: "{{ groups[_master_group] }}"
-        _slave_group: "{{ _gluster_slaves | default('gluster_server_secondary') }}"
+        _slave_group: "{{ gluster_slaves | default('gluster_server_secondary') }}"
         _slaves: "{{ groups[_slave_group] }}"
         _group_name: "{{ _master_group if inventory_hostname in _masters else _slave_group }}"
         _group: "{{ groups[_group_name] }}"
