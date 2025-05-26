@@ -46,13 +46,12 @@
 
     - name: Set gluster geo replication volume facts
       ansible.builtin.set_fact:
-        _gluster_server_slave_targets: "{{ _targets_dict }}"
+        _gluster_server_slave_targets: "{{ _targets }}"
         _gluster_target_volumes: []
         _gluster_volumes_filter: "{{ _gluster_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
         _meta_volume: "{{ gluster_meta_volume.name }}"
         _targets: "{{ hostvars['localhost']['_gluster_server_slave_targets'] }}"
-        _targets_dict: "{{ _targets | map(_to_dict, 'replica_name') }}"
 
     - name: Set gluster geo replication volume facts
       ansible.builtin.set_fact:
