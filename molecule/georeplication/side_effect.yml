@@ -261,7 +261,7 @@
     gluster_server_prefix: gluster_server_georeplication
 
 - name: Verify gluster volumes status
-  hosts: "gluster_server_secondary"
+  hosts: "gluster_server"
   any_errors_fatal: true
   become: true
   gather_facts: false
@@ -332,7 +332,7 @@
     gluster_server_prefix: gluster_server_scaledown
 
 - name: Verify gluster volumes status
-  hosts: "gluster_server_secondary"
+  hosts: "gluster_server"
   become: true
   any_errors_fatal: true
   gather_facts: false
