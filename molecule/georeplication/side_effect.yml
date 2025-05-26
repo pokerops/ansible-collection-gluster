@@ -26,7 +26,7 @@
     - name: Get gluster geo replication status
       ansible.builtin.shell: |
         gluster volume geo-replication status | awk \
-        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $7"\"}"}'
+        'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
       args:
         chdir: "/usr/sbin/"
       register: _georeplica_status
@@ -56,7 +56,7 @@
         _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
         _volume_names: "{{ _stop_volumes | map(attribute='name') }}"
         _stop_existing: "{{ _existing | selectattr('status', 'equalto', 'Stopped') }}"
-        _query_volumes: "{{ _stop_existing | rejectattr('volume', 'in', _volume_names) }}"
+        _query_volumes: "{{ _stop_existing | rejectattr('name', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to present
   hosts: "gluster_server:gluster_client"
@@ -84,7 +84,7 @@
     - name: Get gluster geo replication status
       ansible.builtin.shell: |
         gluster volume geo-replication status | awk \
-        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+        'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
       args:
         chdir: "/usr/sbin/"
       register: _georeplica_status
@@ -122,7 +122,7 @@
         _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
         _volume_names: "{{ _start_volumes | map(attribute='name') }}"
-        _query_volumes: "{{ _start_existing | rejectattr('volume', 'in', _volume_names) }}"
+        _query_volumes: "{{ _start_existing | rejectattr('name', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to absent
   hosts: "gluster_server:gluster_client"
@@ -151,7 +151,7 @@
     - name: Get gluster geo replication status
       ansible.builtin.shell: |
         gluster volume geo-replication status | awk \
-        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+        'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
       args:
         chdir: "/usr/sbin/"
       register: _georeplica_status
@@ -180,7 +180,7 @@
         _volumes: "{{ gluster_volumes }}"
         _delete_volumes: "{{ _volumes | selectattr('state', 'equalto', 'absent') }}"
         _volume_names: "{{ _delete_volumes | map(attribute='name') }}"
-        _delete_existing: "{{ _existing | rejectattr('volume', 'in', _volume_names) }}"
+        _delete_existing: "{{ _existing | rejectattr('name', 'in', _volume_names) }}"
 
 - name: Override gluster volumes facts
   hosts: "gluster_server:gluster_client"
@@ -214,7 +214,9 @@
     - name: Set gluster primary facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: true
-      when: inventory_hostname in groups['gluster_server_primary']
+      when: |
+        inventory_hostname in groups['gluster_server_primary'] or
+        inventory_hostname in groups['gluster_server_tertiary']
 
     - name: Set gluster replica facts
       ansible.builtin.set_fact:
@@ -234,7 +236,7 @@
     - name: Get gluster geo replication status
       ansible.builtin.shell: |
         gluster volume geo-replication status | awk \
-        'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
+        'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
       args:
         chdir: "/usr/sbin/"
       register: _georeplica_status
@@ -272,7 +274,7 @@
         _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
         _volume_names: "{{ _start_volumes | map(attribute='name') }}"
-        _query_volumes: "{{ _start_existing | rejectattr('volume', 'in', _volume_names) }}"
+        _query_volumes: "{{ _start_existing | rejectattr('name', 'in', _volume_names) }}"
 
 - name: Override gluster server group fact
   hosts: "gluster_server:gluster_client"
