@@ -277,7 +277,7 @@
         _query_volumes: "{{ _start_existing | rejectattr('name', 'in', _volume_names) }}"
 
 - name: Override gluster server group fact
-  hosts: "gluster_server:gluster_client"
+  hosts: "all"
   gather_facts: false
   tasks:
     - name: Set gluster server hostgroup fact
