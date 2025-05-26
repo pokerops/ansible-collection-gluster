@@ -47,16 +47,23 @@
       ansible.builtin.debug:
         msg: "{{ _gluster_georeplica_volumes }}"
 
+    - name: Group slave members
+      ansible.builtin.group_by:
+        key: "gluster_slaves_delete"
+      when: gluster_georeplica_manage | bool
+
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: _query_volumes | length == 0
+        that: _query_volumes | length == (_slaves_num)
       vars:
+        _slaves: "{{ groups['gluster_slaves_delete'] }}"
+        _slaves_num: "{{ _slaves | length }}"
         _existing: "{{ _gluster_georeplica_volumes }}"
         _volumes: "{{ gluster_volumes }}"
         _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
         _volume_names: "{{ _stop_volumes | map(attribute='name') }}"
         _stop_existing: "{{ _existing | selectattr('status', 'equalto', 'Stopped') }}"
-        _query_volumes: "{{ _stop_existing | rejectattr('name', 'in', _volume_names) }}"
+        _query_volumes: "{{ _stop_existing | selectattr('name', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to present
   hosts: "gluster_server:gluster_client"
@@ -105,10 +112,17 @@
       ansible.builtin.debug:
         msg: "{{ _gluster_georeplica_volumes }}"
 
+    - name: Group slave members
+      ansible.builtin.group_by:
+        key: "gluster_slaves_start"
+      when: gluster_georeplica_manage | bool
+
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: _query_volumes | length == 0
+        that: _query_volumes | length == (_slaves_num)
       vars:
+        _slaves: "{{ groups['gluster_slaves_start'] }}"
+        _slaves_num: "{{ _slaves | length }}"
         _statuses:
           - "Active"
           - "Passive"
@@ -122,7 +136,7 @@
         _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
         _volume_names: "{{ _start_volumes | map(attribute='name') }}"
-        _query_volumes: "{{ _start_existing | rejectattr('name', 'in', _volume_names) }}"
+        _query_volumes: "{{ _start_existing | selectattr('name', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to absent
   hosts: "gluster_server:gluster_client"
