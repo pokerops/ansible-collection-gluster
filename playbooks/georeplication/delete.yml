@@ -49,7 +49,7 @@
         _gluster_user: "{{ _gluster_georeplica_user.name }}"
         _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
         _gluster_georeplica_volumes: "{{ _delete_volumes }}"
-        _gluster_georeplica_orphan_volumes: "{{ _orphan_volumes }}"
+        _gluster_georeplica_orphan_volumes: "{{ _orphan_replicas }}"
       vars:
         _attrs:
           - name
@@ -70,7 +70,6 @@
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_names) }}"
         _replicas_list: "{{ _volumes | selectattr('replica_name', 'in', _existing_replicas) }}"
         _orphan_replicas: "{{ _replica_attrs | rejectattr('replica_name', 'in', _target_replicas) }}"
-        _orphan_volumes: "{{ _orphan_replicas | rejectattr('name', 'in', _target_volume_names) }}"
         _delete_volumes: "{{ _replicas_list | selectattr('state', 'equalto', 'absent') }}"
 
     - name: Debug gluster geo replication volumes to delete a session
