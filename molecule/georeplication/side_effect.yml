@@ -15,8 +15,8 @@
               - c
             state: stopped
 
-- name: Import geo replication install playbook
-  ansible.builtin.import_playbook: pokerops.gluster.install
+- name: Import geo replication playbook
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.stop
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_primary"
@@ -73,8 +73,8 @@
               - b
               - c
 
-- name: Import geo replication install playbook
-  ansible.builtin.import_playbook: pokerops.gluster.install
+- name: Import geo replication playbook
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.start
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_primary"
@@ -140,8 +140,8 @@
               - c
             state: absent
 
-- name: Import geo replication install playbook
-  ansible.builtin.import_playbook: pokerops.gluster.install
+- name: Import geo replication playbook
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.delete
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_primary"
@@ -204,8 +204,8 @@
               - b
               - c
 
-- name: Import geo replication install playbook
-  ansible.builtin.import_playbook: pokerops.gluster.install
+- name: Import geo replication playbook
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.create
 
 - name: Test gluster failover to a different site
   hosts: "gluster_server"
@@ -273,6 +273,19 @@
         _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
         _volume_names: "{{ _start_volumes | map(attribute='name') }}"
         _query_volumes: "{{ _start_existing | rejectattr('volume', 'in', _volume_names) }}"
+
+- name: Override gluster server group fact
+  hosts: "gluster_server:gluster_client"
+  gather_facts: false
+  tasks:
+    - name: Set gluster server hostgroup fact
+      ansible.builtin.set_fact:
+        gluster_server_hostgroup_name: gluster_server_scaledown
+
+- name: Import geo replication install playbook
+  ansible.builtin.import_playbook: pokerops.gluster.install
+  vars:
+    gluster_server_prefix: scaledown
 
 - name: Import verify playbook
   ansible.builtin.import_playbook: ./verify.yml
