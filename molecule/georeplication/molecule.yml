@@ -85,13 +85,30 @@ platforms:
     groups:
       - gluster_server
       - gluster_server_tertiary
-  - name: gluster-client-${MOLECULE_SCENARIO_NAME}-01
+  - name: gluster-client-${MOLECULE_SCENARIO_NAME}-primary-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
     mem: 1
     size: 5G
     groups:
       - gluster_client
+      - gluster_client_primary
+  - name: gluster-client-${MOLECULE_SCENARIO_NAME}-secondary-01
+    image: "${MOLECULE_KVM_IMAGE}"
+    cpu: 1
+    mem: 1
+    size: 5G
+    groups:
+      - gluster_client
+      - gluster_client_secondary
+  - name: gluster-client-${MOLECULE_SCENARIO_NAME}-tertiary-01
+    image: "${MOLECULE_KVM_IMAGE}"
+    cpu: 1
+    mem: 1
+    size: 5G
+    groups:
+      - gluster_client
+      - gluster_client_tertiary
 provisioner:
   name: ansible
   config_options:
@@ -123,6 +140,10 @@ provisioner:
       gluster_server_tertiary:
         gluster_server_slave_groupset: tertiary
         gluster_georeplica_manage: true
+      gluster_client_secondary:
+        gluster_server_slave_groupset: secondary
+      gluster_client_tertiary:
+        gluster_server_slave_groupset: tertiary
 verifier:
   name: ansible
 scenario:
