@@ -319,41 +319,42 @@
       vars:
         _status: "{{ _georeplica_meta.results | default([]) }}"
 
-    - name: Manage gluster geo replication common key tasks
-      delegate_to: "{{ _gluster_server_slave_targets }}"
-      block:
-        - name: Wait for gluster common key replication
-          ansible.builtin.stat:
-            path: "{{ _path }}"
-          vars:
-            _home: "/home/{{ _gluster_user }}"
-            _path: "{{ _home }}/{{ _primary }}_{{ _replica }}_common_secret.pem.pub"
-            _primary: "{{ item.name }}"
-            _replica: "{{ item.replica_name }}"
-            _results: "{{ _georeplica_common_key.results | default([]) | map(attribute='stat') }}"
-            _status: "{{ _results | map(attribute='stat') }}"
-            _query: "{{ _status | rejectattr('exists') }}"
-          loop_control:
-            label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-          loop: "{{ _gluster_sessions_create }}"
-          retries: "{{ _gluster_retries }}"
-          delay: "{{ _gluster_delay }}"
-          until: _query | length == 0
-          register: _georeplica_common_key
+    - name: Wait for gluster common key replication
+      ansible.builtin.stat:
+        path: "{{ _path }}"
+      vars:
+        _slave: "{{ item.1 }}"
+        _home: "/home/{{ _gluster_user }}"
+        _path: "{{ _home }}/{{ _primary }}_{{ _replica }}_common_secret.pem.pub"
+        _primary: "{{ item.0.name }}"
+        _replica: "{{ item.0.replica_name }}"
+        _results: "{{ _georeplica_common_key.results | default([]) | map(attribute='stat') }}"
+        _status: "{{ _results | map(attribute='stat') }}"
+        _query: "{{ _status | rejectattr('exists') }}"
+      loop_control:
+        label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+      loop: "{{ _gluster_sessions_create | product(_gluster_server_slave_targets) }}"
+      retries: "{{ _gluster_retries }}"
+      delay: "{{ _gluster_delay }}"
+      until: _query | length == 0
+      register: _georeplica_common_key
+      delegate_to: "{{ _slave }}"
 
-        - name: Execute gluster geo replication pem keys script
-          ansible.builtin.shell: |
-            {{ _script }} {{ _gluster_user }} {{ _primary }} {{ _replica }}
-          vars:
-            _script: "{{ gluster_georeplication_keys_script }}"
-            _primary: "{{ item.name }}"
-            _replica: "{{ item.replica_name | split('::') | last }}"
-          loop_control:
-            label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-          loop: "{{ _gluster_sessions_create }}"
-          register: _georeplica_sshkeys_script
-          changed_when: false
-          tags: skip_ansible_lint
+    - name: Execute gluster geo replication pem keys script
+      ansible.builtin.shell: |
+        {{ _script }} {{ _gluster_user }} {{ _primary }} {{ _replica }}
+      vars:
+        _slave: "{{ item.1 }}"
+        _script: "{{ gluster_georeplication_keys_script }}"
+        _primary: "{{ item.0.name }}"
+        _replica: "{{ item.0.replica_name | split('::') | last }}"
+      loop_control:
+        label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+      loop: "{{ _gluster_sessions_create | product(_gluster_server_slave_targets) }}"
+      register: _georeplica_sshkeys_script
+      changed_when: false
+      delegate_to: "{{ _slave }}"
+      tags: skip_ansible_lint
 
     - name: Start geo replication session
       ansible.builtin.shell: |
