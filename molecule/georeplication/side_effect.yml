@@ -58,7 +58,7 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == _slaves_num | length
+            that: _query_volumes | length == _slaves | length
           vars:
             _slaves: "{{ groups['gluster_slaves_delete'] }}"
             _existing: "{{ _gluster_georeplica_volumes }}"
@@ -126,7 +126,7 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == _slaves_num } length
+            that: _query_volumes | length == _slaves | length
           vars:
             _slaves: "{{ groups['gluster_slaves_start'] }}"
             _statuses:
