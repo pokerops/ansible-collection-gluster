@@ -44,21 +44,23 @@
         _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
       when: _replicas | length == 0
 
-    - name: Set gluster replica volumes
+    - name: Set gluster geo replication volume facts
       ansible.builtin.set_fact:
-        _gluster_target_volumes: "{{ _volumes_overwritten | rejectattr('name', 'equalto', _meta_volume) }}"
+        _gluster_server_slave_targets: "{{ _targets_dict }}"
+        _gluster_target_volumes: []
+        _gluster_volumes_filter: "{{ _gluster_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
-        _join:
-          - name
-          - slave
-        _slaves: "{{ hostvars['localhost']['_gluster_server_slave_targets'] }}"
-        _slaves_format: "{{ _slaves | map(_map_format, '%s::') }}"
-        _slaves_list: "{{ _slaves_format | map(_to_dict, 'slave') }}"
-        _volumes_num: "{{ _volumes | length }}"
-        _slaves_default: "{{ _slaves_list * (_volumes_num | int) }}"
-        _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
-        _volumes_list: "{{ _volumes | zip(_slaves_default) | map('combine') }}"
-        _volumes_join: "{{ _volumes_list | map(_map_join, _join, '%s::') }}"
-        _volume_dict: "{{ _volumes_join | map(_to_dict, 'replica_name') }}"
-        _volumes_overwritten: "{{ _volumes_list | zip(_volume_dict) | map('combine') }}"
+        _targets: "{{ hostvars['localhost']['_gluster_server_slave_targets'] }}"
+        _targets_dict: "{{ _targets | map(_to_dict, 'replica_name') }}"
+
+    - name: Set gluster geo replication volume facts
+      ansible.builtin.set_fact:
+        _gluster_target_volumes: "{{ _gluster_target_volumes + [_volume | combine({'replica_name': _replica_name})] }}"
+      vars:
+        _volume: "{{ item.0 }}"
+        _slave: "{{ item.1 }}"
         _meta_volume: "{{ gluster_meta_volume.name }}"
+        _replica_name: "{{ _slave | map(_map_format, '%s::' + _volume.name) }}"
+      loop_control:
+        target: "Volume: {{ _volume.name }} - Replica: {{ _replica_name }}"
+      loop: "{{ _gluster_volumes_filter | product(_gluster_server_slave_targets) }}"
