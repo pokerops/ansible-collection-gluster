@@ -6,6 +6,7 @@ authors = ["pokerops"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
+glustercli = "^0.8.6"
 
 [tool.poetry.group.dev.dependencies]
 molecule = "^25.4.0"
