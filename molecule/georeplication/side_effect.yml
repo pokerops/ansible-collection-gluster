@@ -22,10 +22,12 @@
   hosts: "gluster_server"
   become: true
   gather_facts: false
+  any_errors_fatal: true
   tasks:
     - name: Group slave members
       ansible.builtin.group_by:
         key: "gluster_slaves_delete"
+      when: gluster_georeplica_manage | default('false') | bool
 
     - name: Run master tasks
       when: not gluster_georeplica_manage | default('false') | bool
@@ -89,6 +91,7 @@
   hosts: "gluster_server"
   become: true
   gather_facts: false
+  any_errors_fatal: true
   tasks:
     - name: Group slave members
       ansible.builtin.group_by:
@@ -166,6 +169,7 @@
   hosts: "gluster_server_primary"
   become: true
   gather_facts: false
+  any_errors_fatal: true
   tasks:
     - name: Get gluster geo replication status
       ansible.builtin.shell: |
@@ -249,6 +253,7 @@
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_secondary"
+  any_errors_fatal: true
   become: true
   gather_facts: false
   tasks:
@@ -321,6 +326,7 @@
 - name: Verify gluster volumes status
   hosts: "gluster_server_secondary"
   become: true
+  any_errors_fatal: true
   gather_facts: false
   tasks:
     - name: Group slave members
