@@ -63,3 +63,6 @@
       loop_control:
         label: "Volume: {{ _volume.name }} - Replica: {{ _replica_name }}"
       loop: "{{ _gluster_volumes_filter | product(_gluster_server_slave_targets) }}"
+
+    - debug:
+        var: _gluster_target_volumes

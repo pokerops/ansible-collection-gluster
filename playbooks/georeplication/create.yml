@@ -4,6 +4,11 @@
   vars:
     gluster_server_groupset: replica_create
 
+- name: Get existing gluster geo replication volumes
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
+  vars:
+    gluster_server_groupset: replica_create
+
 - name: Manage geo replication mount broker tasks
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
   gather_facts: false
@@ -134,11 +139,6 @@
   when:
     - _gluster_georeplica_manage
     - _gluster_georeplica_volumes | length > 0
-
-- name: Get existing gluster geo replication volumes
-  ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
-  vars:
-    gluster_server_groupset: replica_create
 
 - name: Create geo replication session tasks
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_master_all"
