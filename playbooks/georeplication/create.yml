@@ -23,106 +23,106 @@
         _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
       when: _replicas | length == 0
 
-    - name: Manage gluster replication member tasks
-      tags: skip_ansible_lint
-      run_once: true
+    - name: End play for unrequired gluster geo replication nodes
+      ansible.builtin.meta: end_host
+      when: (not inventory_hostname == (gluster_target_members | first))
+
+    - name: Set georeplication facts
+      ansible.builtin.set_fact:
+        _gluster_user: "{{ _gluster_georeplica_user.name }}"
+        _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
+
+    - name: Verify existing gluster geo replication sessions
+      delegate_to: "{{ _gluster_server_masters | first }}"
       block:
-        - name: Set georeplication facts
-          ansible.builtin.set_fact:
-            _gluster_user: "{{ _gluster_georeplica_user.name }}"
-            _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
-
-        - name: Verify existing gluster geo replication sessions
-          delegate_to: "{{ _gluster_server_masters | first }}"
-          block:
-            - name: Get gluster geo replication status
-              ansible.builtin.shell: |
-                gluster volume geo-replication status | awk \
-                'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
-              args:
-                chdir: "/usr/sbin/"
-              register: _georeplica_status
-              changed_when: false
-              tags: skip_ansible_lint
-
-            - name: Set georeplication session status
-              ansible.builtin.set_fact:
-                _gluster_georeplica_sessions: "{{ _output | map('from_json') }}"
-              vars:
-                _output: "{{ _georeplica_status.stdout_lines | default([]) }}"
-              delegate_facts: true
-              delegate_to: localhost
-
-            - name: Debug gluster geo replication status
-              ansible.builtin.debug:
-                msg: "{{ _sessions }}"
-              vars:
-                _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
-
-        - name: Set georeplication existing volumes fact
-          ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _missing_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
-          vars:
-            _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
-            _existing_volumes: "{{ _sessions | map(attribute='replica') }}"
-            _existing_split: "{{ _existing_volumes | map('split', '::') | map('last') | flatten }}"
-            _volumes: "{{ _gluster_volumes | rejectattr('state', 'equalto', 'absent') }}"
-            _missing_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_split) }}"
-            _meta_volume: "{{ gluster_meta_volume.name }}"
-
-        - name: Manage gluster mountbroker tasks
-          when: _gluster_georeplica_volumes | length > 0
-          block:
-            - name: Setup gluster mountbroker
-              ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_usergroup }}"
-              args:
-                chdir: "/usr/sbin/"
-              vars:
-                _mount: "{{ gluster_georeplica_mountbroker }}"
-              register: _mount_broker_setup
-              changed_when: false
-              tags: skip_ansible_lint
-
-            - name: Add gluster mountbroker volumes
-              ansible.builtin.shell: "gluster-mountbroker add {{ _name }} {{ _gluster_user }}"
-              args:
-                chdir: "/usr/sbin/"
-              vars:
-                _name: "{{ item.name }}"
-              loop: "{{ _gluster_georeplica_volumes }}"
-              loop_control:
-                label: "{{ _name }}"
-              register: _mount_broker_volumes
-              changed_when: false
-              tags: skip_ansible_lint
-
-        - name: Get gluster mountbroker volume status
-          ansible.builtin.shell: "gluster-mountbroker status | awk -F '|' '/{{ _broker_name }}/ {print $2 $4 $5}'"
+        - name: Get gluster geo replication status
+          ansible.builtin.shell: |
+            gluster volume geo-replication status | awk \
+            'NR>3 {print "{\"server\": \"" $1 "\", \"volume\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
           args:
             chdir: "/usr/sbin/"
-          vars:
-            _broker_path: "{{ gluster_georeplica_mountbroker }}"
-            _broker_name: "{{ _broker_path | split('/') | last }}"
-          register: _mount_broker_status
+          register: _georeplica_status
           changed_when: false
           tags: skip_ansible_lint
 
-        - name: Debug gluster mountbroker volume status
-          ansible.builtin.debug:
-            msg: "{{ _members_split }}"
+        - name: Set georeplication session status
+          ansible.builtin.set_fact:
+            _gluster_georeplica_sessions: "{{ _output | map('from_json') }}"
           vars:
-            _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
-            _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
-            _members_split: "{{ _members | map('split') | map('join', ' ') }}"
+            _output: "{{ _georeplica_status.stdout_lines | default([]) }}"
+          delegate_facts: true
+          delegate_to: localhost
 
-        - name: Verify gluster mountbroker volume status
-          ansible.builtin.assert:
-            that:
-              - (_members | length) == (gluster_target_members | length)
-              - _members | reject('match', 'OK') | length > 0
+        - name: Debug gluster geo replication status
+          ansible.builtin.debug:
+            msg: "{{ _sessions }}"
           vars:
-            _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
-            _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
+            _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
+
+    - name: Set georeplication existing volumes fact
+      ansible.builtin.set_fact:
+        _gluster_georeplica_volumes: "{{ _missing_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
+      vars:
+        _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
+        _existing_volumes: "{{ _sessions | map(attribute='replica') }}"
+        _existing_split: "{{ _existing_volumes | map('split', '::') | map('last') | flatten }}"
+        _volumes: "{{ _gluster_volumes | rejectattr('state', 'equalto', 'absent') }}"
+        _missing_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_split) }}"
+        _meta_volume: "{{ gluster_meta_volume.name }}"
+
+    - name: Manage gluster mountbroker tasks
+      when: _gluster_georeplica_volumes | length > 0
+      block:
+        - name: Setup gluster mountbroker
+          ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_usergroup }}"
+          args:
+            chdir: "/usr/sbin/"
+          vars:
+            _mount: "{{ gluster_georeplica_mountbroker }}"
+          register: _mount_broker_setup
+          changed_when: false
+          tags: skip_ansible_lint
+
+        - name: Add gluster mountbroker volumes
+          ansible.builtin.shell: "gluster-mountbroker add {{ _name }} {{ _gluster_user }}"
+          args:
+            chdir: "/usr/sbin/"
+          vars:
+            _name: "{{ item.name }}"
+          loop: "{{ _gluster_georeplica_volumes }}"
+          loop_control:
+            label: "{{ _name }}"
+          register: _mount_broker_volumes
+          changed_when: false
+          tags: skip_ansible_lint
+
+    - name: Get gluster mountbroker volume status
+      ansible.builtin.shell: "gluster-mountbroker status | awk -F '|' '/{{ _broker_name }}/ {print $2 $4 $5}'"
+      args:
+        chdir: "/usr/sbin/"
+      vars:
+        _broker_path: "{{ gluster_georeplica_mountbroker }}"
+        _broker_name: "{{ _broker_path | split('/') | last }}"
+      register: _mount_broker_status
+      changed_when: false
+      tags: skip_ansible_lint
+
+    - name: Debug gluster mountbroker volume status
+      ansible.builtin.debug:
+        msg: "{{ _members_split }}"
+      vars:
+        _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
+        _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _members_split: "{{ _members | map('split') | map('join', ' ') }}"
+
+    - name: Verify gluster mountbroker volume status
+      ansible.builtin.assert:
+        that:
+          - (_members | length) == (gluster_target_members | length)
+          - _members | reject('match', 'OK') | length > 0
+      vars:
+        _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
+        _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
 
     - name: Set gluster replica volumes
       ansible.builtin.set_fact:
