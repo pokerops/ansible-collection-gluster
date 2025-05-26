@@ -253,7 +253,7 @@
         gluster_server_slave_groupset: primary
       when: |
         inventory_hostname in groups['gluster_server_primary'] or
-        inventory_hostname in groups['gluster_client_primary'] or
+        inventory_hostname in groups['gluster_client_primary']
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
