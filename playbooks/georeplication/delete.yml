@@ -48,14 +48,13 @@
         _gluster_georeplica_sessions: "{{ _sessions }}"
         _gluster_user: "{{ _gluster_georeplica_user.name }}"
         _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
-        _gluster_georeplica_volumes: "{{ _georeplica_volumes }}"
+        _gluster_georeplica_volumes: "{{ _delete_volumes }}"
         _gluster_georeplica_orphan_volumes: "{{ _orphan_volumes }}"
       vars:
         _attrs:
           - name
           - replica_name
         _sessions: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
-        _replica_query: "{{ _gluster_georeplica_manage and (_sessions | length > 0) }}"
         _existing_names: "{{ _sessions | map(attribute='name') | unique }}"
         _replicas: "{{ _sessions | map(attribute='replica_name') | unique }}"
         _existing_replicas: "{{ _replicas | map('regex_replace', '.*@', '') }}"
@@ -68,13 +67,11 @@
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
         _target_volume_names: "{{ _target_volumes | map(attribute='name') }}"
         _target_replicas: "{{ _target_volumes | map(attribute='replica_name') }}"
-        _volumes_list: "{{ _replica_attrs | zip(_target_volumes) | map('combine') }}"
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_names) }}"
         _replicas_list: "{{ _volumes | selectattr('replica_name', 'in', _existing_replicas) }}"
-        _orphan_replicas: "{{ _sessions | rejectattr('replica_name', 'in', _target_replicas) }}"
+        _orphan_replicas: "{{ _replica_attrs | rejectattr('replica_name', 'in', _target_replicas) }}"
         _orphan_volumes: "{{ _orphan_replicas | rejectattr('name', 'in', _target_volume_names) }}"
         _delete_volumes: "{{ _replicas_list | selectattr('state', 'equalto', 'absent') }}"
-        _georeplica_volumes: "{{ _replica_attrs if _replica_query else _delete_volumes }}"
 
     - name: Debug gluster geo replication volumes to delete a session
       ansible.builtin.debug:
