@@ -50,6 +50,7 @@
         _gluster_target_volumes: []
         _gluster_volumes_filter: "{{ _gluster_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
+        _meta_volume: "{{ gluster_meta_volume.name }}"
         _targets: "{{ hostvars['localhost']['_gluster_server_slave_targets'] }}"
         _targets_dict: "{{ _targets | map(_to_dict, 'replica_name') }}"
 
@@ -59,7 +60,6 @@
       vars:
         _volume: "{{ item.0 }}"
         _slave: "{{ item.1 }}"
-        _meta_volume: "{{ gluster_meta_volume.name }}"
         _replica_name: "{{ _slave | map(_map_format, '%s::' + _volume.name) }}"
       loop_control:
         label: "Volume: {{ _volume.name }} - Replica: {{ _replica_name }}"
