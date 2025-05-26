@@ -143,9 +143,9 @@
       vars:
         _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
-        _orphan_volumes: "{{ _gluster_georeplica_orphan_volumes | map(attribute='name') }}"
+        _orphan_replicas: "{{ _gluster_georeplica_orphan_volumes | map(attribute='replica_name') }}"
         _status: "{{ _results | selectattr('name', 'in', _volumes) }}"
-        _orphan_status: "{{ _results | selectattr('name', 'in', _orphan_volumes) }}"
+        _orphan_status: "{{ _results | selectattr('replica_name', 'in', _orphan_replicas) }}"
       args:
         chdir: "/usr/sbin/"
       register: _georeplica_status
