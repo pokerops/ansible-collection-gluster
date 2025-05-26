@@ -84,7 +84,7 @@
     - name: End play when there are no geo replications to delete
       ansible.builtin.meta: end_host
       when: |
-        _gluster_georeplica_volumes | length == 0 or
+        _gluster_georeplica_volumes | length == 0 and
         _gluster_georeplica_orphan_volumes | length == 0
 
     - name: Verify gluster geo replication session status
