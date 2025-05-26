@@ -280,3 +280,4 @@
         _to_dict: "nephelaiio.plugins.to_dict"
         _map_format: "nephelaiio.plugins.map_format"
         _select_attrs: "nephelaiio.plugins.select_attributes"
+        _map_join: "nephelaiio.plugins.map_join"

@@ -1,6 +1,13 @@
 ---
+- name: Load Gluster facts
+  ansible.builtin.import_playbook: pokerops.gluster.facts
+  vars:
+    gluster_server_groupset: replica_delete
+
 - name: Get existing gluster geo replication volumes
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
+  vars:
+    gluster_server_groupset: replica_delete
 
 - name: Delete geo replication session tasks
   hosts: "{{ _gluster_server_hostgroup_name }}"
@@ -42,13 +49,16 @@
         _gluster_user: "{{ _gluster_georeplica_user.name }}"
         _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
         _gluster_georeplica_volumes: "{{ _georeplica_volumes }}"
+        _gluster_georeplica_orphan_volumes: "{{ _orphan_volumes }}"
       vars:
         _attrs:
           - name
           - replica_name
         _sessions: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
         _replica_query: "{{ _gluster_georeplica_manage and (_sessions | length > 0) }}"
-        _existing_replicas: "{{ _sessions | map(attribute='name') | unique }}"
+        _existing_names: "{{ _sessions | map(attribute='name') | unique }}"
+        _replicas: "{{ _sessions | map(attribute='replica_name') | unique }}"
+        _existing_replicas: "{{ _replicas | map('regex_replace', '.*@', '') }}"
         _replica_volumes: "{{ _sessions | sort(attribute='name') }}"
         _replica_nodes: "{{ _replica_volumes | map(attribute='replica_name') }}"
         _replica_regex: "{{ _replica_nodes | map('regex_replace', '.*@', '') }}"
@@ -56,18 +66,29 @@
         _replica_combine: "{{ _replica_volumes | zip(_replica_dict) | map('combine') }}"
         _replica_attrs: "{{ _replica_combine | map(_select_attrs, _attrs) | unique }}"
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
+        _target_volume_names: "{{ _target_volumes | map(attribute='name') }}"
+        _target_replicas: "{{ _target_volumes | map(attribute='replica_name') }}"
         _volumes_list: "{{ _replica_attrs | zip(_target_volumes) | map('combine') }}"
-        _volumes: "{{ _volumes_list | selectattr('name', 'in', _existing_replicas) }}"
-        _delete_volumes: "{{ _volumes | selectattr('state', 'equalto', 'absent') }}"
+        _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_names) }}"
+        _replicas_list: "{{ _volumes | selectattr('replica_name', 'in', _existing_replicas) }}"
+        _orphan_replicas: "{{ _sessions | rejectattr('replica_name', 'in', _target_replicas) }}"
+        _orphan_volumes: "{{ _orphan_replicas | rejectattr('name', 'in', _target_volume_names) }}"
+        _delete_volumes: "{{ _replicas_list | selectattr('state', 'equalto', 'absent') }}"
         _georeplica_volumes: "{{ _replica_attrs if _replica_query else _delete_volumes }}"
 
     - name: Debug gluster geo replication volumes to delete a session
       ansible.builtin.debug:
         msg: "{{ _gluster_georeplica_volumes }}"
 
+    - name: Debug gluster geo replication orphan volumes
+      ansible.builtin.debug:
+        msg: "{{ _gluster_georeplica_orphan_volumes }}"
+
     - name: End play when there are no geo replications to delete
       ansible.builtin.meta: end_host
-      when: _gluster_georeplica_volumes | length == 0
+      when: |
+        _gluster_georeplica_volumes | length == 0 or
+        _gluster_georeplica_orphan_volumes | length == 0
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
@@ -86,7 +107,7 @@
         _replica: "{{ item.replica_name }}"
       loop_control:
         label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-      loop: "{{ _gluster_georeplica_volumes }}"
+      loop: "{{ _gluster_georeplica_volumes + _gluster_georeplica_orphan_volumes }}"
       register: _georeplica_stop
       changed_when: false
       tags: skip_ansible_lint
@@ -108,7 +129,7 @@
         _replica: "{{ item.replica_name }}"
       loop_control:
         label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
-      loop: "{{ _gluster_georeplica_volumes }}"
+      loop: "{{ _gluster_georeplica_volumes + _gluster_georeplica_orphan_volumes }}"
       register: _georeplica_delete
       changed_when: false
       tags: skip_ansible_lint
@@ -126,13 +147,15 @@
       vars:
         _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
+        _orphan_volumes: "{{ _gluster_georeplica_orphan_volumes | map(attribute='name') }}"
         _status: "{{ _results | selectattr('name', 'in', _volumes) }}"
+        _orphan_status: "{{ _results | selectattr('name', 'in', _orphan_volumes) }}"
       args:
         chdir: "/usr/sbin/"
       register: _georeplica_status
       retries: "{{ _gluster_retries }}"
       delay: "{{ _gluster_delay }}"
-      until: _status | length == 0
+      until: (_status | length == 0) and (_orphan_status | length == 0)
       changed_when: false
       tags: skip_ansible_lint
 
@@ -148,9 +171,13 @@
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: _status | length == 0
+        that:
+          - _status | length == 0
+          - _orphan_status | length == 0
       vars:
         _sessions: "{{ _gluster_georeplica_sessions }}"
         _volumes: "{{ _gluster_georeplica_volumes }}"
+        _orphan_volumes: "{{ _gluster_georeplica_orphan_volumes }}"
         _volume_names: "{{ _volumes | map(attribute='name') }}"
         _status: "{{ _sessions | selectattr('name', 'in', _volume_names) }}"
+        _orphan_status: "{{ _sessions | selectattr('name', 'in', _orphan_volumes) }}"

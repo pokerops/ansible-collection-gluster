@@ -1,4 +1,37 @@
 ---
+- name: Group gluster server georeplication slaves
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_{{ gluster_server_groupset | default('cluster') }}_slave_all"
+  gather_facts: false
+  vars:
+    _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
+    _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
+    _gluster_name: "{{ _gluster_server_prefix }}_{{ _gluster_server_groupset }}"
+  vars_files:
+    - ../../vars/main.yml
+  tasks:
+    - name: End play when gluster georeplication is not required
+      ansible.builtin.meta: end_play
+      vars:
+        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
+      when: _replicas | length == 0
+
+    - name: End play for unrequired gluster geo replication nodes
+      ansible.builtin.meta: end_host
+      when: (not inventory_hostname == (gluster_target_members | first))
+
+    - name: Group gluster server slave target members
+      ansible.builtin.group_by:
+        key: "{{ _gluster_name }}_slave_targets"
+      changed_when: false
+
+    - name: Set gluster slave target fact
+      ansible.builtin.set_fact:
+        _gluster_server_slave_targets: "{{ groups[_targets] }}"
+      vars:
+        _targets: "{{ _gluster_name }}_slave_targets"
+      delegate_to: localhost
+      delegate_facts: true
+
 - name: Get geo replication volume facts
   hosts: "{{ _gluster_server_hostgroup_name }}"
   gather_facts: false
@@ -15,10 +48,17 @@
       ansible.builtin.set_fact:
         _gluster_target_volumes: "{{ _volumes_overwritten | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
-        _replica_member: "{{ _gluster_server_slaves | sort | first }}"
+        _join:
+          - name
+          - slave
+        _slaves: "{{ hostvars['localhost']['_gluster_server_slave_targets'] }}"
+        _slaves_format: "{{ _slaves | map(_map_format, '%s::') }}"
+        _slaves_list: "{{ _slaves_format | map(_to_dict, 'slave') }}"
+        _volumes_num: "{{ _volumes | length }}"
+        _slaves_default: "{{ _slaves_list * (_volumes_num | int) }}"
         _volumes: "{{ _gluster_volumes | sort(attribute='name') }}"
-        _volume_names: "{{ _volumes | map(attribute='name') }}"
-        _volume_format: "{{ _volume_names | map(_map_format, _replica_member + '::%s') }}"
-        _volume_dict: "{{ _volume_format | map(_to_dict, 'replica_name') }}"
-        _volumes_overwritten: "{{ _volumes | zip(_volume_dict) | map('combine') }}"
+        _volumes_list: "{{ _volumes | zip(_slaves_default) | map('combine') }}"
+        _volumes_join: "{{ _volumes_list | map(_map_join, _join, '%s::') }}"
+        _volume_dict: "{{ _volumes_join | map(_to_dict, 'replica_name') }}"
+        _volumes_overwritten: "{{ _volumes_list | zip(_volume_dict) | map('combine') }}"
         _meta_volume: "{{ gluster_meta_volume.name }}"

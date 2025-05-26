@@ -121,16 +121,7 @@
 
     - name: Set gluster replica volumes
       ansible.builtin.set_fact:
-        _gluster_target_volumes: "{{ _volumes_list }}"
         _gluster_georeplica_volumes: "{{ _gluster_georeplica_volumes }}"
-      vars:
-        _replica_member: "{{ _gluster_server_slaves | sort | first }}"
-        _volumes: "{{ _gluster_georeplica_volumes | sort(attribute='name') }}"
-        _volumes_present: "{{ _volumes | selectattr('state', 'equalto', 'present') }}"
-        _volume_names: "{{ _volumes_present | map(attribute='name') }}"
-        _volume_format: "{{ _volume_names | map(_map_format, _replica_member + '::%s') }}"
-        _volume_dict: "{{ _volume_format | map(_to_dict, 'replica_name') }}"
-        _volumes_list: "{{ _volumes | zip(_volume_dict) | map('combine') }}"
       delegate_facts: true
       delegate_to: localhost
 
@@ -143,6 +134,11 @@
   when:
     - _gluster_georeplica_manage
     - _gluster_georeplica_volumes | length > 0
+
+- name: Get existing gluster geo replication volumes
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
+  vars:
+    gluster_server_groupset: replica_create
 
 - name: Create geo replication session tasks
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_master_all"
@@ -227,12 +223,14 @@
       ansible.builtin.set_fact:
         _gluster_user: "{{ _gluster_georeplica_user.name }}"
         _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
-        _gluster_sessions_create: "{{ _target_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
+        _gluster_sessions_create: "{{ _target_replicas | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
         _sessions: "{{ _gluster_georeplica_sessions }}"
-        _existing_replicas: "{{ _sessions | map(attribute='name') | unique }}"
-        _volumes: "{{ hostvars['localhost']['_gluster_target_volumes'] | sort(attribute='name') }}"
-        _target_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_replicas) }}"
+        _replicas: "{{ _sessions | map(attribute='replica') | unique }}"
+        _existing_replicas: "{{ _replicas | map('regex_replace', '.*@', '') }}"
+        _existing_volumes: "{{ _sessions | map(attribute='name') | unique }}"
+        _target_volumes: "{{ _gluster_target_volumes | rejectattr('name', 'in', _existing_volumes) }}"
+        _target_replicas: "{{ _target_volumes | rejectattr('replica_name', 'in', _existing_replicas) }}"
         _meta_volume: "{{ gluster_meta_volume.name }}"
 
     - name: Debug gluster geo replication volumes to create a session

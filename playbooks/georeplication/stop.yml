@@ -6,6 +6,8 @@
 
 - name: Get existing gluster geo replication volumes
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
+  vars:
+    gluster_server_groupset: replica_stop
 
 - name: Stop geo replication session tasks
   hosts: "{{ _gluster_server_hostgroup_name }}"
