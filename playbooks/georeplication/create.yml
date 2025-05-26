@@ -320,7 +320,7 @@
         _status: "{{ _georeplica_meta.results | default([]) }}"
 
     - name: Manage gluster geo replication common key tasks
-      delegate_to: "{{ _gluster_server_slaves | first }}"
+      delegate_to: "{{ _gluster_server_slave_targets }}"
       block:
         - name: Wait for gluster common key replication
           ansible.builtin.stat:
