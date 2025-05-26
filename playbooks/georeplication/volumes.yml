@@ -62,5 +62,5 @@
         _meta_volume: "{{ gluster_meta_volume.name }}"
         _replica_name: "{{ _slave | map(_map_format, '%s::' + _volume.name) }}"
       loop_control:
-        target: "Volume: {{ _volume.name }} - Replica: {{ _replica_name }}"
+        label: "Volume: {{ _volume.name }} - Replica: {{ _replica_name }}"
       loop: "{{ _gluster_volumes_filter | product(_gluster_server_slave_targets) }}"
