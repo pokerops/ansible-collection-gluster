@@ -231,20 +231,31 @@
   ansible.builtin.import_playbook: pokerops.gluster.install
 
 - name: Test gluster failover to a different site
-  hosts: "gluster_server"
+  hosts: "gluster_server:gluster_client"
   gather_facts: false
   tasks:
-    - name: Set gluster primary facts
+    - name: Set gluster slave facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: true
       when: |
         inventory_hostname in groups['gluster_server_primary'] or
+        inventory_hostname in groups['gluster_client_primary'] or
+        inventory_hostname in groups['gluster_client_tertiary'] or
         inventory_hostname in groups['gluster_server_tertiary']
 
-    - name: Set gluster replica facts
+    - name: Set gluster master facts
       ansible.builtin.set_fact:
         gluster_georeplica_manage: false
-      when: inventory_hostname in groups['gluster_server_secondary']
+      when: |
+        inventory_hostname in groups['gluster_client_secondary'] or
+        inventory_hostname in groups['gluster_server_secondary']
+
+    - name: Set gluster slave groupset facts
+      ansible.builtin.set_fact:
+        gluster_server_slave_groupset: primary
+      when: |
+        inventory_hostname in groups['gluster_server_primary'] or
+        inventory_hostname in groups['gluster_client_primary'] or
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install

@@ -142,8 +142,10 @@ provisioner:
         gluster_georeplica_manage: true
       gluster_client_secondary:
         gluster_server_slave_groupset: secondary
+        gluster_georeplica_manage: true
       gluster_client_tertiary:
         gluster_server_slave_groupset: tertiary
+        gluster_georeplica_manage: true
 verifier:
   name: ansible
 scenario:
