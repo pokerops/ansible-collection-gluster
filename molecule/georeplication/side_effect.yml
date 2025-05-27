@@ -58,9 +58,10 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == _slaves | length
+            that: _query_volumes | length == _replicas_num | length
           vars:
             _slaves: "{{ groups['gluster_slaves_delete'] }}"
+            _replicas_num: "{{ (_slaves | length | int) * (_volume_names | length | int) }}"
             _existing: "{{ _gluster_georeplica_volumes }}"
             _volumes: "{{ gluster_volumes }}"
             _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
@@ -126,9 +127,10 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == _slaves | length
+            that: _query_volumes | length == _replicas_num | length
           vars:
             _slaves: "{{ groups['gluster_slaves_start'] }}"
+            _replicas_num: "{{ (_slaves | length | int) * (_volume_names | length | int) }}"
             _statuses:
               - "Active"
               - "Passive"
@@ -300,9 +302,10 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == _slaves | length
+            that: _query_volumes | length == _replicas_num | length
           vars:
             _slaves: "{{ groups['gluster_slaves_failover'] }}"
+            _replicas_num: "{{ (_slaves | length | int) * (_volume_names | length | int) }}"
             _statuses:
               - "Active"
               - "Passive"
@@ -371,9 +374,10 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == _slaves | length
+            that: _query_volumes | length == _replicas_num | length
           vars:
             _slaves: "{{ groups['gluster_slaves_scaledown_test'] }}"
+            _replicas_num: "{{ (_slaves | length | int) * (_volume_names | length | int) }}"
             _statuses:
               - "Active"
               - "Passive"
