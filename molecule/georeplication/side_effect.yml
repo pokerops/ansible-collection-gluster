@@ -121,7 +121,7 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: (_query_volumes | length | int) == (_replicas_num | length | int)
+            that: (_query_volumes | length | int) == (_replicas_num | int)
           vars:
             _slaves: "{{ groups['gluster_slaves_start'] }}"
             _replicas_num: "{{ (_slaves | length) * (_volume_names | length) }}"
@@ -290,7 +290,7 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: (_query_volumes | length | int) == (_replicas_num | length | int)
+            that: (_query_volumes | length | int) == (_replicas_num | int)
           vars:
             _slaves: "{{ groups['gluster_slaves_failover'] }}"
             _replicas_num: "{{ (_slaves | length) * (_volume_names | length) }}"
@@ -359,7 +359,7 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: (_query_volumes | length | int) == (_replicas_num | length | int)
+            that: (_query_volumes | length | int) == (_replicas_num | int)
           vars:
             _slaves: "{{ groups['gluster_slaves_scaledown_test'] }}"
             _replicas_num: "{{ (_slaves | length) * (_volume_names | length) }}"

@@ -256,7 +256,7 @@
         _results: "{{ _georeplica_status.result | default([]) | flatten }}"
         _volumes: "{{ _gluster_sessions_create | map(attribute='name') }}"
         _query_volumes: "{{ _results | selectattr('secondary_volume', 'in', _volumes) }}"
-        _status: "{{ _query_volumes | rejectattr('status', 'in', gluster_georeplica_volumes_status) }}"
+        _status: "{{ _query_volumes | rejectattr('status', 'equalto', 'Created') }}"
       register: _georeplica_status
       retries: "{{ _gluster_retries }}"
       delay: "{{ _gluster_delay }}"
