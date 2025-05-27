@@ -12,7 +12,14 @@ def run_module():
 
     module = AnsibleModule(argument_spec=module_args)
 
-    georep_status = status()
+    primary_volume secondary_volume = module_args["volume"]
+
+    secondary_host = module_args["slave"]
+
+    secondary_user = module_args["user"]
+
+    georep_status = status(primary_volume=primary_volume, secondary_volume=secondary_volume, 
+                           secondary_host=secondary_host, secondary_user=secondary_user)
 
     result = {
         "status": georep_status
