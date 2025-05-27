@@ -6,6 +6,6 @@ from glustercli.cli.georep import status
 display = Display()
 
 class LookupModule(LookupBase):
-    def run(self, terms, variables=None, **kwargs):
+    def run(self, terms, variables=None, user=None):
 
         return ([status(secondary_user=user)])
