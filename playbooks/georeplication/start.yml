@@ -44,7 +44,11 @@
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _volume_names) }}"
         _replica_targets: "{{ _volumes | selectattr('replica_name', 'in', _replica_regex) }}"
-        _start_volumes: "{{ _replica_targets | selectattr('state', 'equalto', 'present') }}"
+        _target_volume_names: "{{ _replica_targets | map(attribute='replica_name') }}"
+        _volumes_regex: "{{ _target_volume_names | map('regex_replace', '::.*', '') }}"
+        _target_volumes_dict: "{{ _volumes_regex | map(_to_dict, 'replica_name') }}"
+        _target_volumes_overwritten: "{{ _replica_targets | zip(_target_volumes_dict) | map('combine') }}"
+        _start_volumes: "{{ _target_volumes_overwritten | selectattr('state', 'equalto', 'present') }}"
 
     - name: Debug gluster geo replication status
       ansible.builtin.debug:
@@ -64,25 +68,24 @@
       vars:
         _sessions: "{{ _gluster_georeplica_sessions }}"
 
-    - name: Start geo replication session
-      ansible.builtin.shell: |
-        gluster volume geo-replication {{ _primary }} \
-        {{ _gluster_user }}@{{ _replica }} start
-      args:
-        chdir: "/usr/sbin/"
+    - name: Start gluster geo replication sessions
+      pokerops.gluster.georeplication.start:
+        volume: "{{ _volume }}"
+        slave: "{{ _replica }}"
+        user: "{{ _gluster_user }}"
+        force: True
       vars:
-        _primary: "{{ item.name }}"
+        _volume: "{{ item.name }}"
         _replica: "{{ item.replica_name }}"
       loop_control:
-        label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+        label: "Primary: {{ _volume }} - Replica: {{ _replica }}"
       loop: "{{ _gluster_georeplica_volumes }}"
       register: _georeplica_start
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: _status | rejectattr('stdout', 'match', '.*has been successful.*') | length == 0
+        that: _status | rejectattr('result', 'match', '.*has been successful.*') | length == 0
       vars:
         _status: "{{ _georeplica_start.results | default([]) }}"
 
