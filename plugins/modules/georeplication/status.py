@@ -12,10 +12,10 @@ def run_module():
 
     module = AnsibleModule(argument_spec=module_args)
 
-    status = status()
+    georep_status = status()
 
     result = {
-        "status": status
+        "status": georep_status
     }
 
     module.exit_json(changed=False, meta=result)
