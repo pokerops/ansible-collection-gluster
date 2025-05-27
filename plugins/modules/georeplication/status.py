@@ -23,7 +23,7 @@ def run_module():
     georep_status = status(primary_volume, secondary_host, secondary_volume, secondary_user)
 
     result = {
-        "status": ",".join(georep_status)
+        "status": georep_status
     }
 
     module.exit_json(changed=False, meta=result)
