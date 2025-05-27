@@ -38,7 +38,7 @@
       vars:
         _output: "{{ _georeplica_status.result | default([]) | flatten }}"
         _replicas: "{{ _output | rejectattr('status', 'in', gluster_georeplica_volumes_status) }}"
-        _volume_names: "{{ _replicas | map(attribute='secondary_volumes') | unique }}"
+        _volume_names: "{{ _replicas | map(attribute='secondary_volume') | unique }}"
         _replica_names: "{{ _replicas | map(attribute='secondary') | unique }}"
         _replica_regex: "{{ _replica_names | map('regex_replace', '.*@', '') }}"
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
