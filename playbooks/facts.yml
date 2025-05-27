@@ -12,12 +12,6 @@
     - ../vars/main.yml
   any_errors_fatal: true
   tasks:
-    - debug:
-        msg: "{{ lookup('pokerops.gluster.georeplication.status', _params) }}"
-      vars:
-        _params:
-          user: "georeplica"
-
     - name: End play when facts are not required
       ansible.builtin.meta: end_host
       when: not gluster_facts_manage | default('true') | bool
