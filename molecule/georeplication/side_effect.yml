@@ -138,7 +138,7 @@
             _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
             _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
             _volume_names: "{{ _start_volumes | map(attribute='name') }}"
-            _query_volumes: "{{ _start_existing | selectattr('secondary_volumes', 'in', _volume_names) }}"
+            _query_volumes: "{{ _start_existing | selectattr('secondary_volume', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to absent
   hosts: "gluster_server:gluster_client"
@@ -193,8 +193,8 @@
         _volumes: "{{ gluster_volumes }}"
         _delete_volumes: "{{ _volumes | selectattr('state', 'equalto', 'absent') }}"
         _volume_names: "{{ _delete_volumes | map(attribute='name') }}"
-        _delete_names: "{{ _existing | selectattr('secondary_volumes', 'defined') }}"
-        _delete_existing: "{{ _delete_names | rejectattr('secondary_volumes', 'in', _volume_names) }}"
+        _delete_names: "{{ _existing | selectattr('secondary_volume', 'defined') }}"
+        _delete_existing: "{{ _delete_names | rejectattr('secondary_volume', 'in', _volume_names) }}"
 
 - name: Override gluster volumes facts
   hosts: "gluster_server:gluster_client"
