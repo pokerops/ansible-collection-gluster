@@ -9,7 +9,7 @@ def run_module():
         argument_spec=module_args
     )
 
-    version = glusterfs_version().split(' ')[0]
+    version = glusterfs_version().split(' ')[1]
 
     result = {
         "version": version
