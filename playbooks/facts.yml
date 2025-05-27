@@ -21,7 +21,7 @@
       when: not _gluster_georeplica_manage
 
     - debug:
-        msg: "{{ _georeplica_status.meta }}"
+        msg: "{{ _georeplica_status.result }}"
 
     - fail:
 
