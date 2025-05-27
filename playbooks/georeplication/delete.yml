@@ -42,8 +42,8 @@
     - name: Set georeplication session status
       ansible.builtin.set_fact:
         _gluster_georeplica_sessions: "{{ _sessions }}"
-        _gluster_georeplica_volumes: "{{ _delete_volumes_overwritten }}"
-        _gluster_georeplica_orphan_volumes: "{{ _orphan_replicas_overwritten }}"
+        _gluster_georeplica_volumes: "{{ _delete_volumes }}"
+        _gluster_georeplica_orphan_volumes: "{{ _orphan_attrs }}"
       vars:
         _attrs:
           - replica_name
@@ -66,15 +66,7 @@
         _orphan_servers: "{{ _replica_overwritten | rejectattr('primary_node', 'in', _gluster_server_masters) }}"
         _orphan_replicas: "{{ _orphan_servers | selectattr('replica_name', 'in', _target_replicas) }}"
         _orphan_attrs: "{{ _orphan_replicas | map(_select_attrs, _attrs) | unique }}"
-        _orphan_replica_names: "{{ _orphan_attrs | map(attribute='replica_name') }}"
-        _orphan_replica_regex: "{{ _orphan_replica_names | map('regex_replace', '::.*', '') }}"
-        _orphan_replicas_dict: "{{ _orphan_replica_regex | map(_to_dict, 'replica_name') }}"
-        _orphan_replicas_overwritten: "{{ _orphan_attrs | zip(_orphan_replicas_dict) | map('combine') }}"
         _delete_volumes: "{{ _replicas_list | selectattr('state', 'equalto', 'absent') }}"
-        _delete_volume_names: "{{ _delete_volumes | map(attribute='replica_name') }}"
-        _delete_volume_regex: "{{ _delete_volume_names | map('regex_replace', '::.*', '') }}"
-        _delete_volumes_dict: "{{ _delete_volume_regex | map(_to_dict, 'replica_name') }}"
-        _delete_volumes_overwritten: "{{ _delete_volumes | zip(_delete_volumes_dict) | map('combine') }}"
 
     - name: Debug gluster geo replication volumes to delete a session
       ansible.builtin.debug:

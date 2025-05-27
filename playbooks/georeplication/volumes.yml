@@ -61,7 +61,7 @@
       vars:
         _volume: "{{ item.0 }}"
         _volume_name: "{{ _volume.name }}"
-        _slave: "{{ item.1 }}::{{ _volume_name }}"
+        _slave: "{{ item.1 }}"
       loop_control:
         label: "Volume: {{ _volume_name }} - Replica: {{ _slave }}"
       loop: "{{ _gluster_volumes_filter | product(_gluster_server_slave_targets) }}"

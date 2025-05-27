@@ -46,11 +46,7 @@
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _volume_names) }}"
         _replica_targets: "{{ _volumes | selectattr('replica_name', 'in', _replica_regex) }}"
-        _target_volume_names: "{{ _replica_targets | map(attribute='replica_name') }}"
-        _volumes_regex: "{{ _target_volume_names | map('regex_replace', '::.*', '') }}"
-        _target_volumes_dict: "{{ _volumes_regex | map(_to_dict, 'replica_name') }}"
-        _target_volumes_overwritten: "{{ _replica_targets | zip(_target_volumes_dict) | map('combine') }}"
-        _stop_volumes: "{{ _target_volumes_overwritten | selectattr('state', 'equalto', 'stopped') }}"
+        _stop_volumes: "{{ _replica_targets | selectattr('state', 'equalto', 'stopped') }}"
 
     - name: Debug current gluster geo replication status
       ansible.builtin.debug:

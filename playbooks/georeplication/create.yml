@@ -227,25 +227,24 @@
       when: _gluster_sessions_create | length == 0
 
     - name: Create geo replication session
-      ansible.builtin.shell: |
-        gluster volume geo-replication {{ _primary }} \
-        {{ _gluster_user }}@{{ _replica }} \
-        create push-pem force
-      args:
-        chdir: "/usr/sbin/"
+      pokerops.gluster.georeplication.create:
+        volume: "{{ _volume }}"
+        slave: "{{ _replica }}"
+        user: "{{ _gluster_user }}"
+        push_pem: "{{ item.push_pem | default('true') | bool }}"
+        force: "{{ item.force | default('true') | bool }}"
       vars:
-        _primary: "{{ item.name }}"
+        _volume: "{{ item.name }}"
         _replica: "{{ item.replica_name }}"
       loop_control:
-        label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+        label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
       loop: "{{ _gluster_sessions_create }}"
       register: _georeplica_create
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: _status | rejectattr('stdout', 'match', '.*has been successful.*') | length == 0
+        that: _status | rejectattr('result', 'match', '.*has been successful.*') | length == 0
       vars:
         _status: "{{ _georeplica_create.results | default([]) }}"
 
