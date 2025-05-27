@@ -12,6 +12,18 @@
     - ../vars/main.yml
   any_errors_fatal: true
   tasks:
+    - name: Get gluster geo replication status
+      pokerops.gluster.georeplication.status:
+        user: "{{ _gluster_user }}"
+      vars:
+        _gluster_user: "{{ _gluster_georeplica_user.name }}"
+      register: _georeplica_status
+
+    - debug:
+        msg: "{{ _georeplica_status }}"
+
+    - fail:
+
     - name: End play when facts are not required
       ansible.builtin.meta: end_host
       when: not gluster_facts_manage | default('true') | bool
@@ -70,8 +82,6 @@
           vars:
             _output: "{{ _gluster_version.results | default([]) }}"
             _versions: "{{ _output | map(attribute='meta.version') | unique }}"
-
-        - fail:
 
     - name: Group gluster server geo replication members
       ansible.builtin.group_by:
