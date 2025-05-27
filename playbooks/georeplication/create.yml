@@ -211,9 +211,9 @@
         _gluster_sessions_create: "{{ _target_replicas | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
         _sessions: "{{ _gluster_georeplica_sessions }}"
-        _replicas: "{{ _sessions | map(attribute='replica') | unique }}"
+        _replicas: "{{ _sessions | map(attribute='secondary') | unique }}"
         _existing_replicas: "{{ _replicas | map('regex_replace', '.*@', '') }}"
-        _existing_volumes: "{{ _sessions | map(attribute='name') | unique }}"
+        _existing_volumes: "{{ _sessions | map(attribute='secondary_volume') | unique }}"
         _target_volumes: "{{ _gluster_target_volumes | rejectattr('name', 'in', _existing_volumes) }}"
         _target_replicas: "{{ _target_volumes | rejectattr('replica_name', 'in', _existing_replicas) }}"
         _meta_volume: "{{ gluster_meta_volume.name }}"
