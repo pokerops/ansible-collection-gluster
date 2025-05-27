@@ -38,7 +38,7 @@
         _gluster_georeplica_sessions: "{{ _output }}"
         _gluster_georeplica_volumes: "{{ _stop_volumes }}"
       vars:
-        _output: "{{ _georeplica_status.result | default([]) }}"
+        _output: "{{ _georeplica_status.result | default([]) | flatten }}"
         _replicas: "{{ _output | rejectattr('status', 'equalto', 'Stopped') }}"
         _volume_names: "{{ _replicas | map(attribute='secondary_volume') | unique }}"
         _replica_names: "{{ _replicas | map(attribute='secondary') | unique }}"
@@ -92,7 +92,7 @@
       pokerops.gluster.georeplication.status:
         user: "{{ _gluster_user }}"
       vars:
-        _results: "{{ _georeplica_status.result | default([]) }}"
+        _results: "{{ _georeplica_status.result | default([]) | flatten }}"
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
         _query_volumes: "{{ _results | selectattr('secondary_volume', 'in', _volumes) }}"
         _status: "{{ _query_volumes | rejectattr('status', 'equalto', 'Stopped') }}"
@@ -104,7 +104,7 @@
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
-        _gluster_georeplica_sessions: "{{ _georeplica_status.result | default([]) }}"
+        _gluster_georeplica_sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
 
     - name: Debug gluster geo replication status
       ansible.builtin.debug:

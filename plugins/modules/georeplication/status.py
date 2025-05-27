@@ -21,16 +21,10 @@ def run_module():
     secondary_user = module.params["user"]
 
     try:
-        georep = status(primary_volume, secondary_host, secondary_volume, secondary_user)
+        georep_status = status(primary_volume, secondary_host, secondary_volume, secondary_user)
 
     except:
 
-        georep = []
-
-    if len(georep) > 0:
-        georep_status = georep[0]
-
-    else:
         georep_status = []
 
     module.exit_json(changed=False, result=georep_status)

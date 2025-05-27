@@ -37,7 +37,7 @@
       ansible.builtin.debug:
         msg: "{{ _sessions }}"
       vars:
-        _sessions: "{{ _georeplica_status.result | default([]) }}"
+        _sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
@@ -48,7 +48,7 @@
         _attrs:
           - secondary_volume
           - replica_name
-        _sessions: "{{ _georeplica_status.result | default([]) }}"
+        _sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
         _replica_volumes: "{{ _sessions | sort(attribute='secondary_volume') }}"
         _existing_names: "{{ _replica_volumes | map(attribute='secondary_volume') | unique }}"
         _replicas: "{{ _replica_volumes | map(attribute='secondary') | unique }}"
@@ -133,7 +133,7 @@
       pokerops.gluster.georeplication.status:
         user: "{{ _gluster_user }}"
       vars:
-        _results: "{{ _georeplica_status.result | default([]) }}"
+        _results: "{{ _georeplica_status.result | default([]) | flatten }}"
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
         _orphan_replicas: "{{ _gluster_georeplica_orphan_volumes | map(attribute='replica_name') }}"
         _status: "{{ _results | selectattr('secondary_volume', 'in', _volumes) }}"
@@ -146,7 +146,7 @@
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
-        _gluster_georeplica_sessions: "{{ _georeplica_status.result | default([]) }}"
+        _gluster_georeplica_sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
 
     - name: Debug gluster geo replication status
       ansible.builtin.debug:
