@@ -17,7 +17,7 @@
       register: _gluster_version_output
 
     - debug:
-        msg: "{{ _gluster_version_output }}"
+        msg: "{{ _gluster_version_output.meta.version }}"
 
     - fail:
 

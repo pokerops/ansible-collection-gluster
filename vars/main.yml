@@ -1,5 +1,8 @@
 ---
 # Defaults
+gluster_server_packages:
+  - "{{ gluster_server_package_name }}"
+  - python3-pip
 gluster_server_package_name: "glusterfs-server"
 gluster_client_package_name: "glusterfs-client"
 gluster_service_name: "glusterd.service"
