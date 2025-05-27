@@ -28,20 +28,16 @@
       when: (not inventory_hostname == (gluster_target_members | first))
 
     - name: Get gluster geo replication status
-      ansible.builtin.shell: |
-        gluster volume geo-replication status | awk \
-        'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica_name\": \"" $5 "\", \"status\": \"" $6"\"}"}'
-      args:
-        chdir: "/usr/sbin/"
+      pokerops.gluster.georeplication.status:
+        user: "{{ _gluster_user }}"
       register: _georeplica_status
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: Debug gluster geo replication status
       ansible.builtin.debug:
         msg: "{{ _sessions }}"
       vars:
-        _sessions: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+        _sessions: "{{ _georeplica_status.result | default([]) }}"
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
@@ -49,30 +45,26 @@
         _gluster_user: "{{ _gluster_georeplica_user.name }}"
         _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
         _gluster_georeplica_volumes: "{{ _delete_volumes }}"
-        _gluster_georeplica_orphan_volumes: "{{ _orphan_attrs | unique }}"
+        _gluster_georeplica_orphan_volumes: "{{ _orphan_attrs }}"
       vars:
         _attrs:
-          - name
+          - secondary_volume
           - replica_name
-          - server
-        _sessions: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
-        _existing_names: "{{ _sessions | map(attribute='name') | unique }}"
-        _replicas: "{{ _sessions | map(attribute='replica_name') | unique }}"
+        _sessions: "{{ _georeplica_status.result | default([]) }}"
+        _replica_volumes: "{{ _sessions | sort(attribute='secondary_volume') }}"
+        _existing_names: "{{ _replica_volumes | map(attribute='secondary_volume') | unique }}"
+        _replicas: "{{ _replica_volumes | map(attribute='secondary') | unique }}"
         _existing_replicas: "{{ _replicas | map('regex_replace', '.*@', '') }}"
-        _replica_volumes: "{{ _sessions | sort(attribute='name') }}"
-        _replica_nodes: "{{ _replica_volumes | map(attribute='replica_name') }}"
-        _replica_regex: "{{ _replica_nodes | map('regex_replace', '.*@', '') }}"
-        _replica_dict: "{{ _replica_regex | map(_to_dict, 'replica_name') }}"
-        _replica_combine: "{{ _replica_volumes | zip(_replica_dict) | map('combine') }}"
-        _replica_attrs: "{{ _replica_combine | map(_select_attrs, _attrs) | unique }}"
+        _replica_dict: "{{ _existing_replicas | map(_to_dict, 'replica_name') }}"
+        _replica_combine: "{{ _replica_volumes | zip(_replica_dict) | map('combine') | unique }}"
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
         _target_volume_names: "{{ _target_volumes | map(attribute='name') }}"
         _target_replicas: "{{ _target_volumes | map(attribute='replica_name') }}"
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_names) }}"
         _replicas_list: "{{ _volumes | selectattr('replica_name', 'in', _existing_replicas) }}"
-        _orphan_servers: "{{ _replica_attrs | rejectattr('server', 'in', _gluster_server_masters) }}"
+        _orphan_servers: "{{ _replica_combine | rejectattr('primary_node', 'in', _gluster_server_masters) }}"
         _orphan_replicas: "{{ _orphan_servers | selectattr('replica_name', 'in', _target_replicas) }}"
-        _orphan_attrs: "{{ _orphan_replicas | map(_select_attrs, ['name', 'replica_name']) }}"
+        _orphan_attrs: "{{ _orphan_replicas | map(_select_attrs, _attrs) | unique }}"
         _delete_volumes: "{{ _replicas_list | selectattr('state', 'equalto', 'absent') }}"
 
     - name: Debug gluster geo replication volumes to delete a session
@@ -140,29 +132,23 @@
         _status: "{{ _georeplica_delete.results | default([]) }}"
 
     - name: Get gluster geo replication status
-      ansible.builtin.shell: |
-        gluster volume geo-replication status | awk \
-        'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica_name\": \"" $5 "\", \"status\": \"" $7"\"}"}'
+      pokerops.gluster.georeplication.status:
+        user: "{{ _gluster_user }}"
       vars:
-        _results: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+        _results: "{{ _georeplica_status.result | default([]) }}"
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
         _orphan_replicas: "{{ _gluster_georeplica_orphan_volumes | map(attribute='replica_name') }}"
-        _status: "{{ _results | selectattr('name', 'in', _volumes) }}"
+        _status: "{{ _results | selectattr('secondary_volume', 'in', _volumes) }}"
         _orphan_status: "{{ _results | selectattr('replica_name', 'in', _orphan_replicas) }}"
-      args:
-        chdir: "/usr/sbin/"
       register: _georeplica_status
       retries: "{{ _gluster_retries }}"
       delay: "{{ _gluster_delay }}"
       until: (_status | length == 0) and (_orphan_status | length == 0)
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
-        _gluster_georeplica_sessions: "{{ _output | map('from_json') }}"
-      vars:
-        _output: "{{ _georeplica_status.stdout_lines | default([]) }}"
+        _gluster_georeplica_sessions: "{{ _georeplica_status.result | default([]) }}"
 
     - name: Debug gluster geo replication status
       ansible.builtin.debug:
@@ -178,5 +164,6 @@
         _volumes: "{{ _gluster_georeplica_volumes }}"
         _orphan_volumes: "{{ _gluster_georeplica_orphan_volumes }}"
         _volume_names: "{{ _volumes | map(attribute='name') }}"
-        _status: "{{ _sessions | selectattr('name', 'in', _volume_names) }}"
-        _orphan_status: "{{ _sessions | selectattr('name', 'in', _orphan_volumes) }}"
+        _status: "{{ _sessions | selectattr('secondary_volume', 'in', _volume_names) }}"
+        _orphan_names: "{{ _orphan_volumes | selectattr('secondary_volume', 'defined') }}"
+        _orphan_status: "{{ _orphan_names | selectattr('secondary_volume', 'in', _volume_names) }}"
