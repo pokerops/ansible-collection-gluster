@@ -18,6 +18,7 @@
       vars:
         _gluster_user: "{{ _gluster_georeplica_user.name }}"
       register: _georeplica_status
+      when: not _gluster_georeplica_manage
 
     - debug:
         msg: "{{ _georeplica_status }}"
