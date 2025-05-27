@@ -1,6 +1,6 @@
 from ansible.module_utils.common.validation import safe_eval
 from ansible.module_utils.basic import AnsibleModule
-from glustercli.cli.georep import delete
+from glustercli.cli.utils import georep_execute
 
 def run_module():
 
@@ -23,8 +23,15 @@ def run_module():
 
     reset_sync_time = module.params["reset_sync_time"]
 
+    cmd = [primary_volume,
+           f"{secondary_user}@{secondary_host}::{secondary_volume}",
+           "delete"]
+
+    if reset_sync_time is not None:
+        cmd += ["reset-sync-time"]
+
     try:
-        georep_delete = delete(primary_volume, secondary_host, secondary_volume, secondary_user, reset_sync_time)
+        georep_delete = georep_execute(cmd)
 
     except:
 
