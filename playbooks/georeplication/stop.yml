@@ -75,7 +75,7 @@
         volume: "{{ _volume }}"
         slave: "{{ _replica }}"
         user: "{{ _gluster_user }}"
-        force: True
+        force: "{{ item.force | default('false') | bool }}"
       vars:
         _volume: "{{ item.name }}"
         _replica: "{{ item.replica_name }}"

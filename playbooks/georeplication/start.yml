@@ -73,12 +73,12 @@
         volume: "{{ _volume }}"
         slave: "{{ _replica }}"
         user: "{{ _gluster_user }}"
-        force: True
+        force: "{{ item.force | default('false') | bool }}"
       vars:
         _volume: "{{ item.name }}"
         _replica: "{{ item.replica_name }}"
       loop_control:
-        label: "Primary: {{ _volume }} - Replica: {{ _replica }}"
+        label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
       loop: "{{ _gluster_georeplica_volumes }}"
       register: _georeplica_start
       changed_when: false
