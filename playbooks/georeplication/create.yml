@@ -208,8 +208,6 @@
 
     - name: Set georeplication facts
       ansible.builtin.set_fact:
-        _gluster_user: "{{ _gluster_georeplica_user.name }}"
-        _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
         _gluster_sessions_create: "{{ _target_replicas | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
         _sessions: "{{ _gluster_georeplica_sessions }}"

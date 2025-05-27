@@ -49,6 +49,8 @@
         _gluster_server_slave_targets: "{{ _targets }}"
         _gluster_target_volumes: []
         _gluster_volumes_filter: "{{ _gluster_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
+        _gluster_user: "{{ _gluster_georeplica_user.name }}"
+        _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
       vars:
         _meta_volume: "{{ gluster_meta_volume.name }}"
         _targets: "{{ hostvars['localhost']['_gluster_server_slave_targets'] }}"

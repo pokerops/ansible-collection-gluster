@@ -34,8 +34,6 @@
     - name: Set georeplication session status
       ansible.builtin.set_fact:
         _gluster_georeplica_sessions: "{{ _output }}"
-        _gluster_user: "{{ _gluster_georeplica_user.name }}"
-        _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
         _gluster_georeplica_volumes: "{{ _start_volumes }}"
       vars:
         _output: "{{ _georeplica_status.result | default([]) }}"

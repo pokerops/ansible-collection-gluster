@@ -27,11 +27,6 @@
       ansible.builtin.meta: end_host
       when: (not inventory_hostname == (gluster_target_members | first))
 
-    - name: Set gluster user facts
-      ansible.builtin.set_fact:
-        _gluster_user: "{{ _gluster_georeplica_user.name }}"
-        _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
-
     - name: Get gluster geo replication status
       pokerops.gluster.georeplication.status:
         user: "{{ _gluster_user }}"
@@ -41,8 +36,6 @@
     - name: Set georeplication session status
       ansible.builtin.set_fact:
         _gluster_georeplica_sessions: "{{ _output }}"
-        _gluster_user: "{{ _gluster_georeplica_user.name }}"
-        _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
         _gluster_georeplica_volumes: "{{ _stop_volumes }}"
       vars:
         _output: "{{ _georeplica_status.result | default([]) }}"
