@@ -12,19 +12,6 @@
     - ../vars/main.yml
   any_errors_fatal: true
   tasks:
-    - name: Get gluster geo replication status
-      pokerops.gluster.georeplication.status:
-        user: "{{ _gluster_user }}"
-      vars:
-        _gluster_user: "{{ _gluster_georeplica_user.name }}"
-      register: _georeplica_status
-      when: not _gluster_georeplica_manage
-
-    - debug:
-        msg: "{{ _georeplica_status.result }}"
-
-    - fail:
-
     - name: End play when facts are not required
       ansible.builtin.meta: end_host
       when: not gluster_facts_manage | default('true') | bool
