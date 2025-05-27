@@ -46,21 +46,24 @@
         _gluster_georeplica_orphan_volumes: "{{ _orphan_attrs }}"
       vars:
         _attrs:
-          - secondary_volume
           - replica_name
+          - name
         _sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
         _replica_volumes: "{{ _sessions | sort(attribute='secondary_volume') }}"
         _existing_names: "{{ _replica_volumes | map(attribute='secondary_volume') | unique }}"
         _replicas: "{{ _replica_volumes | map(attribute='secondary') | unique }}"
         _existing_replicas: "{{ _replicas | map('regex_replace', '.*@', '') }}"
-        _replica_dict: "{{ _existing_replicas | map(_to_dict, 'replica_name') }}"
-        _replica_combine: "{{ _replica_volumes | zip(_replica_dict) | map('combine') | unique }}"
+        _replica_nodes_dict: "{{ _existing_replicas | map(_to_dict, 'replica_name') }}"
+        _replica_nodes_overwritten: "{{ _replica_volumes | zip(_replica_nodes_dict) | map('combine') | unique }}"
+        _replica_names: "{{ _replica_nodes_overwritten | map(attribute='primary_volume') }}"
+        _replica_names_dict: "{{ _replica_names | map(_to_dict, 'name') }}"
+        _replica_overwritten: "{{ _replica_nodes_overwritten | zip(_replica_names_dict) | map('combine') }}"
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
         _target_volume_names: "{{ _target_volumes | map(attribute='name') }}"
         _target_replicas: "{{ _target_volumes | map(attribute='replica_name') }}"
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_names) }}"
         _replicas_list: "{{ _volumes | selectattr('replica_name', 'in', _existing_replicas) }}"
-        _orphan_servers: "{{ _replica_combine | rejectattr('primary_node', 'in', _gluster_server_masters) }}"
+        _orphan_servers: "{{ _replica_overwritten | rejectattr('primary_node', 'in', _gluster_server_masters) }}"
         _orphan_replicas: "{{ _orphan_servers | selectattr('replica_name', 'in', _target_replicas) }}"
         _orphan_attrs: "{{ _orphan_replicas | map(_select_attrs, _attrs) | unique }}"
         _delete_volumes: "{{ _replicas_list | selectattr('state', 'equalto', 'absent') }}"
