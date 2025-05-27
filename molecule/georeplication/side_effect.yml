@@ -28,25 +28,22 @@
       ansible.builtin.group_by:
         key: "gluster_slaves_delete"
       when: gluster_georeplica_manage | default('false') | bool
+      changed_when: false
 
     - name: Run master tasks
       when: not gluster_georeplica_manage | default('false') | bool
       block:
         - name: Get gluster geo replication status
-          ansible.builtin.shell: |
-            gluster volume geo-replication status | awk \
-            'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $7"\"}"}'
-          args:
-            chdir: "/usr/sbin/"
+          pokerops.gluster.georeplication.status:
+            user: "{{ _gluster_user }}"
+          vars:
+            _gluster_user: "{{ _gluster_georeplica_user.name }}"
           register: _georeplica_status
           changed_when: false
-          tags: skip_ansible_lint
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _output }}"
-          vars:
-            _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+            _gluster_georeplica_volumes: "{{ _georeplica_status.result | default([]) | flatten }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:
@@ -58,16 +55,16 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == _replicas_num | length
+            that: (_query_volumes | length | int) == (_replicas_num | int)
           vars:
             _slaves: "{{ groups['gluster_slaves_delete'] }}"
-            _replicas_num: "{{ (_slaves | length | int) * (_volume_names | length | int) }}"
+            _replicas_num: "{{ (_slaves | length) * (_volume_names | length) }}"
             _existing: "{{ _gluster_georeplica_volumes }}"
             _volumes: "{{ gluster_volumes }}"
             _stop_volumes: "{{ _volumes | selectattr('state', 'equalto', 'stopped') }}"
             _volume_names: "{{ _stop_volumes | map(attribute='name') }}"
             _stop_existing: "{{ _existing | selectattr('status', 'equalto', 'Stopped') }}"
-            _query_volumes: "{{ _stop_existing | selectattr('name', 'in', _volume_names) }}"
+            _query_volumes: "{{ _stop_existing | selectattr('secondary_volume', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to present
   hosts: "gluster_server:gluster_client"
@@ -97,25 +94,22 @@
       ansible.builtin.group_by:
         key: "gluster_slaves_start"
       when: gluster_georeplica_manage | default('false') | bool
+      changed_when: false
 
     - name: Run master tasks
       when: not gluster_georeplica_manage | default('false') | bool
       block:
         - name: Get gluster geo replication status
-          ansible.builtin.shell: |
-            gluster volume geo-replication status | awk \
-            'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
-          args:
-            chdir: "/usr/sbin/"
+          pokerops.gluster.georeplication.status:
+            user: "{{ _gluster_user }}"
+          vars:
+            _gluster_user: "{{ _gluster_georeplica_user.name }}"
           register: _georeplica_status
           changed_when: false
-          tags: skip_ansible_lint
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _output }}"
-          vars:
-            _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+            _gluster_georeplica_volumes: "{{ _georeplica_status.result | default([]) | flatten }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:
@@ -127,10 +121,10 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == _replicas_num | length
+            that: (_query_volumes | length | int) == (_replicas_num | length | int)
           vars:
             _slaves: "{{ groups['gluster_slaves_start'] }}"
-            _replicas_num: "{{ (_slaves | length | int) * (_volume_names | length | int) }}"
+            _replicas_num: "{{ (_slaves | length) * (_volume_names | length) }}"
             _statuses:
               - "Active"
               - "Passive"
@@ -144,7 +138,7 @@
             _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
             _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
             _volume_names: "{{ _start_volumes | map(attribute='name') }}"
-            _query_volumes: "{{ _start_existing | selectattr('name', 'in', _volume_names) }}"
+            _query_volumes: "{{ _start_existing | selectattr('secondary_volumes', 'in', _volume_names) }}"
 
 - name: Override gluster volumes state to absent
   hosts: "gluster_server:gluster_client"
@@ -172,20 +166,16 @@
   any_errors_fatal: true
   tasks:
     - name: Get gluster geo replication status
-      ansible.builtin.shell: |
-        gluster volume geo-replication status | awk \
-        'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
-      args:
-        chdir: "/usr/sbin/"
+      pokerops.gluster.georeplication.status:
+        user: "{{ _gluster_user }}"
+      vars:
+        _gluster_user: "{{ _gluster_georeplica_user.name }}"
       register: _georeplica_status
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
-        _gluster_georeplica_volumes: "{{ _output }}"
-      vars:
-        _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+        _gluster_georeplica_volumes: "{{ _georeplica_status.result | default([]) | flatten }}"
 
     - name: Debug gluster volumes
       ansible.builtin.debug:
@@ -203,7 +193,8 @@
         _volumes: "{{ gluster_volumes }}"
         _delete_volumes: "{{ _volumes | selectattr('state', 'equalto', 'absent') }}"
         _volume_names: "{{ _delete_volumes | map(attribute='name') }}"
-        _delete_existing: "{{ _existing | rejectattr('name', 'in', _volume_names) }}"
+        _delete_names: "{{ _existing | selectattr('secondary_volumes', 'defined') }}"
+        _delete_existing: "{{ _delete_names | rejectattr('secondary_volumes', 'in', _volume_names) }}"
 
 - name: Override gluster volumes facts
   hosts: "gluster_server:gluster_client"
@@ -272,25 +263,22 @@
       ansible.builtin.group_by:
         key: "gluster_slaves_failover"
       when: gluster_georeplica_manage | default('false') | bool
+      changed_when: false
 
     - name: Run master tasks
       when: not gluster_georeplica_manage | default('false') | bool
       block:
         - name: Get gluster geo replication status
-          ansible.builtin.shell: |
-            gluster volume geo-replication status | awk \
-            'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
-          args:
-            chdir: "/usr/sbin/"
+          pokerops.gluster.georeplication.status:
+            user: "{{ _gluster_user }}"
+          vars:
+            _gluster_user: "{{ _gluster_georeplica_user.name }}"
           register: _georeplica_status
           changed_when: false
-          tags: skip_ansible_lint
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _output }}"
-          vars:
-            _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+            _gluster_georeplica_volumes: "{{ _georeplica_status.result | default([]) | flatten }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:
@@ -302,10 +290,10 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == _replicas_num | length
+            that: (_query_volumes | length | int) == (_replicas_num | length | int)
           vars:
             _slaves: "{{ groups['gluster_slaves_failover'] }}"
-            _replicas_num: "{{ (_slaves | length | int) * (_volume_names | length | int) }}"
+            _replicas_num: "{{ (_slaves | length) * (_volume_names | length) }}"
             _statuses:
               - "Active"
               - "Passive"
@@ -319,7 +307,7 @@
             _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
             _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
             _volume_names: "{{ _start_volumes | map(attribute='name') }}"
-            _query_volumes: "{{ _start_existing | selectattr('name', 'in', _volume_names) }}"
+            _query_volumes: "{{ _start_existing | selectattr('secondary_volume', 'in', _volume_names) }}"
 
 - name: Override gluster server group fact
   hosts: "all"
@@ -344,25 +332,22 @@
       ansible.builtin.group_by:
         key: "gluster_slaves_scaledown_test"
       when: gluster_georeplica_manage | default('false') | bool
+      changed_when: false
 
     - name: Run master tasks
       when: not gluster_georeplica_manage | default('false') | bool
       block:
         - name: Get gluster geo replication status
-          ansible.builtin.shell: |
-            gluster volume geo-replication status | awk \
-            'NR>3 {print "{\"server\": \"" $1 "\", \"name\": \"" $2 "\", \"replica\": \"" $5 "\", \"status\": \"" $6"\"}"}'
-          args:
-            chdir: "/usr/sbin/"
+          pokerops.gluster.georeplication.status:
+            user: "{{ _gluster_user }}"
+          vars:
+            _gluster_user: "{{ _gluster_georeplica_user.name }}"
           register: _georeplica_status
           changed_when: false
-          tags: skip_ansible_lint
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _output }}"
-          vars:
-            _output: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
+            _gluster_georeplica_volumes: "{{ _georeplica_status.result | default([]) | flatten }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:
@@ -374,10 +359,10 @@
 
         - name: Verify gluster geo replication session status
           ansible.builtin.assert:
-            that: _query_volumes | length == _replicas_num | length
+            that: (_query_volumes | length | int) == (_replicas_num | length | int)
           vars:
             _slaves: "{{ groups['gluster_slaves_scaledown_test'] }}"
-            _replicas_num: "{{ (_slaves | length | int) * (_volume_names | length | int) }}"
+            _replicas_num: "{{ (_slaves | length) * (_volume_names | length) }}"
             _statuses:
               - "Active"
               - "Passive"
@@ -391,7 +376,7 @@
             _start_volumes: "{{ _volumes_list | selectattr('state', 'equalto', 'present') }}"
             _start_existing: "{{ _existing | selectattr('status', 'in', _statuses) }}"
             _volume_names: "{{ _start_volumes | map(attribute='name') }}"
-            _query_volumes: "{{ _start_existing | selectattr('name', 'in', _volume_names) }}"
+            _query_volumes: "{{ _start_existing | selectattr('secondary_volume', 'in', _volume_names) }}"
 
 - name: Import verify playbook
   ansible.builtin.import_playbook: ./verify.yml
