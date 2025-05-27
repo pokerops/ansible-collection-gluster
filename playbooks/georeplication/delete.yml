@@ -54,6 +54,7 @@
         _attrs:
           - name
           - replica_name
+          - server
         _sessions: "{{ _georeplica_status.stdout_lines | default([]) | map('from_json') }}"
         _existing_names: "{{ _sessions | map(attribute='name') | unique }}"
         _replicas: "{{ _sessions | map(attribute='replica_name') | unique }}"
@@ -69,7 +70,8 @@
         _target_replicas: "{{ _target_volumes | map(attribute='replica_name') }}"
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_names) }}"
         _replicas_list: "{{ _volumes | selectattr('replica_name', 'in', _existing_replicas) }}"
-        _orphan_replicas: "{{ _replica_attrs | rejectattr('replica_name', 'in', _target_replicas) }}"
+        _orphan_servers: "{{ _replica_attrs | selectattr('server', 'in', _gluster_server_slaves) }}"
+        _orphan_replicas: "{{ _orphan_servers | rejectattr('replica_name', 'in', _target_replicas) }}"
         _delete_volumes: "{{ _replicas_list | selectattr('state', 'equalto', 'absent') }}"
 
     - name: Debug gluster geo replication volumes to delete a session
