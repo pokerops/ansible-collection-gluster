@@ -146,7 +146,7 @@
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
         _orphan_replicas: "{{ _gluster_georeplica_orphan_volumes | map(attribute='replica_name') }}"
         _status: "{{ _results | selectattr('secondary_volume', 'in', _volumes) }}"
-        _orphan_status: "{{ _results | selectattr('replica_name', 'in', _orphan_replicas) }}"
+        _orphan_status: "{{ _results | selectattr('secondary_volume', 'in', _orphan_replicas) }}"
       register: _georeplica_status
       retries: "{{ _gluster_retries }}"
       delay: "{{ _gluster_delay }}"
