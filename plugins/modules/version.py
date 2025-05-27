@@ -9,7 +9,13 @@ def run_module():
         argument_spec=module_args
     )
 
-    module.exit_json(changed=False, meta=glusterfs_version())
+    version = glusterfs_version()
+
+    result = {
+        "version": version
+    }
+
+    module.exit_json(changed=False, meta=result)
 
 def main():
     run_module()
