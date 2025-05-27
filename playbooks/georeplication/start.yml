@@ -91,7 +91,7 @@
         user: "{{ _gluster_user }}"
       vars:
         _results: "{{ _georeplica_status.result | default([]) | flatten }}"
-        _volumes: "{{ _gluster_sessions_create | map(attribute='name') }}"
+        _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
         _query_volumes: "{{ _results | selectattr('secondary_volume', 'in', _volumes) }}"
         _status: "{{ _query_volumes | rejectattr('status', 'in', gluster_georeplica_volumes_status) }}"
       register: _georeplica_status
