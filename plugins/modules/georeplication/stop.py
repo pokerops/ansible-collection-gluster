@@ -28,7 +28,7 @@ def run_module():
 
     except:
 
-        georep_stop = []
+        georep_stop = ""
 
     module.exit_json(changed=False, result=georep_stop)
 
