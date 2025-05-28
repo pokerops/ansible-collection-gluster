@@ -352,6 +352,6 @@
 
     - name: Verify gluster geo replication session start
       ansible.builtin.assert:
-        that: _status | rejectattr('stdout', 'match', '.*has been successful.*') | length == 0
+        that: _status | rejectattr('result', 'match', '.*has been successful.*') | length == 0
       vars:
         _status: "{{ _georeplica_start.results | default([]) }}"
