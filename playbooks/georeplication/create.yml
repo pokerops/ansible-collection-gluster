@@ -335,21 +335,20 @@
       delegate_to: "{{ _slave }}"
       tags: skip_ansible_lint
 
-    - name: Start geo replication session
-      ansible.builtin.shell: |
-        gluster volume geo-replication {{ _primary }} \
-        {{ _gluster_user }}@{{ _replica }} start
-      args:
-        chdir: "/usr/sbin/"
+    - name: Start gluster geo replication sessions
+      pokerops.gluster.georeplication.start:
+        volume: "{{ _volume }}"
+        slave: "{{ _replica }}"
+        user: "{{ _gluster_user }}"
+        force: "{{ item.force | default('false') | bool }}"
       vars:
-        _primary: "{{ item.name }}"
+        _volume: "{{ item.name }}"
         _replica: "{{ item.replica_name }}"
       loop_control:
-        label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+        label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
       loop: "{{ _gluster_sessions_create }}"
       register: _georeplica_start
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: Verify gluster geo replication session start
       ansible.builtin.assert:
