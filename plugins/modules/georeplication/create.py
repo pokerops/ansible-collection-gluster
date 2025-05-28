@@ -10,7 +10,7 @@ def run_module():
         "user": {"required": True, "type": "str"},
         "push_pem": {"default": True, "type": "bool"},
         "no_verify": {"default": False, "type": "bool"},
-        "ssh_port": {"default": 22, "type": "integer"},
+        "ssh_port": {"default": "22", "type": "str"},
         "force": {"default": False, "type": "bool"}
     }
 
