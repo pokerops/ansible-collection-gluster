@@ -236,6 +236,10 @@
   vars_files:
     - ../vars/main.yml
   tasks:
+    - name: End play when facts are not required
+      ansible.builtin.meta: end_host
+      when: not gluster_facts_manage | default('true') | bool
+
     - name: Set volume facts
       ansible.builtin.set_fact:
         _gluster_volumes: "{{ _target_volumes_overwritten }}"
