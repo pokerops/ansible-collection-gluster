@@ -134,7 +134,6 @@
       ansible.builtin.set_fact:
         _gluster_georeplica_volumes_create: "{{ _volumes }}"
         gluster_server_hostgroup_restart: "{{ _group_name }}"
-        gluster_facts_manage: false
       vars:
         _group: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
         _volumes: "{{ hostvars['localhost']['_gluster_georeplica_volumes_create'] }}"
