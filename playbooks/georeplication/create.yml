@@ -314,7 +314,7 @@
         _status: "{{ _results | map(attribute='stat') }}"
         _query: "{{ _status | rejectattr('exists') }}"
       loop_control:
-        label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
+        label: "Volume: {{ _volume }} - Replica: {{ _slave }}"
       loop: "{{ _gluster_sessions_create }}"
       retries: "{{ _gluster_retries }}"
       delay: "{{ _gluster_delay }}"
