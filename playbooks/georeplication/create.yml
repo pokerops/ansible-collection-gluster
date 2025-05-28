@@ -11,7 +11,6 @@
 
 - name: Manage geo replication mount broker tasks
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
-  gather_facts: false
   become: true
   any_errors_fatal: true
   vars_files:
@@ -134,20 +133,19 @@
     - name: Set gluster replica volumes
       ansible.builtin.set_fact:
         _gluster_georeplica_volumes_create: "{{ _volumes }}"
-        gluster_server_hostgroup_restart: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
+        gluster_server_hostgroup_restart: "{{ _group_name }}"
         gluster_facts_manage: false
       vars:
+        _group: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
         _volumes: "{{ hostvars['localhost']['_gluster_georeplica_volumes_create'] }}"
+        _group_name: "{{ _group if (_volumes | length > 0) else 'no_op' }}"
 
 - name: Import gluster restart playbook tasks
   ansible.builtin.import_playbook: ../restart.yml
-  when:
-    - _gluster_georeplica_manage
-    - _gluster_georeplica_volumes_create | length > 0
+  when: _gluster_georeplica_manage
 
 - name: Create geo replication session tasks
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_master_all"
-  gather_facts: false
   any_errors_fatal: true
   become: true
   vars_files:

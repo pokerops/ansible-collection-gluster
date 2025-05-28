@@ -1,7 +1,6 @@
 ---
 - name: Group gluster server georeplication slaves
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_{{ gluster_server_groupset | default('cluster') }}_slave_all"
-  gather_facts: false
   vars:
     _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
     _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
@@ -34,7 +33,6 @@
 
 - name: Get geo replication volume facts
   hosts: "{{ _gluster_server_hostgroup_name }}"
-  gather_facts: false
   vars_files:
     - ../../vars/main.yml
   tasks:

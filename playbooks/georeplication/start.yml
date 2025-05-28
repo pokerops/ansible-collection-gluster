@@ -9,7 +9,6 @@
 
 - name: Start geo replication session tasks
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_start_master_all"
-  gather_facts: false
   any_errors_fatal: true
   become: true
   vars_files:

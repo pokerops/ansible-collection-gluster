@@ -1,7 +1,6 @@
 ---
 - name: Manage gluster geo replication credentials
   hosts: "{{ _gluster_server_hostgroup_name }}"
-  gather_facts: false
   become: true
   vars_files:
     - ../../vars/main.yml
@@ -52,7 +51,6 @@
 
 - name: Configure cluster SSH access
   hosts: "{{ _gluster_server_hostgroup_name }}"
-  gather_facts: false
   become: true
   serial: 1
   vars_files:
