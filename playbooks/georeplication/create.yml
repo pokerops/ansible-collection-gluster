@@ -133,15 +133,17 @@
     - name: Set gluster replica volumes
       ansible.builtin.set_fact:
         _gluster_georeplica_volumes_create: "{{ _volumes }}"
-        gluster_server_hostgroup_restart: "{{ _group_name }}"
       vars:
-        _group: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
         _volumes: "{{ hostvars['localhost']['_gluster_georeplica_volumes_create'] }}"
-        _group_name: "{{ _group if (_volumes | length > 0) else 'no_op' }}"
 
-- name: Import gluster restart playbook tasks
-  ansible.builtin.import_playbook: ../restart.yml
-  when: _gluster_georeplica_manage
+    - name: End play when there is no need to restart gluster service in slaves
+      ansible.builtin.meta: end_host
+      when: _gluster_georeplica_volumes_create | length == 0
+
+    - name: Include service tasks
+      ansible.builtin.include_tasks: ../tasks/service.yml
+      vars:
+        gluster_service_state: restarted
 
 - name: Create geo replication session tasks
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_master_all"

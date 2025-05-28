@@ -46,7 +46,6 @@
           pokerops.gluster.version:
           register: _gluster_version
           changed_when: false
-          run_once: true
           loop: "{{ play_hosts }}"
           delegate_to: "{{ item }}"
           delegate_facts: true
