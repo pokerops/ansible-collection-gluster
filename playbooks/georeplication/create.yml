@@ -57,7 +57,7 @@
 
     - name: Set georeplication existing volumes fact
       ansible.builtin.set_fact:
-        _gluster_georeplica_volumes: "{{ _missing_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
+        _gluster_georeplica_volumes_create: "{{ _missing_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
       vars:
         _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
         _existing_volumes: "{{ _sessions | map(attribute='secondary_volume') | unique }}"
@@ -65,31 +65,38 @@
         _missing_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_volumes) }}"
         _meta_volume: "{{ gluster_meta_volume.name }}"
 
-    - name: Manage gluster mountbroker tasks
-      when: _gluster_georeplica_volumes | length > 0
-      block:
-        - name: Setup gluster mountbroker
-          ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_usergroup }}"
-          args:
-            chdir: "/usr/sbin/"
-          vars:
-            _mount: "{{ gluster_georeplica_mountbroker }}"
-          register: _mount_broker_setup
-          changed_when: false
-          tags: skip_ansible_lint
+    - name: Set gluster replica volumes
+      ansible.builtin.set_fact:
+        _gluster_georeplica_volumes_create: "{{ _gluster_georeplica_volumes_create }}"
+      delegate_facts: true
+      delegate_to: localhost
 
-        - name: Add gluster mountbroker volumes
-          ansible.builtin.shell: "gluster-mountbroker add {{ _name }} {{ _gluster_user }}"
-          args:
-            chdir: "/usr/sbin/"
-          vars:
-            _name: "{{ item.name }}"
-          loop: "{{ _gluster_georeplica_volumes }}"
-          loop_control:
-            label: "{{ _name }}"
-          register: _mount_broker_volumes
-          changed_when: false
-          tags: skip_ansible_lint
+    - name: End play when there are no new geo replica volumes to create
+      ansible.builtin.meta: end_host
+      when: _gluster_georeplica_volumes_create | length == 0
+
+    - name: Setup gluster mountbroker
+      ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_usergroup }}"
+      args:
+        chdir: "/usr/sbin/"
+      vars:
+        _mount: "{{ gluster_georeplica_mountbroker }}"
+      register: _mount_broker_setup
+      changed_when: false
+      tags: skip_ansible_lint
+
+    - name: Add gluster mountbroker volumes
+      ansible.builtin.shell: "gluster-mountbroker add {{ _name }} {{ _gluster_user }}"
+      args:
+        chdir: "/usr/sbin/"
+      vars:
+        _name: "{{ item.name }}"
+      loop: "{{ _gluster_georeplica_volumes_create }}"
+      loop_control:
+        label: "{{ _name }}"
+      register: _mount_broker_volumes
+      changed_when: false
+      tags: skip_ansible_lint
 
     - name: Get gluster mountbroker volume status
       ansible.builtin.shell: "gluster-mountbroker status | awk -F '|' '/{{ _broker_name }}/ {print $2 $4 $5}'"
@@ -119,21 +126,24 @@
         _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
         _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
 
+- name: Set gluster replica volume fact
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
+  vars_files:
+    - ../../vars/main.yml
+  tasks:
     - name: Set gluster replica volumes
       ansible.builtin.set_fact:
-        _gluster_georeplica_volumes: "{{ _gluster_georeplica_volumes }}"
-      delegate_facts: true
-      delegate_to: localhost
+        _gluster_georeplica_volumes_create: "{{ _volumes }}"
+        gluster_server_hostgroup_restart: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
+        gluster_facts_manage: false
+      vars:
+        _volumes: "{{ hostvars['localhost']['_gluster_georeplica_volumes_create'] }}"
 
 - name: Import gluster restart playbook tasks
   ansible.builtin.import_playbook: ../restart.yml
-  vars:
-    _gluster_georeplica_volumes: "{{ hostvars['localhost']['_gluster_georeplica_volumes'] }}"
-    gluster_hostgroup_restart: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
-    gluster_facts_manage: false
   when:
     - _gluster_georeplica_manage
-    - _gluster_georeplica_volumes | length > 0
+    - _gluster_georeplica_volumes_create | length > 0
 
 - name: Create geo replication session tasks
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_master_all"
