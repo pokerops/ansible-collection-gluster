@@ -278,25 +278,24 @@
         _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
 
     - name: Configure geo replication meta volume
-      ansible.builtin.shell: |
-        gluster volume geo-replication {{ _primary }} \
-        {{ _gluster_user }}@{{ _replica }} config \
-        use-meta-volume true
-      args:
-        chdir: "/usr/sbin/"
+      pokerops.gluster.georeplication.config_set:
+        volume: "{{ _volume }}"
+        slave: "{{ _replica }}"
+        user: "{{ _gluster_user }}"
+        key: "use-meta-volume"
+        value: "true"
       vars:
-        _primary: "{{ item.name }}"
+        _volume: "{{ item.name }}"
         _replica: "{{ item.replica_name }}"
       loop_control:
-        label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+        label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
       loop: "{{ _gluster_sessions_create }}"
       register: _georeplica_meta
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: Verify gluster geo replication meta volume configuration
       ansible.builtin.assert:
-        that: _status | rejectattr('stdout', 'match', '.*config updated successfully.*') | length == 0
+        that: _status | rejectattr('result', 'match', '.*config updated successfully.*') | length == 0
       vars:
         _status: "{{ _georeplica_meta.results | default([]) }}"
 
@@ -323,14 +322,13 @@
 
     - name: Execute gluster geo replication pem keys script
       ansible.builtin.shell: |
-        {{ _script }} {{ _gluster_user }} {{ _primary }} {{ _replica }}
+        {{ _script }} {{ _gluster_user }} {{ _volume }} {{ _volume }}
       vars:
         _slave: "{{ item.1 }}"
         _script: "{{ gluster_georeplication_keys_script }}"
-        _primary: "{{ item.0.name }}"
-        _replica: "{{ item.0.replica_name | split('::') | last }}"
+        _volume: "{{ item.0.name }}"
       loop_control:
-        label: "Primary: {{ _primary }} - Replica: {{ _replica }}"
+        label: "Volume: {{ _volume }} - Replica: {{ _slave }}"
       loop: "{{ _gluster_sessions_create | product(_gluster_server_slave_targets) }}"
       register: _georeplica_sshkeys_script
       changed_when: false
