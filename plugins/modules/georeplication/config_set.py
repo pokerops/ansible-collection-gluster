@@ -1,43 +1,53 @@
 from ansible.module_utils.common.validation import safe_eval
 from ansible.module_utils.basic import AnsibleModule
-from glustercli.cli.utils import georep_execute
+from glustercli.cli.utils import georep_execute, GlusterCmdException
 
 def run_module():
 
     module_args = {
-        "volume": {"required": True, "type": "str"},
-        "slave": {"required": True, "type": "str"},
-        "user": {"required": True, "type": "str"},
+        "primary_volume": {"default": None, "type": "str"},
+        "secondary_host": {"default": None, "type": "str"},
+        "secondary_volume": {"default": None, "type": "str"},
+        "secondary_user": {"required": True, "type": "str"},
         "key": {"required": True, "type": "str"},
         "value": {"required": True, "type": "str"}
     }
 
-    module = AnsibleModule(argument_spec=module_args)
+    module = AnsibleModule(
+        argument_spec=module_args,
+        supports_check_mode=False
+    )
 
-    primary_volume = module.params["volume"]
+    params = {}
 
-    secondary_volume = module.params["volume"]
-
-    secondary_host = module.params["slave"]
-
-    secondary_user = module.params["user"]
-
-    key = module.params["key"]
-
-    value = module.params["value"]
-
-    cmd = [primary_volume,
-           f"{secondary_user}@{secondary_host}::{secondary_volume}",
-           "config", key, value]
+    params = module.params
 
     try:
-        georep_config_set = georep_execute(cmd)
+        secondary_target = f"{params['secondary_user']}@{params['secondary_host']}::{params['secondary_volume']}"
+        cmd = [
+            params['primary_volume'],
+            secondary_target,
+            "config",
+            params['key'],
+            params['value']
+        ]
 
-    except:
+        result = dict(
+            changed=True,
+            msg="Command executed successfully",
+            result=georep_execute(cmd)
+        )
+        module.exit_json(**result)
 
-        georep_config_set = ""
-
-    module.exit_json(changed=False, result=georep_config_set)
+    except GlusterCmdException as e:
+        rc, out, err = e.args[0]
+        module.fail_json(
+            msg=f"Gluster command failed: {err.strip()}",
+            rc=rc,
+            stdout=out,
+            stderr=err,
+            changed=False
+        )
 
 def main():
     run_module()

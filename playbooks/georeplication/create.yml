@@ -302,9 +302,10 @@
 
     - name: Configure geo replication meta volume
       pokerops.gluster.georeplication.config_set:
-        volume: "{{ _volume }}"
-        slave: "{{ _replica }}"
-        user: "{{ _gluster_user }}"
+        primary_volume: "{{ _volume }}"
+        secondary_volume: "{{ _volume }}"
+        secondary_host: "{{ _replica }}"
+        secondary_user: "{{ _gluster_user }}"
         key: "use-meta-volume"
         value: "true"
       vars:
