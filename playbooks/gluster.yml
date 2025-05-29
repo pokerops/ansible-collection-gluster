@@ -69,9 +69,13 @@
 
     - name: Debug gluster peer list
       ansible.builtin.debug:
-        msg: "{{ _members_output }}"
+        msg: "{{ _existing_members }}"
       vars:
-        _members_output: "{{ _member_query.results | default([]) }}"
+        _members_output: "{{ _member_query.results | default([]) | sort(attribute='hostname') }}"
+        _members: "{{ _members_output | map(attribute='hostname') }}"
+        _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
+        _existing_members: "{{ _members_output | zip(_members_dict) | map('combine') }}"
 
     - name: Verify gluster peers status
       ansible.builtin.assert:
