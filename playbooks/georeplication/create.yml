@@ -44,7 +44,7 @@
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_sessions: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+            _gluster_georeplica_sessions: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
           vars:
             _volumes: "{{ _gluster_target_volumes }}"
             _target_volumes: "{{ _volumes | map(attribute='name') }}"

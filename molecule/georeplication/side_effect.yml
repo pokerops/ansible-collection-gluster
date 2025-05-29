@@ -43,7 +43,7 @@
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+            _gluster_georeplica_volumes: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
           vars:
             _volumes: "{{ gluster_volumes }}"
             _target_volumes: "{{ _volumes | map(attribute='name') }}"
@@ -113,7 +113,7 @@
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+            _gluster_georeplica_volumes: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
           vars:
             _volumes: "{{ gluster_volumes }}"
             _target_volumes: "{{ _volumes | map(attribute='name') }}"
@@ -183,7 +183,7 @@
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
-        _gluster_georeplica_volumes: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+        _gluster_georeplica_volumes: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
       vars:
         _volumes: "{{ gluster_volumes }}"
         _target_volumes: "{{ _volumes | map(attribute='name') }}"
@@ -290,7 +290,7 @@
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+            _gluster_georeplica_volumes: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
           vars:
             _volumes: "{{ gluster_volumes }}"
             _target_volumes: "{{ _volumes | map(attribute='name') }}"
@@ -363,7 +363,7 @@
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+            _gluster_georeplica_volumes: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
           vars:
             _volumes: "{{ gluster_volumes }}"
             _target_volumes: "{{ _volumes | map(attribute='name') }}"
