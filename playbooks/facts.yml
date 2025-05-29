@@ -244,8 +244,8 @@
         _gluster_volumes: "{{ _target_volumes_overwritten }}"
         _gluster_server_slaves: "{{ _slaves }}"
         _gluster_server_masters: "{{ _masters }}"
-        _gluster_server_slaves_all: "{{ groups[_slave_group_all] }}"
-        _gluster_server_masters_all: "{{ groups[_master_group_all] }}"
+        _gluster_server_slaves_all: "{{ groups[_slave_group_all] | default([]) }}"
+        _gluster_server_masters_all: "{{ groups[_master_group_all] | default([]) }}"
       vars:
         _slave: "{{ _gluster_server_slave_groupset }}"
         _master: "{{ _gluster_server_master_groupset }}"
