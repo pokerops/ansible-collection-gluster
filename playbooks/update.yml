@@ -24,11 +24,14 @@
 
     - name: Verify gluster status
       ansible.builtin.assert:
-        that: inventory_hostname in _existing_members
+        that:
+          - _members_output | rejectattr('connected', 'equalto', 'Connected') | length == 0
+          - inventory_hostname in _existing_members
         fail_msg: "Gluster is in an inconsistent state"
       vars:
         _members_output: "{{ _member_query.results | default([]) }}"
-        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _members: "{{ _members_output | map(attribute='hostname') }}"
+        _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
 
     - name: Query peer status
       ansible.builtin.shell: gluster peer status | grep -i state
@@ -82,11 +85,14 @@
 
     - name: Verify gluster status
       ansible.builtin.assert:
-        that: inventory_hostname in _existing_members
+        that:
+          - _members_output | rejectattr('connected', 'equalto', 'Connected') | length == 0
+          - inventory_hostname in _existing_members
         fail_msg: "Gluster is in an inconsistent state"
       vars:
         _members_output: "{{ _member_query.results | default([]) }}"
-        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _members: "{{ _members_output | map(attribute='hostname') }}"
+        _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
 
     - name: Query peer status
       ansible.builtin.shell: gluster peer status | grep -i state

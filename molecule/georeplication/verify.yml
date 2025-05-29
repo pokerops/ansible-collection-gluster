@@ -50,7 +50,8 @@
           - (_group | length) == (_existing_members | length)
       vars:
         _members_output: "{{ _member_query.results | default([]) }}"
-        _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _members: "{{ _members_output | map(attribute='hostname') }}"
+        _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
         _master_group: "{{ gluster_masters | default('gluster_server_primary') }}"
         _masters: "{{ groups[_master_group] }}"
         _slave_group: "{{ gluster_slaves | default('gluster_server_secondary') }}"

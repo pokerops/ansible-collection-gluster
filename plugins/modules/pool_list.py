@@ -1,5 +1,6 @@
 from ansible.module_utils.common.validation import safe_eval
 from ansible.module_utils.basic import AnsibleModule
+from glustercli.cli.utils import GlusterCmdException
 from glustercli.cli.peer import pool
 
 def run_module():
