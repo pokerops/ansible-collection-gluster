@@ -68,9 +68,6 @@
       pokerops.gluster.volume_info:
       register: _member_query
       changed_when: false
-      loop_control:
-        label: "{{ _volume }}"
-      loop: "{{ _gluster_volumes }}"
 
     - name: Verify volume statuses
       ansible.builtin.assert:
