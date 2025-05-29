@@ -58,7 +58,7 @@
             msg: "{{ _versions }}"
           vars:
             _output: "{{ _gluster_version.results | default([]) }}"
-            _versions: "{{ _output | map(attribute='meta.version') | unique }}"
+            _versions: "{{ _output | map(attribute='result') | unique }}"
 
         - name: Verify gluster version across geo replication members
           ansible.builtin.assert:
@@ -66,7 +66,7 @@
             fail_msg: "Gluster version must be the same across members"
           vars:
             _output: "{{ _gluster_version.results | default([]) }}"
-            _versions: "{{ _output | map(attribute='meta.version') | unique }}"
+            _versions: "{{ _output | map(attribute='result') | unique }}"
 
     - name: Group gluster server geo replication members
       ansible.builtin.group_by:
