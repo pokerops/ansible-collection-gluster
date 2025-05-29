@@ -35,8 +35,27 @@ def run_module():
 
     except GlusterCmdException as e:
         rc, out, err = e.args[0]
+
+        out = out.strip() if out else ""
+        err = err.strip() if err else ""
+
+        if rc == 2 and (
+            "geo-replication command failed" in out.lower() or
+            "geo-replication command failed" in err.lower()
+        ):
+            module.exit_json(
+                changed=False,
+                msg="No geo-replication sessions exist",
+                result=[],
+                debug={
+                    "rc": rc,
+                    "stdout": out.strip(),
+                    "stderr": err.strip() if err else ""
+                }
+            )
+
         module.fail_json(
-            msg=f"Gluster command failed: {err.strip()}",
+            msg="Gluster command failed unexpectedly",
             rc=rc,
             stdout=out,
             stderr=err,
