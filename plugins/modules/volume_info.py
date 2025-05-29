@@ -5,8 +5,10 @@ from glustercli.cli.volume import info
 
 def run_module():
     module_args = {
-        "name": {"default": None, "type": "str"}
+        "volname": {"default": None, "type": "str"}
     }
+
+    params = {}
 
     module = AnsibleModule(
         argument_spec=module_args,
@@ -19,9 +21,12 @@ def run_module():
         results=[],
     )
 
+    for item in module_args.items():
+        params[item] = module.params[item]
+
     try:
         result['msg'] = "Command executed successfully"
-        result['results'] = info()
+        result['results'] = info(params)
         module.exit_json(**result)
 
     except GlusterCmdException as e:
