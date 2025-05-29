@@ -24,9 +24,9 @@ def run_module():
 
     except FileNotFoundError as e:
         if 'gluster' in str(e):
-            module.exit_json(
+            module.fail_json(
                 changed=False,
-                msg="GlusterFS CLI not found: is Gluster installed?",
+                stderr="GlusterFS CLI not found: is Gluster installed?",
                 result=[]
             )
         else:
