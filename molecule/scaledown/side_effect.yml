@@ -9,12 +9,9 @@
   become: true
   tasks:
     - name: Query pool list
-      ansible.builtin.shell: gluster pool list | awk '{print $2}'
-      args:
-        chdir: "/usr/sbin/"
+      pokerops.gluster.pool_list:
       register: _member_query
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: Set target node membership fact
       ansible.builtin.set_fact:
@@ -22,7 +19,7 @@
         _gluster_initial: "{{ groups['gluster'] }}"
         _gluster_scaledown: "{{ groups['gluster_down'] }}"
       vars:
-        _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
+        _members_output: "{{ _member_query.results | default([]) }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
 
     - name: Debug gluster members

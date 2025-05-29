@@ -31,12 +31,9 @@
           - services[gluster_service_name].state | lower == 'running'
 
     - name: Query pool list
-      ansible.builtin.shell: gluster pool list | awk '{print $2}'
-      args:
-        chdir: "/usr/sbin/"
+      pokerops.gluster.pool_list:
       register: _member_query
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: Query peer status
       ansible.builtin.shell: gluster peer status | grep -i state
@@ -52,7 +49,7 @@
           - inventory_hostname in _existing_members
           - (_group | length) == (_existing_members | length)
       vars:
-        _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
+        _members_output: "{{ _member_query.results | default([]) }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
         _master_group: "{{ gluster_masters | default('gluster_server_primary') }}"
         _masters: "{{ groups[_master_group] }}"

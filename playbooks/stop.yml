@@ -13,17 +13,14 @@
       when: not gluster_service_name in services
 
     - name: Query pool list
-      ansible.builtin.shell: gluster pool list | awk '{print $2}'
-      args:
-        chdir: "/usr/sbin/"
+      pokerops.gluster.pool_list:
       register: _member_query
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: End play when node is not member of cluster
       ansible.builtin.meta: end_host
       vars:
-        _members_output: "{{ _member_query.stdout_lines | reject('equalto', 'Hostname') }}"
+        _members_output: "{{ _member_query.results | default([]) }}"
         _existing_members: "{{ _members_output | map('regex_replace', 'localhost', inventory_hostname) }}"
       when: not inventory_hostname in _existing_members
 
