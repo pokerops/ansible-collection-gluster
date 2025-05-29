@@ -127,6 +127,7 @@
 
 - name: Set gluster replica volume fact
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
+  become: true
   vars_files:
     - ../../vars/main.yml
   tasks:
