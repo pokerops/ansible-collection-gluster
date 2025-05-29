@@ -71,7 +71,7 @@
       ansible.builtin.debug:
         msg: "{{ _members_output }}"
       vars:
-        _members_output: "{{ _members_output.results | default([]) }}"
+        _members_output: "{{ _member_query.results | default([]) }}"
 
     - name: Verify gluster peers status
       ansible.builtin.assert:
