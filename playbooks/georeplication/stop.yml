@@ -70,9 +70,10 @@
 
     - name: Stop gluster geo replication sessions
       pokerops.gluster.georeplication.stop:
-        volume: "{{ _volume }}"
-        slave: "{{ _replica }}"
-        user: "{{ _gluster_user }}"
+        primary_volume: "{{ _volume }}"
+        secondary_volume: "{{ _volume }}"
+        secondary_host: "{{ _replica }}"
+        secondary_user: "{{ _gluster_user }}"
         force: "{{ item.force | default('false') | bool }}"
       vars:
         _volume: "{{ item.name }}"
