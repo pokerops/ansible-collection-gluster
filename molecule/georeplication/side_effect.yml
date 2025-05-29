@@ -43,7 +43,11 @@
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _georeplica_status.result | default([]) | flatten }}"
+            _gluster_georeplica_volumes: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+          vars:
+            _volumes: "{{ gluster_volumes }}"
+            _target_volumes: "{{ _volumes | map(attribute='name') }}"
+            _sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:
@@ -109,7 +113,11 @@
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _georeplica_status.result | default([]) | flatten }}"
+            _gluster_georeplica_volumes: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+          vars:
+            _volumes: "{{ gluster_volumes }}"
+            _target_volumes: "{{ _volumes | map(attribute='name') }}"
+            _sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:
@@ -175,7 +183,11 @@
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
-        _gluster_georeplica_volumes: "{{ _georeplica_status.result | default([]) | flatten }}"
+        _gluster_georeplica_volumes: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+      vars:
+        _volumes: "{{ gluster_volumes }}"
+        _target_volumes: "{{ _volumes | map(attribute='name') }}"
+        _sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
 
     - name: Debug gluster volumes
       ansible.builtin.debug:
@@ -278,7 +290,11 @@
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _georeplica_status.result | default([]) | flatten }}"
+            _gluster_georeplica_volumes: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+          vars:
+            _volumes: "{{ gluster_volumes }}"
+            _target_volumes: "{{ _volumes | map(attribute='name') }}"
+            _sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:
@@ -347,7 +363,11 @@
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
-            _gluster_georeplica_volumes: "{{ _georeplica_status.result | default([]) | flatten }}"
+            _gluster_georeplica_volumes: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+          vars:
+            _volumes: "{{ gluster_volumes }}"
+            _target_volumes: "{{ _volumes | map(attribute='name') }}"
+            _sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:

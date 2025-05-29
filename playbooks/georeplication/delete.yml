@@ -34,8 +34,10 @@
 
     - name: Debug gluster geo replication status
       ansible.builtin.debug:
-        msg: "{{ _sessions }}"
+        msg: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
       vars:
+        _volumes: "{{ _gluster_target_volumes }}"
+        _target_volumes: "{{ _volumes | map(attribute='name') }}"
         _sessions: "{{ _georeplica_status.result | default([]) | flatten }}"
 
     - name: Set georeplication session status

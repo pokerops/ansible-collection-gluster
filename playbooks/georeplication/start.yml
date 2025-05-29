@@ -32,16 +32,18 @@
 
     - name: Set georeplication session status
       ansible.builtin.set_fact:
-        _gluster_georeplica_sessions: "{{ _output }}"
+        _gluster_georeplica_sessions: "{{ _sessions }}"
         _gluster_georeplica_volumes: "{{ _start_volumes }}"
       vars:
         _output: "{{ _georeplica_status.result | default([]) | flatten }}"
+        _sessions: "{{ _output | selectatrr('primary_volume', 'in', _target_volume_names) }}"
         _replicas: "{{ _output | rejectattr('status', 'in', gluster_georeplica_volumes_status) }}"
         _volume_names: "{{ _replicas | map(attribute='secondary_volume') | unique }}"
         _replica_names: "{{ _replicas | map(attribute='secondary') | unique }}"
         _replica_volumes: "{{ _replica_names | map('regex_replace', '.*@', '') }}"
         _replica_regex: "{{ _replica_volumes | map('regex_replace', '::.*', '') }}"
         _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
+        _target_volume_names: "{{ _target_volumes | map(attribute='name') }}"
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _volume_names) }}"
         _replica_targets: "{{ _volumes | selectattr('replica_name', 'in', _replica_regex) }}"
         _start_volumes: "{{ _replica_targets | selectattr('state', 'equalto', 'present') }}"
