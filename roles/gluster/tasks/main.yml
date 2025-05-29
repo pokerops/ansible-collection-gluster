@@ -41,7 +41,7 @@
 
 - name: Install gluster server
   ansible.builtin.package:
-    name: "{{ gluster_server_packages }}"
+    name: "{{ gluster_server_package_name }}"
 
 - name: Install glustercli python module
   ansible.builtin.pip:

@@ -158,6 +158,14 @@
       vars:
         _members_num: "{{ gluster_target_members }}"
 
+    - name: Install python pip3
+      ansible.builtin.package:
+        name: "python3-pip"
+
+    - name: Install glustercli python module
+      ansible.builtin.pip:
+        name: "glustercli"
+
     - name: Query pool list
       pokerops.gluster.pool_list:
       register: _member_query
