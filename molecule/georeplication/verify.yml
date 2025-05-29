@@ -67,21 +67,21 @@
         _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
         _query: "{{ _members_overwritten | rejectattr('connected', 'equalto', 'Connected') }}"
 
-    - name: Verify volume statuses
-      ansible.builtin.shell: gluster volume info {{ _volume }} | grep -i status
-      args:
-        chdir: "/usr/sbin/"
-      vars:
-        _volume: "{{ item.name }}"
-        _query: "{{ _member_query.stdout }}"
-        _status: "Status: Started"
-      failed_when: not _status is search(_query)
+    - name: Get volume statuses
+      pokerops.gluster.volume_info:
       register: _member_query
       changed_when: false
       loop_control:
         label: "{{ _volume }}"
-      loop: "{{ gluster_volumes }}"
-      tags: skip_ansible_lint
+      loop: "{{ _gluster_volumes }}"
+
+    - name: Verify volume statuses
+      ansible.builtin.assert:
+        that: _query | length > 0
+      vars:
+        _output: "{{ _member_query.results | default([]) }}"
+        _volumes: "{{ _output | map(attribute='results') | default([]) | flatten }}"
+        _query: "{{ _volumes | rejectattr('status', 'equalto', 'Started') }}"
 
 - name: Test gluster client connection
   hosts: "gluster_client"

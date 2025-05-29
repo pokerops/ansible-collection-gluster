@@ -41,19 +41,18 @@
   changed_when: false
 
 - name: Verify volume statuses
-  ansible.builtin.shell: gluster volume info {{ _volume }} | grep -i status
-  args:
-    chdir: "/usr/sbin/"
+  pokerops.gluster.volume_info:
+    volname: "{{ _volume }}"
   vars:
     _volume: "{{ item.name }}"
-    _query: "{{ _member_query.stdout }}"
-    _status: "Status: Started"
+    _output: "{{ _member_query.results | default([]) }}"
+    _volumes: "{{ _output | map(attribute='results') | default([]) | flatten }}"
+    _query: "{{ _volumes | rejectattr('status', 'equalto', 'Started') }}"
   retries: "{{ _gluster_retries }}"
   delay: "{{ _gluster_delay }}"
-  until: _status is search(_query)
+  until: _query | length == 0
   register: _member_query
   changed_when: false
   loop_control:
     label: "{{ _volume }}"
   loop: "{{ _gluster_volumes }}"
-  tags: skip_ansible_lint
