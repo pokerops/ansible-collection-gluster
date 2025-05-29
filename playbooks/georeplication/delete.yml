@@ -112,9 +112,10 @@
 
     - name: Delete geo replication session
       pokerops.gluster.georeplication.delete:
-        volume: "{{ _volume }}"
-        slave: "{{ _replica }}"
-        user: "{{ _gluster_user }}"
+        primary_volume: "{{ _volume }}"
+        secondary_volume: "{{ _volume }}"
+        secondary_host: "{{ _replica }}"
+        secondary_user: "{{ _gluster_user }}"
         reset_sync_time: "{{ item.reset_sync_time | default('true') | bool }}"
       vars:
         _volume: "{{ item.name }}"
