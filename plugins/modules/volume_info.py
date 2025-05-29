@@ -8,7 +8,7 @@ def run_module():
         "volname": {"default": None, "type": "str"}
     }
 
-    params_dict = {}
+    params = {}
 
     module = AnsibleModule(
         argument_spec=module_args,
@@ -22,13 +22,11 @@ def run_module():
     )
 
     for key, value in module_args.items():
-        params_dict[key] = module.params[key]
-
-    params = ",".join(params_dict.keys())
+        params[key] = module.params[key]
 
     try:
         result['msg'] = "Command executed successfully"
-        result['results'] = info(params)
+        result['results'] = info(**params)
         module.exit_json(**result)
 
     except GlusterCmdException as e:
