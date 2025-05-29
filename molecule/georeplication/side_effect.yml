@@ -27,7 +27,9 @@
     - name: Group slave members
       ansible.builtin.group_by:
         key: "gluster_slaves_delete"
-      when: gluster_georeplica_manage | default('false') | bool
+      when:
+        - gluster_georeplica_manage | default('false') | bool
+        - inventory_hostname == (gluster_target_members | first)
       changed_when: false
 
     - name: Run master tasks
@@ -97,7 +99,9 @@
     - name: Group slave members
       ansible.builtin.group_by:
         key: "gluster_slaves_start"
-      when: gluster_georeplica_manage | default('false') | bool
+      when:
+        - gluster_georeplica_manage | default('false') | bool
+        - inventory_hostname == (gluster_target_members | first)
       changed_when: false
 
     - name: Run master tasks
@@ -274,7 +278,9 @@
     - name: Group slave members
       ansible.builtin.group_by:
         key: "gluster_slaves_failover"
-      when: gluster_georeplica_manage | default('false') | bool
+      when:
+        - gluster_georeplica_manage | default('false') | bool
+        - inventory_hostname == (gluster_target_members | first)
       changed_when: false
 
     - name: Run master tasks
@@ -347,7 +353,9 @@
     - name: Group slave members
       ansible.builtin.group_by:
         key: "gluster_slaves_scaledown_test"
-      when: gluster_georeplica_manage | default('false') | bool
+      when:
+        - gluster_georeplica_manage | default('false') | bool
+        - inventory_hostname == (gluster_target_members | first)
       changed_when: false
 
     - name: Run master tasks
