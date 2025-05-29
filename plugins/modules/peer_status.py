@@ -14,12 +14,12 @@ def run_module():
     result = dict(
         changed=False,
         msg='',
-        result="",
+        results=[],
     )
 
     try:
         result['msg'] = "Command executed successfully"
-        result['result'] = status()
+        result['results'] = status()
         module.exit_json(**result)
 
     except GlusterCmdException as e:

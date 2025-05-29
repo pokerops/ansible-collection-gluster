@@ -36,12 +36,9 @@
       changed_when: false
 
     - name: Query peer status
-      ansible.builtin.shell: gluster peer status | grep -i state
-      args:
-        chdir: "/usr/sbin/"
+      pokerops.gluster.peer_status:
       register: _peer_query
       changed_when: false
-      tags: skip_ansible_lint
 
     - name: Verify gluster node membership
       ansible.builtin.assert:
@@ -63,8 +60,12 @@
       ansible.builtin.assert:
         that: _query | length == 0
       vars:
-        _output: "{{ _peer_query.stdout_lines }}"
-        _query: "{{ _output | reject('regex', 'Connected') }}"
+        _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
+        _members: "{{ _output | map(attribute='hostname') }}"
+        _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
+        _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
+        _query: "{{ _members_overwritten | rejectattr('connected', 'equalto', 'Connected') }}"
 
     - name: Verify volume statuses
       ansible.builtin.shell: gluster volume info {{ _volume }} | grep -i status
