@@ -71,11 +71,11 @@
       ansible.builtin.debug:
         msg: "{{ _members_output }}"
       vars:
-        _members_output: "{{ _members_output.results | default([])}"
+        _members_output: "{{ _members_output.results | default([]) }}"
 
     - name: Verify gluster peers status
       ansible.builtin.assert:
         that: _fail_members | length == 0
       vars:
-        _members_output: "{{ _member_query.results | default([])}"
+        _members_output: "{{ _member_query.results | default([]) }}"
         _fail_members: "{{ _members_output | rejectattr('connected', 'equalto', 'Connected') }}"
