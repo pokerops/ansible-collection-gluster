@@ -27,16 +27,12 @@
 - name: Query peer status
   pokerops.gluster.peer_status:
   vars:
-    _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
-    _members: "{{ _output | map(attribute='hostname') }}"
-    _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
-    _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
-    _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
-    _query: "{{ _members_overwritten | selectattr('connected', 'equalto', 'Connected') }}"
-    _group: "{{ gluster_target_members }}"
+    _output: "{{ _peer_query.results | default([]) }}"
+    _query_node: "{{ _output | selectattr('hostname', 'equalto', 'localhost') }}"
+    _query_status: "{{ _query_node | selectattr('connected', 'equalto', 'Connected') }}"
   retries: "{{ _gluster_retries }}"
   delay: "{{ _gluster_delay }}"
-  until: (_query | length) == (_group | length)
+  until: _query_status | length > 0
   register: _peer_query
   changed_when: false
 

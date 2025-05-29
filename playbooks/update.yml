@@ -40,7 +40,7 @@
 
     - name: Verify gluster status
       ansible.builtin.assert:
-        that: _query | length == _group | length
+        that: (_query | length) == (_group | length)
         fail_msg: "Gluster node is in an inconsistent state"
       vars:
         _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
@@ -102,7 +102,7 @@
 
     - name: Verify gluster status
       ansible.builtin.assert:
-        that: _query | length == _group | length
+        that: (_query | length) == (_group | length)
         fail_msg: "Gluster node is in an inconsistent state"
       vars:
         _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"

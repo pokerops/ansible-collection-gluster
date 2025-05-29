@@ -22,6 +22,16 @@ def run_module():
         result['results'] = pool()
         module.exit_json(**result)
 
+    except FileNotFoundError as e:
+        if 'gluster' in str(e):
+            module.exit_json(
+                changed=False,
+                msg="GlusterFS CLI not found: is Gluster installed?",
+                result=[]
+            )
+        else:
+            module.fail_json(msg=f"File not found: {str(e)}", changed=False)
+
     except GlusterCmdException as e:
         rc, out, err = e.args[0]
         module.fail_json(
@@ -31,6 +41,10 @@ def run_module():
             stderr=err,
             changed=False
         )
+
+    
+    except Exception as e:
+        module.fail_json(msg=f"Unexpected error: {str(e)}", changed=False)
 
 def main():
     run_module()
