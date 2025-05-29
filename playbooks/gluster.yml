@@ -7,6 +7,7 @@
 - name: Deploy gluster server on alien nodes
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_install_alien"
   become: true
+  any_errors_fatal: true
   vars_files:
     - ../vars/main.yml
   tasks:
@@ -14,9 +15,21 @@
       ansible.builtin.include_role:
         name: pokerops.gluster.gluster
 
-- name: Deploy gluster server on member nodes
-  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_install_member"
+- name: Deploy gluster server on slave nodes
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_install_slave_all"
   become: true
+  any_errors_fatal: true
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: Install gluster server
+      ansible.builtin.include_role:
+        name: pokerops.gluster.gluster
+
+- name: Deploy gluster server on master nodes
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_install_master_all"
+  become: true
+  any_errors_fatal: true
   vars_files:
     - ../vars/main.yml
   tasks:
