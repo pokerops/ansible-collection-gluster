@@ -251,9 +251,10 @@
 
     - name: Create geo replication session
       pokerops.gluster.georeplication.create:
-        volume: "{{ _volume }}"
-        slave: "{{ _replica }}"
-        user: "{{ _gluster_user }}"
+        primary_volume: "{{ _volume }}"
+        secondary_volume: "{{ _volume }}"
+        secondary_host: "{{ _replica }}"
+        secondary_user: "{{ _gluster_user }}"
         push_pem: "{{ item.push_pem | default('true') | bool }}"
         force: "{{ item.force | default('true') | bool }}"
       vars:
