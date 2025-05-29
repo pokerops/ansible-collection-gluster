@@ -134,7 +134,7 @@
 
     - name: Get gluster geo replication status
       pokerops.gluster.georeplication.status:
-        user: "{{ _gluster_user }}"
+        secondary_user: "{{ _gluster_user }}"
       vars:
         _gluster_user: "{{ _gluster_georeplica_user.name }}"
         _results: "{{ _georeplica_status.result | default([]) | flatten }}"

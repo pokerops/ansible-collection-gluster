@@ -37,7 +37,7 @@
       block:
         - name: Get gluster geo replication status
           pokerops.gluster.georeplication.status:
-            user: "{{ _gluster_user }}"
+            secondary_user: "{{ _gluster_user }}"
           vars:
             _gluster_user: "{{ _gluster_georeplica_user.name }}"
           register: _georeplica_status
@@ -109,7 +109,7 @@
       block:
         - name: Get gluster geo replication status
           pokerops.gluster.georeplication.status:
-            user: "{{ _gluster_user }}"
+            secondary_user: "{{ _gluster_user }}"
           vars:
             _gluster_user: "{{ _gluster_georeplica_user.name }}"
           register: _georeplica_status
@@ -179,7 +179,7 @@
   tasks:
     - name: Get gluster geo replication status
       pokerops.gluster.georeplication.status:
-        user: "{{ _gluster_user }}"
+        secondary_user: "{{ _gluster_user }}"
       vars:
         _gluster_user: "{{ _gluster_georeplica_user.name }}"
       register: _georeplica_status
@@ -288,7 +288,7 @@
       block:
         - name: Get gluster geo replication status
           pokerops.gluster.georeplication.status:
-            user: "{{ _gluster_user }}"
+            secondary_user: "{{ _gluster_user }}"
           vars:
             _gluster_user: "{{ _gluster_georeplica_user.name }}"
           register: _georeplica_status
@@ -363,7 +363,7 @@
       block:
         - name: Get gluster geo replication status
           pokerops.gluster.georeplication.status:
-            user: "{{ _gluster_user }}"
+            secondary_user: "{{ _gluster_user }}"
           vars:
             _gluster_user: "{{ _gluster_georeplica_user.name }}"
           register: _georeplica_status

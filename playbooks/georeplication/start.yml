@@ -26,7 +26,7 @@
 
     - name: Get gluster geo replication status
       pokerops.gluster.georeplication.status:
-        user: "{{ _gluster_user }}"
+        secondary_user: "{{ _gluster_user }}"
       register: _georeplica_status
       changed_when: false
 
@@ -89,7 +89,7 @@
 
     - name: Get gluster geo replication status
       pokerops.gluster.georeplication.status:
-        user: "{{ _gluster_user }}"
+        secondary_user: "{{ _gluster_user }}"
       vars:
         _results: "{{ _georeplica_status.result | default([]) | flatten }}"
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"

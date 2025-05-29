@@ -1,5 +1,6 @@
 from ansible.module_utils.common.validation import safe_eval
 from ansible.module_utils.basic import AnsibleModule
+from glustercli.cli.utils import GlusterCmdException
 from glustercli.cli.gluster_version import glusterfs_version
 
 def run_module():
@@ -9,13 +10,26 @@ def run_module():
         argument_spec=module_args
     )
 
-    version = glusterfs_version().split(' ')[1]
+    result = dict(
+        changed=False,
+        msg='',
+        result="",
+    )
 
-    result = {
-        "version": version
-    }
+    try:
+        result['msg'] = "Command executed successfully"
+        result['result'] = glusterfs_version().split(' ')[1]
+        module.exit_json(**result)
 
-    module.exit_json(changed=False, meta=result)
+    except GlusterCmdException as e:
+        rc, out, err = e.args[0]
+        module.fail_json(
+            msg=f"Gluster command failed: {err.strip()}",
+            rc=rc,
+            stdout=out,
+            stderr=err,
+            changed=False
+        )
 
 def main():
     run_module()
