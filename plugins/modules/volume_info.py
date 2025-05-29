@@ -8,7 +8,7 @@ def run_module():
         "volname": {"default": None, "type": "str"}
     }
 
-    params = {}
+    params_dict = {}
 
     module = AnsibleModule(
         argument_spec=module_args,
@@ -21,8 +21,10 @@ def run_module():
         results=[],
     )
 
-    for item in module_args.items():
-        params[item] = module.params[item]
+    for key, value in module_args.items():
+        params_dict[key] = module.params[key]
+
+    params = ",".join(params_dict.keys())
 
     try:
         result['msg'] = "Command executed successfully"
