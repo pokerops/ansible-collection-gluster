@@ -26,6 +26,7 @@ def run_module():
         if 'gluster' in str(e):
             module.fail_json(
                 changed=False,
+                msg="",
                 stderr="GlusterFS CLI not found: is Gluster installed?",
                 result=[]
             )
