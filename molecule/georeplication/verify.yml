@@ -75,11 +75,10 @@
 
     - name: Verify volume statuses
       ansible.builtin.assert:
-        that: _query | length > 0
+        that: _query | length == 0
       vars:
         _output: "{{ _member_query.results | default([]) }}"
-        _volumes: "{{ _output | map(attribute='results') | default([]) | flatten }}"
-        _query: "{{ _volumes | rejectattr('status', 'equalto', 'Started') }}"
+        _query: "{{ _output | rejectattr('status', 'equalto', 'Started') }}"
 
 - name: Test gluster client connection
   hosts: "gluster_client"
