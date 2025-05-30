@@ -43,10 +43,6 @@
   ansible.builtin.package:
     name: "{{ gluster_server_package_name }}"
 
-- name: Install glustercli python module
-  ansible.builtin.pip:
-    name: "glustercli"
-
 - name: Query installed packages
   ansible.builtin.package_facts:
     manager: auto

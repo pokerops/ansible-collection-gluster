@@ -49,11 +49,10 @@
         _members_output: "{{ _status.results | default([]) }}"
         _members: "{{ _members_output | map(attribute='hostname') }}"
         _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _targets: "{{ gluster_target_members }}"
       register: _member_query
       retries: "{{ _gluster_retries }}"
       delay: "{{ _gluster_delay }}"
-      until: _targets | length == _existing_members | length
+      until: inventory_hostname in _existing_members
       changed_when: false
 
     - name: Debug gluster peer list
