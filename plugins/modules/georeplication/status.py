@@ -2,6 +2,20 @@ from ansible.module_utils.common.validation import safe_eval
 from ansible.module_utils.basic import AnsibleModule
 from glustercli.cli.utils import GlusterCmdException
 from glustercli.cli.georep import status
+from collections import defaultdict
+
+def group_sessions_by_secondary(gluster_status):
+    grouped = defaultdict(list)
+    for group in gluster_status:
+        for entry in group:
+            grouped[entry.get("secondary")].append(entry)
+    return grouped
+
+def session_is_healthy(session_entries):
+    return all(
+        entry.get("status", "").strip().lower() in ("active", "passive")
+        for entry in session_entries
+    )
 
 def run_module():
 
@@ -29,8 +43,22 @@ def run_module():
         params[key] = module.params[key]
 
     try:
-        result['msg'] = "Command executed successfully"
-        result['results'] = status(**params)
+        gluster_status = status(**params)
+        grouped = group_sessions_by_secondary(gluster_status)
+
+        for secondary, entries in grouped.items():
+            if session_is_healthy(entries):
+                result['sessions'].append({
+                    "secondary": secondary,
+                    "status": "healthy",
+                    "bricks": entries
+                })
+            else:
+                result['sessions'].append({
+                    "secondary": secondary,
+                    "status": "unhealthy",
+                    "bricks": entries
+                })
         module.exit_json(**result)
 
     except GlusterCmdException as e:
