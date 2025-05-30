@@ -342,9 +342,10 @@
       register: _georeplica_status
       changed_when: false
 
-    - name: Set georeplication session status
+    - name: Set georeplication facts
       ansible.builtin.set_fact:
         _gluster_georeplica_volumes: "{{ _sessions }}"
+        _gluster_server_stale_slaves: "{{ groups['gluster_server_tertiary'] }}"
       vars:
         _sessions: "{{ _georeplica_status.results | default([]) }}"
 
@@ -368,12 +369,18 @@
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
-        that: _query_volumes | length == 0
+        that:
+          - _query_volumes | length == 0
+          - _stale_slaves | select('in', _existing_members) | length == 0
       vars:
         _statuses:
           - "Active"
           - "Passive"
         _existing: "{{ _gluster_georeplica_volumes }}"
+        _existing_slaves: "{{ _existing | map(attribute='secondary') | unique }}"
+        _slaves_regex: "{{ _existing_slaves | map('regex_replace', '.*@', '') }}"
+        _existing_members: "{{ _slaves_regex | map('regex_replace', '::.*', '') }}"
+        _stale_slaves: "{{ _gluster_server_stale_slaves }}"
         _volumes: "{{ gluster_volumes | sort(attribute='name') }}"
         _replica_state_default: "present"
         _volumes_num: "{{ _volumes | length }}"
