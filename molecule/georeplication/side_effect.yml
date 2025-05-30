@@ -48,7 +48,7 @@
           vars:
             _volumes: "{{ gluster_volumes }}"
             _target_volumes: "{{ _volumes | map(attribute='name') }}"
-            _sessions: "{{ _georeplica_status.results | default([]) | flatten }}"
+            _sessions: "{{ _georeplica_status.results | default([]) }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:
@@ -119,7 +119,7 @@
           vars:
             _volumes: "{{ gluster_volumes }}"
             _target_volumes: "{{ _volumes | map(attribute='name') }}"
-            _sessions: "{{ _georeplica_status.results | default([]) | flatten }}"
+            _sessions: "{{ _georeplica_status.results | default([]) }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:
@@ -189,7 +189,7 @@
       vars:
         _volumes: "{{ gluster_volumes }}"
         _target_volumes: "{{ _volumes | map(attribute='name') }}"
-        _sessions: "{{ _georeplica_status.results | default([]) | flatten }}"
+        _sessions: "{{ _georeplica_status.results | default([]) }}"
 
     - name: Debug gluster volumes
       ansible.builtin.debug:
@@ -297,7 +297,7 @@
           vars:
             _volumes: "{{ gluster_volumes }}"
             _target_volumes: "{{ _volumes | map(attribute='name') }}"
-            _sessions: "{{ _georeplica_status.results | default([]) | flatten }}"
+            _sessions: "{{ _georeplica_status.results | default([]) }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:
@@ -371,7 +371,7 @@
           vars:
             _volumes: "{{ gluster_volumes }}"
             _target_volumes: "{{ _volumes | map(attribute='name') }}"
-            _sessions: "{{ _georeplica_status.results | default([]) | flatten }}"
+            _sessions: "{{ _georeplica_status.results | default([]) }}"
 
         - name: Debug gluster volumes
           ansible.builtin.debug:

@@ -1,6 +1,13 @@
 from ansible.module_utils.common.validation import safe_eval
 from ansible.module_utils.basic import AnsibleModule
-from glustercli.cli.utils import georep_execute, GlusterCmdException
+from glustercli.cli.utils import GlusterCmdException
+from glustercli.cli.georep import status
+
+def session_is_healthy(session_entries):
+    return all(
+        entry.get("status", "").strip().lower() in ("active", "passive")
+        for entry in session_entries
+    )
 
 def run_module():
 
@@ -10,12 +17,6 @@ def run_module():
         "secondary_volume": {"default": None, "type": "str"},
         "secondary_user": {"required": True, "type": "str"}
     }
-
-    result = dict(
-        changed=False,
-        msg='',
-        results=[],
-    )
 
     params = {}
 
@@ -28,19 +29,14 @@ def run_module():
         params[key] = module.params[key]
 
     try:
-        cmd = []
+        georep_status = status(**params)
+        flattened_status = [session for sessions in georep_status for session in sessions]
+        result = dict(
+            changed=True,
+            msg="Command executed successfully",
+            results=flattened_status
+        )
 
-        if params['primary_volume'] is not None:
-            cmd += [params['primary_volume']]
-
-        if params['primary_user'] is not None and params['secondary_host'] is not None and \
-            params['secondary_volume'] is not None:
-            cmd += [
-                f"{params['secondary_user']}@{params['secondary_host']}::{params['secondary_volume']}"
-            ]
-
-        cmd += ["status"]
-        result["results"] = georep_execute(cmd)
         module.exit_json(**result)
 
     except GlusterCmdException as e:
@@ -56,7 +52,7 @@ def run_module():
             module.exit_json(
                 changed=False,
                 msg="No geo-replication sessions exist",
-                result=[],
+                results=[],
                 debug={
                     "rc": rc,
                     "stdout": out.strip(),
