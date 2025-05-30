@@ -30,7 +30,12 @@ def run_module():
 
     try:
         georep_status = status(**params)
-        flattened_status = [session for sessions in georep_status for session in sessions]
+        flattened_status = [
+            session
+            for sessions in georep_status
+            for session in sessions
+            if session.get("status", "").lower() != "offline"
+        ]
         result = dict(
             changed=True,
             msg="Command executed successfully",
