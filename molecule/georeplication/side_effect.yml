@@ -22,6 +22,7 @@
   hosts: "gluster_server"
   become: true
   gather_facts: false
+  any_errors_fatal: true
   tasks:
     - name: Get gluster geo replication status
       pokerops.gluster.georeplication.status:
@@ -72,6 +73,7 @@
 - name: Override gluster volumes state to present
   hosts: "gluster_server:gluster_client"
   gather_facts: false
+  any_errors_fatal: true
   tasks:
     - name: Set gluster volumes
       ansible.builtin.set_fact:
@@ -91,6 +93,7 @@
   hosts: "gluster_server"
   become: true
   gather_facts: false
+  any_errors_fatal: true
   tasks:
     - name: Get gluster geo replication status
       pokerops.gluster.georeplication.status:
@@ -166,6 +169,7 @@
   hosts: "gluster_server"
   become: true
   gather_facts: false
+  any_errors_fatal: true
   tasks:
     - name: Get gluster geo replication status
       pokerops.gluster.georeplication.status:
@@ -238,6 +242,7 @@
 - name: Test gluster failover to a different site
   hosts: "gluster_server:gluster_client"
   gather_facts: false
+  any_errors_fatal: true
   tasks:
     - name: Set gluster slave facts
       ansible.builtin.set_fact:
@@ -271,6 +276,7 @@
   hosts: "gluster_server"
   become: true
   gather_facts: false
+  any_errors_fatal: true
   tasks:
     - name: Get gluster geo replication status
       pokerops.gluster.georeplication.status:
@@ -333,6 +339,7 @@
 - name: Verify gluster volumes status
   hosts: "gluster_server_scaledown"
   become: true
+  any_errors_fatal: true
   tasks:
     - name: Get gluster geo replication status
       pokerops.gluster.georeplication.status:

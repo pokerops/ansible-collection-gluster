@@ -17,6 +17,7 @@
 - name: Query cluster state
   hosts: "{{ gluster_server_hostgroup | default('gluster_server') }}"
   become: true
+  any_errors_fatal: true
   vars:
     gluster_service_name: "glusterd.service"
   tasks:
@@ -74,6 +75,7 @@
 - name: Test gluster client connection
   hosts: "{{ gluster_client_hostgroup | default('gluster_client') }}"
   become: true
+  any_errors_fatal: true
   vars:
     _log_file: "{{ gluster_log_file | default('test.log') }}"
   tasks:
@@ -98,6 +100,7 @@
 - name: Test gluster file replication
   hosts: "gluster_server"
   become: true
+  any_errors_fatal: true
   vars:
     _log_file: "{{ gluster_log_file | default('test.log') }}"
   tasks:
