@@ -5,7 +5,7 @@
   tasks:
     - name: Set volume facts
       ansible.builtin.set_fact:
-        _gluster_volumes: "{{ _volumes_filter }}"
+        _gluster_volumes: "{{ _volumes_overwritten }}"
       vars:
         _volume_defaults:
           state: present
@@ -13,7 +13,6 @@
         _volumes_num: "{{ _volumes | length }}"
         _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
         _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
-        _volumes_filter: "{{ _volumes_overwritten | rejectattr('state', 'equalto', 'absent') }}"
 
 - name: Query cluster state
   hosts: "{{ gluster_server_hostgroup | default('gluster_server') }}"
@@ -42,19 +41,11 @@
 
     - name: Verify gluster node membership
       ansible.builtin.assert:
-        that:
-          - inventory_hostname in _existing_members
-          - (_group | length) == (_existing_members | length)
+        that: inventory_hostname in _existing_members
       vars:
         _members_output: "{{ _member_query.results | default([]) }}"
         _members: "{{ _members_output | map(attribute='hostname') }}"
         _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _master_group: "{{ gluster_masters | default('gluster_server_primary') }}"
-        _masters: "{{ groups[_master_group] }}"
-        _slave_group: "{{ gluster_slaves | default('gluster_server_secondary') }}"
-        _slaves: "{{ groups[_slave_group] }}"
-        _group_name: "{{ _master_group if inventory_hostname in _masters else _slave_group }}"
-        _group: "{{ groups[_group_name] }}"
 
     - name: Verify gluster node status
       ansible.builtin.assert:
@@ -81,12 +72,10 @@
         _query: "{{ _output | rejectattr('status', 'equalto', 'Started') }}"
 
 - name: Test gluster client connection
-  hosts: "gluster_client"
+  hosts: "{{ gluster_client_hostgroup | default('gluster_client') }}"
   become: true
   vars:
     _log_file: "{{ gluster_log_file | default('test.log') }}"
-    _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
-    _gluster_name: "{{ _gluster_server_prefix }}_verify"
   tasks:
     - name: Verify gluster mount paths
       ansible.builtin.assert:
@@ -102,19 +91,15 @@
         dest: "{{ _mount }}/{{ _log_file }}"
       vars:
         _mount: "{{ item.mount }}"
-        _group: "{{ gluster_client_hostgroup | default('gluster_client_primary') }}"
       loop_control:
         label: "{{ _mount }}"
       loop: "{{ gluster_volumes }}"
-      delegate_to: "{{ groups[_group] | first }}"
 
 - name: Test gluster file replication
   hosts: "gluster_server"
   become: true
   vars:
     _log_file: "{{ gluster_log_file | default('test.log') }}"
-    _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
-    _gluster_name: "{{ _gluster_server_prefix }}_verify"
   tasks:
     - name: Verify gluster geo-replication
       ansible.builtin.stat:

@@ -93,6 +93,7 @@ platforms:
     groups:
       - gluster_client
       - gluster_client_primary
+      - gluster_client_scaledown
   - name: gluster-client-${MOLECULE_SCENARIO_NAME}-secondary-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
@@ -101,6 +102,7 @@ platforms:
     groups:
       - gluster_client
       - gluster_client_secondary
+      - gluster_client_scaledown
   - name: gluster-client-${MOLECULE_SCENARIO_NAME}-tertiary-01
     image: "${MOLECULE_KVM_IMAGE}"
     cpu: 1
