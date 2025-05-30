@@ -42,8 +42,7 @@
   vars:
     _volume: "{{ item.name }}"
     _output: "{{ _member_query.results | default([]) }}"
-    _volumes: "{{ _output | map(attribute='results') | default([]) | flatten }}"
-    _query: "{{ _volumes | rejectattr('status', 'equalto', 'Started') }}"
+    _query: "{{ _output | rejectattr('status', 'equalto', 'Started') }}"
   retries: "{{ _gluster_retries }}"
   delay: "{{ _gluster_delay }}"
   until: _query | length == 0
