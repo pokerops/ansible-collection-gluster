@@ -35,8 +35,8 @@
       register: _member_query
       changed_when: false
 
-    - name: Query peer status
-      pokerops.gluster.peer_status:
+    - name: Query pool list
+      pokerops.gluster.pool_list:
       register: _peer_query
       changed_when: false
 

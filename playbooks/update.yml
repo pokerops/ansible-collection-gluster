@@ -33,8 +33,8 @@
         _members: "{{ _members_output | map(attribute='hostname') }}"
         _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
 
-    - name: Query peer status
-      pokerops.gluster.peer_status:
+    - name: Query pool list
+      pokerops.gluster.pool_list:
       register: _peer_query
       changed_when: false
 
@@ -95,8 +95,8 @@
         _members: "{{ _members_output | map(attribute='hostname') }}"
         _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
 
-    - name: Query peer status
-      pokerops.gluster.peer_status:
+    - name: Query pool list
+      pokerops.gluster.pool_list:
       register: _peer_query
       changed_when: false
 

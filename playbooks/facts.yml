@@ -27,8 +27,8 @@
           ansible.builtin.assert:
             that: services[gluster_service_name].state | lower == 'running'
 
-        - name: Query peer status
-          pokerops.gluster.peer_status:
+        - name: Query pool list
+          pokerops.gluster.pool_list:
           register: _peer_query
           changed_when: false
 
