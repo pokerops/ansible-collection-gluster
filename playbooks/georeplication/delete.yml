@@ -44,7 +44,7 @@
       ansible.builtin.set_fact:
         _gluster_georeplica_sessions: "{{ _sessions }}"
         _gluster_georeplica_volumes: "{{ _delete_volumes }}"
-        _gluster_georeplica_orphan_volumes: "{{ _orphan_attrs }}"
+        _gluster_georeplica_orphan_sessions: "{{ _orphan_sessions }}"
       vars:
         _attrs:
           - replica_name
@@ -66,22 +66,25 @@
         _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_names) }}"
         _replicas_list: "{{ _volumes | selectattr('replica_name', 'in', _existing_replicas) }}"
         _orphan_masters: "{{ _replica_overwritten | rejectattr('primary_node', 'in', _gluster_server_masters) }}"
-        _orphan_attrs: "{{ _orphan_masters | map(_select_attrs, _attrs) | unique }}"
+        _orphan_slaves_query: "{{ _replica_overwritten | difference(_orphan_masters) }}"
+        _orphan_slaves: "{{ _orphan_slaves_query | rejectattr('replica_name', 'in', _gluster_server_slaves_all) }}"
+        _orphan_list: "{{ _orphan_masters + _orphan_slaves }}"
+        _orphan_sessions: "{{ _orphan_list | map(_select_attrs, _attrs) | unique }}"
         _delete_volumes: "{{ _replicas_list | selectattr('state', 'equalto', 'absent') }}"
 
     - name: Debug gluster geo replication volumes to delete a session
       ansible.builtin.debug:
         msg: "{{ _gluster_georeplica_volumes }}"
 
-    - name: Debug gluster geo replication orphan volumes
+    - name: Debug gluster geo replication orphan sessions
       ansible.builtin.debug:
-        msg: "{{ _gluster_georeplica_orphan_volumes }}"
+        msg: "{{ _gluster_georeplica_orphan_sessions }}"
 
     - name: End play when there are no geo replications to delete
       ansible.builtin.meta: end_host
       when: |
         _gluster_georeplica_volumes | length == 0 and
-        _gluster_georeplica_orphan_volumes | length == 0
+        _gluster_georeplica_orphan_sessions | length == 0
 
     - name: Verify gluster geo replication session status
       ansible.builtin.assert:
@@ -101,7 +104,7 @@
         _replica: "{{ item.replica_name }}"
       loop_control:
         label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
-      loop: "{{ _gluster_georeplica_volumes + _gluster_georeplica_orphan_volumes }}"
+      loop: "{{ _gluster_georeplica_volumes + _gluster_georeplica_orphan_sessions }}"
       register: _georeplica_stop
       changed_when: false
 
@@ -123,7 +126,7 @@
         _replica: "{{ item.replica_name }}"
       loop_control:
         label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
-      loop: "{{ _gluster_georeplica_volumes + _gluster_georeplica_orphan_volumes }}"
+      loop: "{{ _gluster_georeplica_volumes + _gluster_georeplica_orphan_sessions }}"
       register: _georeplica_delete
       changed_when: false
 
@@ -139,7 +142,7 @@
       vars:
         _results: "{{ _georeplica_status.results | default([]) }}"
         _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
-        _orphan_replicas: "{{ _gluster_georeplica_orphan_volumes | map(attribute='replica_name') }}"
+        _orphan_replicas: "{{ _gluster_georeplica_orphan_sessions | map(attribute='replica_name') }}"
         _status: "{{ _results | selectattr('secondary_volume', 'in', _volumes) }}"
         _orphan_status: "{{ _results | selectattr('secondary_volume', 'in', _orphan_replicas) }}"
       register: _georeplica_status
@@ -164,7 +167,7 @@
       vars:
         _sessions: "{{ _gluster_georeplica_sessions }}"
         _volumes: "{{ _gluster_georeplica_volumes }}"
-        _orphan_volumes: "{{ _gluster_georeplica_orphan_volumes }}"
+        _orphan_volumes: "{{ _gluster_georeplica_orphan_sessions }}"
         _volume_names: "{{ _volumes | map(attribute='name') }}"
         _status: "{{ _sessions | selectattr('secondary_volume', 'in', _volume_names) }}"
         _orphan_names: "{{ _orphan_volumes | selectattr('secondary_volume', 'defined') }}"
