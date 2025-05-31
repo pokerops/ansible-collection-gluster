@@ -73,7 +73,7 @@
         _query: "{{ _output | rejectattr('status', 'equalto', 'Started') }}"
 
 - name: Test gluster client connection
-  hosts: "{{ gluster_client_hostgroup | default('gluster_client') }}"
+  hosts: "{{ gluster_client_hostgroup | default('gluster_client_primary') }}"
   become: true
   any_errors_fatal: true
   vars:
