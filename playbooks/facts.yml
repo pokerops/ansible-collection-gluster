@@ -20,6 +20,14 @@
     - name: Gather service facts
       ansible.builtin.service_facts:
 
+    - name: Install python pip3
+      ansible.builtin.package:
+        name: "python3-pip"
+
+    - name: Install glustercli python module
+      ansible.builtin.pip:
+        name: "glustercli"
+
     - name: Manage gluster status check tasks
       when: gluster_service_name in services
       block:
@@ -156,14 +164,6 @@
         that: _members_num | length > 1
       vars:
         _members_num: "{{ gluster_target_members }}"
-
-    - name: Install python pip3
-      ansible.builtin.package:
-        name: "python3-pip"
-
-    - name: Install glustercli python module
-      ansible.builtin.pip:
-        name: "glustercli"
 
     - name: Query pool list
       pokerops.gluster.pool_list:
