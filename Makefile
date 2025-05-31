@@ -26,6 +26,7 @@ test: requirements
 	poetry run molecule $@ -s ${MOLECULE_SCENARIO}
 
 install:
+	@sudo apt-get update
 	@type poetry >/dev/null || pip3 install poetry
 	@type yq >/dev/null || sudo apt-get install -y yq
 	@sudo apt-get install -y libvirt-dev network-manager
