@@ -174,7 +174,7 @@
         _orphan_status: "{{ _orphan_names | selectattr('secondary_volume', 'in', _volume_names) }}"
 
     - name: End play when there are no orphan sessions
-      ansible.builtin.meta: end_play
+      ansible.builtin.meta: end_host
       vars:
         _orphans: "{{ _gluster_georeplica_orphan_sessions | default([]) }}"
       when: _orphans | length == 0
