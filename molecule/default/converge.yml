@@ -1,9 +1,0 @@
----
-- name: Converge
-
-  hosts: all
-
-  roles:
-
-    - nephelaiio.plugins
-    - pokerops.gluster

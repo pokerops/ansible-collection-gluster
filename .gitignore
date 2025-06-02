@@ -5,3 +5,6 @@
 .molecule/
 **/.ropeproject
 playbook.retry
+.ansible/
+.devbox/
+.pyre/

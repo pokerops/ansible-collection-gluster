@@ -1,0 +1,21 @@
+---
+namespace: pokerops
+name: gluster
+version: 0.0.1
+readme: README.md
+authors:
+  - Carlos Gonzalez <43476850+carlosgo13@users.noreply.github.com>
+description: Gluster collection
+license:
+  - MIT
+tags:
+  - gluster
+dependencies:
+  "nephelaiio.plugins": "*"
+repository: http://github.com/pokerops/ansible-collection-gluster
+documentation: http://github.com/pokerops/ansible-collection-gluster
+homepage: http://github.com/pokerops/ansible-collection-gluster
+issues: http://github.com/pokerops/ansible-collection-gluster/issues
+build_ignore:
+  - .devbox
+  - .venv

@@ -1,0 +1,44 @@
+---
+# Defaults
+gluster_server_package_name: "glusterfs-server"
+gluster_client_package_name: "glusterfs-client"
+gluster_service_name: "glusterd.service"
+gluster_address_attrs: ["ansible_default_ipv4", "address"]
+gluster_ssh_key: ~/.ssh/id_rsa
+gluster_georeplica_user_default:
+  name: georeplica
+  group: "{{ gluster_georeplica_group_default.name }}"
+gluster_georeplica_group_default:
+  name: "georeplica"
+gluster_release_default: 11
+gluster_georeplica_mountbroker: "/var/mountbroker-root"
+gluster_georeplication_keys_script: /usr/libexec/glusterfs/set_geo_rep_pem_keys.sh
+gluster_meta_volume:
+  name: gluster_shared_storage
+  brick: /data/gluster-shared-storage
+  mount: /var/run/gluster/shared_storage/
+  paths: []
+gluster_georeplica_volumes_status:
+  - "Active"
+  - "Passive"
+
+# Overridable values
+_gluster_server_hostgroup_name: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
+_gluster_volumes_list: "{{ gluster_volumes | default([]) }}"
+_gluster_hosts_manage: "{{ gluster_hosts_manage | default('true') | bool }}"
+_gluster_owner_user: "{{ gluster_owner_user | default('root') }}"
+_gluster_owner_group: "{{ gluster_owner_group | default('root') }}"
+_gluster_directory_mode: "{{ gluster_directory_mode | default('0740') }}"
+_gluster_retries: "{{ gluster_retries | default(5) }}"
+_gluster_delay: "{{ gluster_delay | default(5) }}"
+_gluster_georeplica_user: "{{ gluster_georeplica_user | default(gluster_georeplica_user_default) }}"
+_gluster_georeplica_group: "{{ gluster_georeplica_group | default(gluster_georeplica_group_default) }}"
+_gluster_georeplica_manage: "{{ gluster_georeplica_manage | default('false') | bool }}"
+_gluster_nolog: "{{ gluster_nolog | default('true') | bool }}"
+_gluster_release: "{{ gluster_release | default(gluster_release_default) }}"
+_gluster_client_hostgroup_name: "{{ gluster_client_hostgroup_name | default('gluster_client') }}"
+_gluster_client_user: "{{ gluster_client_user | default('root') }}"
+_gluster_client_group: "{{ gluster_client_group | default('root') }}"
+_gluster_client_mode: "{{ gluster_client_mode | default('644') }}"
+_gluster_client_serial: "{{ gluster_client_serial | default('1') }}"
+_gluster_update_skip_hostgroup: "{{ gluster_update_skip_hostgroup | default('gluster_update_skip') }}"

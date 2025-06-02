@@ -1,0 +1,53 @@
+---
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: End play for offline hosts
+  ansible.builtin.meta: end_host
+  when: not gluster_service_name in services
+
+- name: Query pool list
+  pokerops.gluster.pool_list:
+  register: _member_query
+  changed_when: false
+
+- name: End play when node is not member of cluster
+  ansible.builtin.meta: end_host
+  vars:
+    _members_output: "{{ _member_query.results | default([]) }}"
+    _members: "{{ _members_output | map(attribute='hostname') }}"
+    _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+  when: not inventory_hostname in _existing_members
+
+- name: Manage gluster service
+  ansible.builtin.service:
+    name: "{{ gluster_service_name }}"
+    state: "{{ gluster_service_state | default('started') }}"
+
+- name: Query pool list
+  pokerops.gluster.pool_list:
+  vars:
+    _output: "{{ _peer_query.results | default([]) }}"
+    _query_node: "{{ _output | selectattr('hostname', 'equalto', 'localhost') }}"
+    _query_status: "{{ _query_node | selectattr('connected', 'equalto', 'Connected') }}"
+  retries: "{{ _gluster_retries }}"
+  delay: "{{ _gluster_delay }}"
+  until: _query_status | length > 0
+  register: _peer_query
+  changed_when: false
+
+- name: Verify volume statuses
+  pokerops.gluster.volume.info:
+    volname: "{{ _volume }}"
+  vars:
+    _volume: "{{ item.name }}"
+    _output: "{{ _member_query.results | default([]) }}"
+    _query: "{{ _output | rejectattr('status', 'equalto', 'Started') }}"
+  retries: "{{ _gluster_retries }}"
+  delay: "{{ _gluster_delay }}"
+  until: _query | length == 0
+  register: _member_query
+  changed_when: false
+  loop_control:
+    label: "{{ _volume }}"
+  loop: "{{ _gluster_volumes }}"

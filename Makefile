@@ -1,58 +1,81 @@
-.PHONY: all ${MAKECMDGOALS}
+.PHONY: ${MAKECMDGOALS}
 
-MOLECULE_SCENARIO ?= default
-MOLECULE_DOCKER_IMAGE ?= ubuntu2004
+HOST_DISTRO = $$(grep ^ID /etc/os-release | cut -d '=' -f 2)
+PKGMAN = $$(if [ "$(HOST_DISTRO)" = "fedora" ]; then echo "dnf" ; else echo "apt-get"; fi)
+MOLECULE_SCENARIO ?= install
+MOLECULE_DOCKER_IMAGE ?= ubuntu2204
+MOLECULE_DOCKER_COMMAND ?= /lib/systemd/systemd
+MOLECULE_KVM_IMAGE ?= https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
 GALAXY_API_KEY ?=
 GITHUB_REPOSITORY ?= $$(git config --get remote.origin.url | cut -d':' -f 2 | cut -d. -f 1)
 GITHUB_ORG = $$(echo ${GITHUB_REPOSITORY} | cut -d/ -f 1)
 GITHUB_REPO = $$(echo ${GITHUB_REPOSITORY} | cut -d/ -f 2)
 REQUIREMENTS = requirements.yml
+ROLE_DIR = roles
+ROLE_FILE = roles.yml
+COLLECTION_NAMESPACE = $$(yq -r '.namespace' < galaxy.yml)
+COLLECTION_NAME = $$(yq -r '.name' < galaxy.yml)
+COLLECTION_VERSION = $$(yq -r '.version' < galaxy.yml)
 
 all: install version lint test
 
-shell:
-	DEVBOX_USE_VERSION=0.13.1 devbox shell
-
-test: install
-	poetry run molecule test -s ${MOLECULE_SCENARIO}
+test: requirements
+	MOLECULE_KVM_IMAGE=${MOLECULE_KVM_IMAGE} \
+	MOLECULE_DOCKER_COMMAND=${MOLECULE_DOCKER_COMMAND} \
+	MOLECULE_DOCKER_IMAGE=${MOLECULE_DOCKER_IMAGE} \
+	poetry run molecule $@ -s ${MOLECULE_SCENARIO}
 
 install:
+	@sudo apt-get update
+	@type poetry >/dev/null || pip3 install poetry
+	@type yq >/dev/null || sudo apt-get install -y yq
+	@sudo apt-get install -y libvirt-dev network-manager
 	@poetry install --no-root
 
-lint: install
+lint: requirements
 	poetry run yamllint .
-	poetry run ansible-lint .
+	poetry run ansible-lint -- playbooks/ --exclude roles --exclude .ansible/
 
-roles:
-	[ -f ${REQUIREMENTS} ] && yq '.$@[] | .name' -r < ${REQUIREMENTS} \
-		| xargs -L1 poetry run ansible-galaxy role install --force || exit 0
+requirements: install
+	@yq '.roles[].name' -r < roles.yml | xargs -I {} rm -rf roles/{}
+	@python --version
+	@poetry run ansible-galaxy role install \
+		--force --no-deps \
+		--roles-path ${ROLE_DIR} \
+		--role-file ${ROLE_FILE}
+	@poetry run ansible-galaxy collection install \
+		--force-with-deps .
+	@\find ./ -name "*.ymle*" -delete
 
-collections:
-	[ -f ${REQUIREMENTS} ] && yq '.$@[]' -r < ${REQUIREMENTS} \
-		| xargs -L1 echo poetry run ansible-galaxy -vvv collection install --force || exit 0
+build: requirements
+	@poetry run ansible-galaxy collection build --force
 
-requirements: roles collections
+dependency create prepare converge idempotence side-effect verify destroy cleanup reset list:
+	MOLECULE_KVM_IMAGE=${MOLECULE_KVM_IMAGE} \
+	MOLECULE_DOCKER_COMMAND=${MOLECULE_DOCKER_COMMAND} \
+	MOLECULE_DOCKER_IMAGE=${MOLECULE_DOCKER_IMAGE} \
+	poetry run molecule $@ -s ${MOLECULE_SCENARIO}
 
-dependency create prepare converge idempotence side-effect verify destroy login reset:
-	MOLECULE_DOCKER_IMAGE=${MOLECULE_DOCKER_IMAGE} poetry run molecule $@ -s ${MOLECULE_SCENARIO}
+ifeq (login,$(firstword $(MAKECMDGOALS)))
+    LOGIN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
-rebuild: destroy prepare create
+login:
+	MOLECULE_KVM_IMAGE=${MOLECULE_KVM_IMAGE} \
+	MOLECULE_DOCKER_COMMAND=${MOLECULE_DOCKER_COMMAND} \
+	MOLECULE_DOCKER_IMAGE=${MOLECULE_DOCKER_IMAGE} \
+	poetry run molecule $@ -s ${MOLECULE_SCENARIO} ${LOGIN_ARGS}
 
 ignore:
-	poetry run ansible-lint --generate-ignore
+	@poetry run ansible-lint --generate-ignore
 
 clean: destroy reset
-	poetry env remove $$(which python)
+	@poetry env remove $$(which python) >/dev/null 2>&1 || exit 0
 
-publish:
-	@echo publishing repository ${GITHUB_REPOSITORY}
-	@echo GITHUB_ORGANIZATION=${GITHUB_ORG}
-	@echo GITHUB_REPOSITORY=${GITHUB_REPO}
-	@poetry run ansible-galaxy role import \
-		--api-key ${GALAXY_API_KEY} ${GITHUB_ORG} ${GITHUB_REPO}
+publish: build
+	poetry run ansible-galaxy collection publish --api-key ${GALAXY_API_KEY} \
+		"${COLLECTION_NAMESPACE}-${COLLECTION_NAME}-${COLLECTION_VERSION}.tar.gz"
 
-version: install
+version:
 	@poetry run molecule --version
-
-debug: version install
-	@poetry export --dev --without-hashes

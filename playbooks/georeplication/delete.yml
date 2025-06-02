@@ -1,0 +1,192 @@
+---
+- name: Load Gluster facts
+  ansible.builtin.import_playbook: pokerops.gluster.facts
+  vars:
+    gluster_server_groupset: replica_delete
+
+- name: Get existing gluster geo replication volumes
+  ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
+  vars:
+    gluster_server_groupset: replica_delete
+
+- name: Delete geo replication session tasks
+  hosts: "{{ _gluster_server_hostgroup_name }}"
+  any_errors_fatal: true
+  become: true
+  vars_files:
+    - ../../vars/main.yml
+  tasks:
+    - name: End play when gluster georeplication is not required
+      ansible.builtin.meta: end_play
+      vars:
+        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
+      when: _replicas | length == 0
+
+    - name: End play for unrequired gluster geo replication nodes
+      ansible.builtin.meta: end_host
+      when: (not inventory_hostname == (gluster_target_members | first))
+
+    - name: Get gluster geo replication status
+      pokerops.gluster.georeplication.status:
+        secondary_user: "{{ _gluster_user }}"
+      register: _georeplica_status
+      changed_when: false
+
+    - name: Debug gluster geo replication status
+      ansible.builtin.debug:
+        msg: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
+      vars:
+        _volumes: "{{ _gluster_target_volumes }}"
+        _target_volumes: "{{ _volumes | map(attribute='name') }}"
+        _sessions: "{{ _georeplica_status.results | default([]) }}"
+
+    - name: Set georeplication session status
+      ansible.builtin.set_fact:
+        _gluster_georeplica_sessions: "{{ _sessions }}"
+        _gluster_georeplica_volumes: "{{ _delete_volumes }}"
+        _gluster_georeplica_orphan_sessions: "{{ _orphan_sessions }}"
+      vars:
+        _attrs:
+          - replica_name
+          - name
+        _sessions: "{{ _georeplica_status.results | default([]) }}"
+        _replica_volumes: "{{ _sessions | sort(attribute='primary_volume') }}"
+        _existing_names: "{{ _replica_volumes | map(attribute='secondary_volume') }}"
+        _replicas: "{{ _replica_volumes | map(attribute='secondary') }}"
+        _existing_volumes: "{{ _replicas | map('regex_replace', '.*@', '') }}"
+        _existing_replicas: "{{ _existing_volumes | map('regex_replace', '::.*', '') }}"
+        _replica_nodes_dict: "{{ _existing_replicas | map(_to_dict, 'replica_name') }}"
+        _replica_nodes_overwritten: "{{ _replica_volumes | zip(_replica_nodes_dict) | map('combine') }}"
+        _replica_names: "{{ _replica_nodes_overwritten | map(attribute='primary_volume') }}"
+        _replica_names_dict: "{{ _replica_names | map(_to_dict, 'name') }}"
+        _replica_overwritten: "{{ _replica_nodes_overwritten | zip(_replica_names_dict) | map('combine') }}"
+        _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
+        _target_volume_names: "{{ _target_volumes | map(attribute='name') }}"
+        _target_replicas: "{{ _target_volumes | map(attribute='replica_name') }}"
+        _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_names) }}"
+        _replicas_list: "{{ _volumes | selectattr('replica_name', 'in', _existing_replicas) }}"
+        _orphan_masters: "{{ _replica_overwritten | rejectattr('primary_node', 'in', _gluster_server_masters) }}"
+        _orphan_slaves_query: "{{ _replica_overwritten | difference(_orphan_masters) }}"
+        _orphan_slaves: "{{ _orphan_slaves_query | rejectattr('replica_name', 'in', _gluster_server_slaves_all) }}"
+        _orphan_list: "{{ _orphan_masters + _orphan_slaves }}"
+        _orphan_sessions: "{{ _orphan_list | map(_select_attrs, _attrs) | unique }}"
+        _delete_volumes: "{{ _replicas_list | selectattr('state', 'equalto', 'absent') }}"
+
+    - name: Debug gluster geo replication volumes to delete a session
+      ansible.builtin.debug:
+        msg: "{{ _gluster_georeplica_volumes }}"
+
+    - name: Debug gluster geo replication orphan sessions
+      ansible.builtin.debug:
+        msg: "{{ _gluster_georeplica_orphan_sessions }}"
+
+    - name: End play when there are no geo replications to delete
+      ansible.builtin.meta: end_host
+      when: |
+        _gluster_georeplica_volumes | length == 0 and
+        _gluster_georeplica_orphan_sessions | length == 0
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that: _sessions | length > 0
+      vars:
+        _sessions: "{{ _gluster_georeplica_sessions }}"
+
+    - name: Stop gluster geo replication sessions
+      pokerops.gluster.georeplication.stop:
+        primary_volume: "{{ _volume }}"
+        secondary_volume: "{{ _volume }}"
+        secondary_host: "{{ _replica }}"
+        secondary_user: "{{ _gluster_user }}"
+        force: "{{ item.force | default('false') | bool }}"
+      vars:
+        _volume: "{{ item.name }}"
+        _replica: "{{ item.replica_name }}"
+      loop_control:
+        label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
+      loop: "{{ _gluster_georeplica_volumes + _gluster_georeplica_orphan_sessions }}"
+      register: _georeplica_stop
+      changed_when: false
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that: _status | rejectattr('result', 'match', '.*has been successful.*') | length == 0
+      vars:
+        _status: "{{ _georeplica_stop.results | default([]) }}"
+
+    - name: Delete geo replication session
+      pokerops.gluster.georeplication.delete:
+        primary_volume: "{{ _volume }}"
+        secondary_volume: "{{ _volume }}"
+        secondary_host: "{{ _replica }}"
+        secondary_user: "{{ _gluster_user }}"
+        reset_sync_time: "{{ item.reset_sync_time | default('true') | bool }}"
+      vars:
+        _volume: "{{ item.name }}"
+        _replica: "{{ item.replica_name }}"
+      loop_control:
+        label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
+      loop: "{{ _gluster_georeplica_volumes + _gluster_georeplica_orphan_sessions }}"
+      register: _georeplica_delete
+      changed_when: false
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that: _status | rejectattr('result', 'match', '.*has been successful.*') | length == 0
+      vars:
+        _status: "{{ _georeplica_delete.results | default([]) }}"
+
+    - name: Get gluster geo replication status
+      pokerops.gluster.georeplication.status:
+        secondary_user: "{{ _gluster_user }}"
+      vars:
+        _results: "{{ _georeplica_status.results | default([]) }}"
+        _volumes: "{{ _gluster_georeplica_volumes | map(attribute='name') }}"
+        _orphan_replicas: "{{ _gluster_georeplica_orphan_sessions | map(attribute='replica_name') }}"
+        _status: "{{ _results | selectattr('secondary_volume', 'in', _volumes) }}"
+        _orphan_status: "{{ _results | selectattr('secondary_volume', 'in', _orphan_replicas) }}"
+      register: _georeplica_status
+      retries: "{{ _gluster_retries }}"
+      delay: "{{ _gluster_delay }}"
+      until: (_status | length == 0) and (_orphan_status | length == 0)
+      changed_when: false
+
+    - name: Set georeplication session status
+      ansible.builtin.set_fact:
+        _gluster_georeplica_sessions: "{{ _georeplica_status.results | default([]) }}"
+
+    - name: Debug gluster geo replication status
+      ansible.builtin.debug:
+        msg: "{{ _gluster_georeplica_sessions }}"
+
+    - name: Verify gluster geo replication session status
+      ansible.builtin.assert:
+        that:
+          - _status | length == 0
+          - _orphan_status | length == 0
+      vars:
+        _sessions: "{{ _gluster_georeplica_sessions }}"
+        _volumes: "{{ _gluster_georeplica_volumes }}"
+        _orphan_volumes: "{{ _gluster_georeplica_orphan_sessions }}"
+        _volume_names: "{{ _volumes | map(attribute='name') }}"
+        _status: "{{ _sessions | selectattr('secondary_volume', 'in', _volume_names) }}"
+        _orphan_names: "{{ _orphan_volumes | selectattr('secondary_volume', 'defined') }}"
+        _orphan_status: "{{ _orphan_names | selectattr('secondary_volume', 'in', _volume_names) }}"
+
+    - name: End play when there are no orphan sessions
+      ansible.builtin.meta: end_host
+      vars:
+        _orphans: "{{ _gluster_georeplica_orphan_sessions | default([]) }}"
+      when: _orphans | length == 0
+
+    - name: Reset geo replication indexing in orphan masters
+      pokerops.gluster.volume.optreset:
+        volname: "{{ _volume }}"
+        opt: "geo-replication.indexing"
+        force: True
+      vars:
+        _volume: "{{ item.name }}"
+      loop_control:
+        label: "{{ _volume }}"
+      loop: "{{ _gluster_volumes_list }}"
+      changed_when: false

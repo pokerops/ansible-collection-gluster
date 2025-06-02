@@ -1,0 +1,58 @@
+---
+name: molecule
+
+env:
+  DEVBOX_VERSION: ${{ vars.DEVBOX_VERSION }}
+
+on:
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: "0 5 * * 5"
+
+defaults:
+  run:
+    working-directory: "pokerops.gluster"
+
+jobs:
+  molecule:
+    name: libvirt
+    runs-on: libvirt
+    strategy:
+      matrix:
+        scenario:
+          - install
+          - start
+          - stop
+          - restart
+          - scaleup
+          - scaledown
+          - update
+          - georeplication
+        image:
+          - name: ubuntu2204
+            command: /lib/systemd/systemd
+          - name: ubuntu2004
+            command: /lib/systemd/systemd
+    steps:
+      - name: Check out the codebase
+        uses: actions/checkout@v4
+        with:
+          path: "pokerops.gluster"
+
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.12.0
+        with:
+          project-path: "pokerops.gluster"
+          devbox-version: ${{ vars.DEVBOX_VERSION }}
+
+      - name: Run molecule tests.
+        run: devbox run make test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          PY_COLORS: "1"
+          ANSIBLE_FORCE_COLOR: "1"
+          MOLECULE_SCENARIO: ${{ matrix.scenario }}
+          MOLECULE_DOCKER_IMAGE: ${{ matrix.image.name }}
+          MOLECULE_DOCKER_COMMAND: ${{ matrix.image.command }}

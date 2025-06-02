@@ -1,0 +1,65 @@
+---
+- name: Query installed packages
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Get gluster server installation status
+  when: gluster_server_package_name in packages
+  block:
+    - name: Query installed gluster server package version
+      ansible.builtin.shell:
+        cmd: "dpkg-query -W -f='${Version}' {{ gluster_server_package_name }}"
+      changed_when: false
+      register: gluster_server_package_query
+
+    - name: Set installed gluster package version fact
+      ansible.builtin.set_fact:
+        gluster_package_version_target: "{{ gluster_server_package_query.stdout }}"
+        gluster_server_installed: true
+
+- name: Get target gluster server package version
+  when: not gluster_server_package_name in packages
+  block:
+    - name: Query available gluster server package
+      ansible.builtin.shell:
+        cmd: "apt-cache madison {{ gluster_server_package_name }} | awk '{ print $3 }' | grep '^{{ _gluster_release }}' | sort -r | head -1"
+      changed_when: false
+      register: gluster_server_package_query
+
+    - name: Set available gluster package version fact
+      ansible.builtin.set_fact:
+        gluster_package_version_target: "{{ gluster_server_package_query.stdout }}"
+        gluster_server_installed: false
+
+- name: Debug gluster server package version
+  ansible.builtin.debug:
+    var: gluster_package_version_target
+
+- name: Debug gluster server release
+  ansible.builtin.debug:
+    var: _gluster_release
+
+- name: Install gluster server
+  ansible.builtin.package:
+    name: "{{ gluster_server_package_name }}"
+
+- name: Query installed packages
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Debug installed gluster server package
+  ansible.builtin.debug:
+    msg: "{{ _gluster_package | map(attribute='version') | first }}"
+  vars:
+    _gluster_package: "{{ packages[gluster_server_package_name] }}"
+
+- name: Manage gluster service
+  ansible.builtin.service:
+    name: "{{ gluster_service_name }}"
+    state: "{{ 'restarted' if _changed else 'started' }}"
+    enabled: true
+  vars:
+    _gluster_package: "{{ packages[gluster_server_package_name] }}"
+    _gluster_installed: "{{ gluster_server_installed | bool }}"
+    _gluster_installed_target: "{{ _gluster_package | map(attribute='version') | first }}"
+    _changed: "{{ _gluster_installed_target != gluster_package_version_target }}"

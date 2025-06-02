@@ -1,0 +1,98 @@
+---
+- name: Load Gluster facts
+  ansible.builtin.import_playbook: pokerops.gluster.facts
+  vars:
+    gluster_server_groupset: install
+
+- name: Deploy gluster server on slave nodes
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_install_slave_all"
+  become: true
+  any_errors_fatal: true
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: Install gluster server
+      ansible.builtin.include_role:
+        name: pokerops.gluster.gluster
+
+- name: Deploy gluster server on master nodes
+  hosts: "{{ gluster_server_prefix | default('gluster_server') }}_install_master_all"
+  become: true
+  any_errors_fatal: true
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: Install gluster server
+      ansible.builtin.include_role:
+        name: pokerops.gluster.gluster
+
+- name: Manage gluster peers
+  hosts: "{{ _gluster_server_hostgroup_name }}"
+  become: true
+  any_errors_fatal: true
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: Manage gluster peer members
+      gluster.gluster.gluster_peer:
+        state: present
+        nodes: "{{ _targets }}"
+      vars:
+        _targets: "{{ gluster_target_members }}"
+      changed_when: false
+      when: (inventory_hostname == (gluster_target_members | first))
+
+    - name: Wait for gluster peers to be connected
+      pokerops.gluster.pool_list:
+      vars:
+        _targets: "{{ gluster_target_members }}"
+        _status: "{{ _member_query }}"
+        _members_output: "{{ _status.results | default([]) }}"
+        _members: "{{ _members_output | map(attribute='hostname') }}"
+        _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+      register: _member_query
+      retries: "{{ _gluster_retries }}"
+      delay: "{{ _gluster_delay }}"
+      until: _targets | reject('in', _existing_members) | length == 0
+      changed_when: false
+
+    - name: Debug gluster peer list
+      ansible.builtin.debug:
+        msg: "{{ _existing_members }}"
+      vars:
+        _members_output: "{{ _member_query.results | default([]) | sort(attribute='hostname') }}"
+        _members: "{{ _members_output | map(attribute='hostname') }}"
+        _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+        _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
+        _existing_members: "{{ _members_output | zip(_members_dict) | map('combine') }}"
+
+    - name: Verify gluster peers status
+      ansible.builtin.assert:
+        that: _fail_members | length == 0
+      vars:
+        _members_output: "{{ _member_query.results | default([]) }}"
+        _fail_members: "{{ _members_output | rejectattr('connected', 'equalto', 'Connected') }}"
+
+    - name: Get gluster version
+      pokerops.gluster.version:
+      register: _gluster_version
+      changed_when: false
+      loop: "{{ play_hosts }}"
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      tags: skip_ansible_lint
+
+    - name: Debug gluster version
+      ansible.builtin.debug:
+        msg: "{{ _versions }}"
+      vars:
+        _output: "{{ _gluster_version.results | default([]) }}"
+        _versions: "{{ _output | map(attribute='result') | unique }}"
+
+    - name: Verify gluster version across geo replication members
+      ansible.builtin.assert:
+        that: _versions | length == 1
+        fail_msg: "Gluster version must be the same across members"
+      vars:
+        _output: "{{ _gluster_version.results | default([]) }}"
+        _versions: "{{ _output | map(attribute='result') | unique }}"

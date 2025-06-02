@@ -1,0 +1,40 @@
+---
+- name: Load Gluster facts
+  ansible.builtin.import_playbook: pokerops.gluster.facts
+  vars:
+    gluster_server_groupset: client
+
+- name: Manage gluster clients
+  hosts: "{{ _gluster_client_hostgroup_name }}"
+  become: true
+  any_errors_fatal: true
+  serial: "{{ _gluster_client_serial }}"
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: Install gluster client
+      ansible.builtin.package:
+        name: "{{ gluster_client_package_name }}"
+
+    - name: Manage gluster client volume mounts
+      ansible.posix.mount:
+        src: "{{ _server }}:/{{ item.name }}"
+        path: "{{ item.mount }}"
+        fstype: glusterfs
+        opts: "{{ _options }}"
+        state: "{{ _state }}"
+      vars:
+        _slaves: "{{ _gluster_server_slaves }}"
+        _masters: "{{ _gluster_server_masters }}"
+        _server_group: "{{ _slaves if _replica_manage else _masters }}"
+        _server: "{{ _server_group | first }}"
+        _replica_manage: "{{ _gluster_georeplica_manage }}"
+        _options: "{{ item.opts | default('defaults,rw') }}"
+        _state_defaults:
+          - "present"
+          - "stopped"
+          - "started"
+        _state: "{{ 'mounted' if item.state in _state_defaults else item.state }}"
+      loop_control:
+        label: "{{ item.name }} - {{ item.mount }}"
+      loop: "{{ _gluster_client_volumes }}"

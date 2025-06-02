@@ -1,4 +1,9 @@
 ---
-roles:
+roles: []
+collections:
+  - name: pokerops.gluster
+    source: .
+    type: dir
   - name: nephelaiio.plugins
-collections: []
+  - name: nephelaiio.libvirt
+  - name: gluster.gluster
