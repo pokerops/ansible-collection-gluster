@@ -103,7 +103,7 @@
       when: inventory_hostname in _gluster_server_masters
 
     - name: Get gluster volume status
-      pokerops.gluster.volume_status:
+      pokerops.gluster.volume.status:
       register: _gluster_volumes_status
 
     - name: Verify gluster volume status

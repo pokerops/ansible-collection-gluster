@@ -37,7 +37,7 @@
   changed_when: false
 
 - name: Verify volume statuses
-  pokerops.gluster.volume_info:
+  pokerops.gluster.volume.info:
     volname: "{{ _volume }}"
   vars:
     _volume: "{{ item.name }}"
