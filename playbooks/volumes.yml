@@ -45,6 +45,10 @@
             _options: "{{ _options_default | combine(item.options | default({})) }}"
             _brick: "{{ item.brick }}"
             _volume: "{{ item.name }}"
+          register: _gluster_status_output
+          retries: "{{ _gluster_retries }}"
+          delay: "{{ _gluster_delay }}"
+          until: _gluster_status_output is success
           loop_control:
             label: "{{ _volume }}"
           loop: "{{ _gluster_volumes_present }}"
