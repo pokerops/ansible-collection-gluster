@@ -102,6 +102,22 @@
       loop: "{{ _gluster_volumes_present | subelements('paths', skip_missing='yes') }}"
       when: inventory_hostname in _gluster_server_masters
 
+    - name: Get gluster volume status
+      pokerops.gluster.volume_status:
+      register: _gluster_volumes_status
+
+    - name: Verify gluster volume status
+      ansible.builtin.assert:
+        that:
+          - _volumes_query | rejectattr('status', 'equalto', 'Started')
+          - _volumes | rejectattr('name', 'in', _volume_names)
+          - _volumes_query | rejectattr('replica', 'equalto', _replicas_num)
+      vars:
+        _volumes: "{{ _gluster_volumes_present }}"
+        _volume_names: "{{ _volumes_query | map(attribute='name') }}"
+        _replicas_num: "{{ gluster_target_members | length }}"
+        _volumes_query: "{{ _gluster_volumes_status.results | default([]) }}"
+
     - name: Set delete gluster volumes facts
       ansible.builtin.set_fact:
         _gluster_volumes_delete: "{{ _volumes_delete }}"
