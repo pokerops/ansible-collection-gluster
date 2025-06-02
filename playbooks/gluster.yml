@@ -96,4 +96,3 @@
       vars:
         _output: "{{ _gluster_version.results | default([]) }}"
         _versions: "{{ _output | map(attribute='result') | unique }}"
-
