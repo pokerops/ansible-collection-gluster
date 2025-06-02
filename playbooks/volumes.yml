@@ -109,9 +109,9 @@
     - name: Verify gluster volume status
       ansible.builtin.assert:
         that:
-          - _volumes_query | rejectattr('status', 'equalto', 'Started')
-          - _volumes | rejectattr('name', 'in', _volume_names)
-          - _volumes_query | rejectattr('replica', 'equalto', _replicas_num)
+          - _volumes_query | rejectattr('status', 'equalto', 'Started') | length == 0
+          - _volumes | rejectattr('name', 'in', _volume_names) | length == 0
+          - _volumes_query | rejectattr('replica', 'equalto', (_replicas_num | int)) | length == 0
       vars:
         _volumes: "{{ _gluster_volumes_present }}"
         _volume_names: "{{ _volumes_query | map(attribute='name') }}"

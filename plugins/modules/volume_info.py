@@ -32,7 +32,7 @@ def run_module():
                 changed=False,
                 msg="",
                 stderr="GlusterFS CLI not found: is Gluster installed?",
-                result=[]
+                results=[]
             )
         else:
             module.fail_json(msg=f"File not found: {str(e)}", changed=False)

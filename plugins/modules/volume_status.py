@@ -22,7 +22,7 @@ def run_module():
 
     try:
         result = dict(
-            changed=True,
+            changed=False,
             msg="Command executed successfully",
             results=status_detail(**params)
         )
