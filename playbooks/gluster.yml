@@ -71,3 +71,28 @@
       vars:
         _members_output: "{{ _member_query.results | default([]) }}"
         _fail_members: "{{ _members_output | rejectattr('connected', 'equalto', 'Connected') }}"
+
+    - name: Get gluster version
+      pokerops.gluster.version:
+      register: _gluster_version
+      changed_when: false
+      loop: "{{ play_hosts }}"
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      tags: skip_ansible_lint
+
+    - name: Debug gluster version
+      ansible.builtin.debug:
+        msg: "{{ _versions }}"
+      vars:
+        _output: "{{ _gluster_version.results | default([]) }}"
+        _versions: "{{ _output | map(attribute='result') | unique }}"
+
+    - name: Verify gluster version across geo replication members
+      ansible.builtin.assert:
+        that: _versions | length == 1
+        fail_msg: "Gluster version must be the same across members"
+      vars:
+        _output: "{{ _gluster_version.results | default([]) }}"
+        _versions: "{{ _output | map(attribute='result') | unique }}"
+

@@ -52,30 +52,6 @@
             _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
             _query: "{{ _members_overwritten | rejectattr('connected', 'equalto', 'Connected') }}"
 
-        - name: Get gluster version
-          pokerops.gluster.version:
-          register: _gluster_version
-          changed_when: false
-          loop: "{{ play_hosts }}"
-          delegate_to: "{{ item }}"
-          delegate_facts: true
-          tags: skip_ansible_lint
-
-        - name: Debug gluster version
-          ansible.builtin.debug:
-            msg: "{{ _versions }}"
-          vars:
-            _output: "{{ _gluster_version.results | default([]) }}"
-            _versions: "{{ _output | map(attribute='result') | unique }}"
-
-        - name: Verify gluster version across geo replication members
-          ansible.builtin.assert:
-            that: _versions | length == 1
-            fail_msg: "Gluster version must be the same across members"
-          vars:
-            _output: "{{ _gluster_version.results | default([]) }}"
-            _versions: "{{ _output | map(attribute='result') | unique }}"
-
     - name: Group gluster server geo replication members
       ansible.builtin.group_by:
         key: "{{ _gluster_name }}_{{ _slave if _replica_manage else _master }}"
