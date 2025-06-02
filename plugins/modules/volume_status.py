@@ -1,41 +1,30 @@
 from ansible.module_utils.common.validation import safe_eval
 from ansible.module_utils.basic import AnsibleModule
-from glustercli.cli.utils import georep_execute, GlusterCmdException
+from glustercli.cli.utils import GlusterCmdException
+from glustercli.cli.volume import status_detail
 
 def run_module():
 
     module_args = {
-        "primary_volume": {"default": None, "type": "str"},
-        "secondary_host": {"default": None, "type": "str"},
-        "secondary_volume": {"default": None, "type": "str"},
-        "secondary_user": {"required": True, "type": "str"},
-        "key": {"required": True, "type": "str"},
-        "value": {"required": True, "type": "str"}
+        "volname": {"default": None, "type": "str"},
+        "group_subvols": {"default": None, "type": "str"}
     }
+
+    params = {}
 
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=False
     )
 
-    params = {}
-
-    params = module.params
+    for key, value in module_args.items():
+        params[key] = module.params[key]
 
     try:
-        secondary_target = f"{params['secondary_user']}@{params['secondary_host']}::{params['secondary_volume']}"
-        cmd = [
-            params['primary_volume'],
-            secondary_target,
-            "config",
-            params['key'],
-            params['value']
-        ]
-
         result = dict(
             changed=True,
             msg="Command executed successfully",
-            result=georep_execute(cmd)
+            results=status_detail(**params)
         )
         module.exit_json(**result)
 
@@ -59,6 +48,10 @@ def run_module():
             stderr=err,
             changed=False
         )
+
+    
+    except Exception as e:
+        module.fail_json(msg=f"Unexpected error: {str(e)}", changed=False)
 
 def main():
     run_module()

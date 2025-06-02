@@ -37,12 +37,23 @@ def run_module():
             if session.get("status", "").lower() != "offline"
         ]
         result = dict(
-            changed=True,
+            changed=False,
             msg="Command executed successfully",
             results=flattened_status
         )
 
         module.exit_json(**result)
+
+    except FileNotFoundError as e:
+        if 'gluster' in str(e):
+            module.fail_json(
+                changed=False,
+                msg="",
+                stderr="GlusterFS CLI not found: is Gluster installed?",
+                result=[]
+            )
+        else:
+            module.fail_json(msg=f"File not found: {str(e)}", changed=False)
 
     except GlusterCmdException as e:
         rc, out, err = e.args[0]

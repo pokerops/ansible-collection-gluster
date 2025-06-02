@@ -15,19 +15,27 @@ def run_module():
         supports_check_mode=False
     )
 
-    result = dict(
-        changed=False,
-        msg='',
-        results=[],
-    )
-
     for key, value in module_args.items():
         params[key] = module.params[key]
 
     try:
-        result['msg'] = "Command executed successfully"
-        result['results'] = info(**params)
+        result = dict(
+            changed=False,
+            msg="Command executed successfully",
+            results=info(**params)
+        )
         module.exit_json(**result)
+
+    except FileNotFoundError as e:
+        if 'gluster' in str(e):
+            module.fail_json(
+                changed=False,
+                msg="",
+                stderr="GlusterFS CLI not found: is Gluster installed?",
+                result=[]
+            )
+        else:
+            module.fail_json(msg=f"File not found: {str(e)}", changed=False)
 
     except GlusterCmdException as e:
         rc, out, err = e.args[0]
