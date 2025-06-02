@@ -172,3 +172,21 @@
         _status: "{{ _sessions | selectattr('secondary_volume', 'in', _volume_names) }}"
         _orphan_names: "{{ _orphan_volumes | selectattr('secondary_volume', 'defined') }}"
         _orphan_status: "{{ _orphan_names | selectattr('secondary_volume', 'in', _volume_names) }}"
+
+    - name: End play when there are no orphan sessions
+      ansible.builtin.meta: end_play
+      vars:
+        _orphans: "{{ _gluster_georeplica_orphan_sessions | default([]) }}"
+      when: _orphans | length == 0
+
+    - name: Reset geo replication indexing in orphan masters
+      pokerops.gluster.volume.optreset:
+        volname: "{{ _volume }}"
+        opt: "geo-replication.indexing"
+        force: True
+      vars:
+        _volume: "{{ item.name }}"
+      loop_control:
+        label: "{{ _volume }}"
+      loop: "{{ _gluster_volumes_list }}"
+      changed_when: false
