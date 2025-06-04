@@ -3,6 +3,25 @@ from ansible.module_utils.basic import AnsibleModule
 from glustercli.cli.utils import GlusterCmdException
 from glustercli.cli.volume import optreset
 
+DOCUMENTATION = """
+    module: optreset
+    short_description: Custom plugin to reset volume options
+    description: Custom plugin to reset volume options
+    options:
+        volname:
+            description: Volume name
+            required: false
+            type: str
+        opt:
+            description: Option to reset value
+            required: false
+            type: str
+        force:
+            description: Force reset
+            required: false
+            type: bool
+"""
+
 def run_module():
     module_args = {
         "volname": {"default": None, "type": "str"},

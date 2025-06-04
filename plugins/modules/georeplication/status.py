@@ -3,6 +3,29 @@ from ansible.module_utils.basic import AnsibleModule
 from glustercli.cli.utils import GlusterCmdException
 from glustercli.cli.georep import status
 
+DOCUMENTATION = """
+    module: status
+    short_description: Custom plugin to get gluster geo replication status
+    description: Custom plugin to get gluster geo replication status
+    options:
+        primary_volume:
+            description: Name of the primary volume
+            required: false
+            type: str
+        secondary_volume:
+            description: Name of the secondary volume
+            required: false
+            type: str
+        secondary_host:
+            description: Name of the secondary host
+            required: false
+            type: str
+        secondary_user:
+            description: Name of the secondary user
+            required: true
+            type: str
+"""
+
 def session_is_healthy(session_entries):
     return all(
         entry.get("status", "").strip().lower() in ("active", "passive")

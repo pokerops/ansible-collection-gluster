@@ -3,6 +3,12 @@ from ansible.module_utils.basic import AnsibleModule
 from glustercli.cli.utils import GlusterCmdException
 from glustercli.cli.peer import pool
 
+DOCUMENTATION = """
+    module: pool_list
+    short_description: Custom plugin to list pool members
+    description: Custom plugin to list pool members
+"""
+
 def run_module():
     module_args = {}
 

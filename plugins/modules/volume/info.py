@@ -3,6 +3,17 @@ from ansible.module_utils.basic import AnsibleModule
 from glustercli.cli.utils import GlusterCmdException
 from glustercli.cli.volume import info
 
+DOCUMENTATION = """
+    module: info
+    short_description: Custom plugin to get volume info details
+    description: Custom plugin to get volume info details
+    options:
+        volname:
+            description: Volume name
+            required: false
+            type: str
+"""
+
 def run_module():
     module_args = {
         "volname": {"default": None, "type": "str"}

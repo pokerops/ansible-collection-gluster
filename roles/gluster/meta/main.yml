@@ -1,0 +1,8 @@
+#SPDX-License-Identifier: MIT-0
+galaxy_info:
+  author: Carlos Gonzalez
+  description: Install gluster server on members
+  license: MIT
+  min_ansible_version: "2.9"
+  galaxy_tags: []
+dependencies: []

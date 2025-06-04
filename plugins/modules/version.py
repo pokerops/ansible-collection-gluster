@@ -3,6 +3,12 @@ from ansible.module_utils.basic import AnsibleModule
 from glustercli.cli.utils import GlusterCmdException
 from glustercli.cli.gluster_version import glusterfs_version
 
+DOCUMENTATION = """
+    module: version
+    short_description: Get gluster version
+    description: Get gluster version
+"""
+
 def run_module():
     module_args = {}
 
