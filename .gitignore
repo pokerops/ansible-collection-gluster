@@ -8,3 +8,5 @@ playbook.retry
 .ansible/
 .devbox/
 .pyre/
+pokerops-gluster-*.tar.gz
+*.ymle

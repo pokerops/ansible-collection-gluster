@@ -2,6 +2,37 @@ from ansible.module_utils.common.validation import safe_eval
 from ansible.module_utils.basic import AnsibleModule
 from glustercli.cli.utils import georep_execute, GlusterCmdException
 
+DOCUMENTATION = """
+    module: config_set
+    short_description: Custom plugin to manage gluster geo replication configs
+    description: Custom plugin to manage gluster geo replication configs
+    options:
+        primary_volume:
+            description: Name of the primary volume
+            required: false
+            type: str
+        secondary_volume:
+            description: Name of the secondary volume
+            required: false
+            type: str
+        secondary_host:
+            description: Name of the secondary host
+            required: false
+            type: str
+        secondary_user:
+            description: Name of the secondary user
+            required: true
+            type: str
+        key:
+            description: Gluster geo replication key to edit the config
+            required: false
+            type: str
+        value:
+            description: Gluster geo replication value to edit the config
+            required: false
+            type: str
+"""
+
 def run_module():
 
     module_args = {

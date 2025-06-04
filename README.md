@@ -1,6 +1,6 @@
 # Ansible Collection - pokerops.gluster
 
-[![Build Status](https://github.com/pokerops/ansible-colllection-gluster/actions/workflows/molecule.yml/badge.svg)](https://github.com/pokerops/ansible-colllection-gluster/actions/wofklows/molecule.yml)
+[![Build Status](https://github.com/pokerops/ansible-collection-gluster/actions/workflows/libvirt.yml/badge.svg)](https://github.com/pokerops/ansible-collection-gluster/actions/workflows/libvirt.yml)
 [![Ansible Galaxy](http://img.shields.io/badge/ansible--galaxy-pokerops.gluster.vim-blue.svg)](https://galaxy.ansible.com/ui/repo/published/pokerops/gluster/)
 
 An [ansible collection](https://galaxy.ansible.com/ui/repo/published/pokerops/gluster) to install and configure [glusterfs](https://docs.gluster.org/en/main/)

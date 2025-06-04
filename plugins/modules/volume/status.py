@@ -3,6 +3,21 @@ from ansible.module_utils.basic import AnsibleModule
 from glustercli.cli.utils import GlusterCmdException
 from glustercli.cli.volume import status_detail
 
+DOCUMENTATION = """
+    module: status
+    short_description: Custom plugin to get volume status
+    description: Custom plugin to get volume status
+    options:
+        volname:
+            description: Volume name
+            required: false
+            type: str
+        group_subvols:
+            description: Subolumes
+            required: false
+            type: str
+"""
+
 def run_module():
 
     module_args = {

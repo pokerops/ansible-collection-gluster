@@ -2,6 +2,33 @@ from ansible.module_utils.common.validation import safe_eval
 from ansible.module_utils.basic import AnsibleModule
 from glustercli.cli.utils import georep_execute, GlusterCmdException
 
+DOCUMENTATION = """
+    module: delete
+    short_description: Custom plugin to delete gluster geo replication sessions
+    description: Custom plugin to delete gluster geo replication sessions
+    options:
+        primary_volume:
+            description: Name of the primary volume
+            required: false
+            type: str
+        secondary_volume:
+            description: Name of the secondary volume
+            required: false
+            type: str
+        secondary_host:
+            description: Name of the secondary host
+            required: false
+            type: str
+        secondary_user:
+            description: Name of the secondary user
+            required: true
+            type: str
+        reset_sync_time:
+            description: Reset sync time for session
+            required: false
+            type: bool
+"""
+
 def run_module():
 
     module_args = {

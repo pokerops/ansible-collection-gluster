@@ -3,6 +3,45 @@ from ansible.module_utils.basic import AnsibleModule
 from glustercli.cli.utils import GlusterCmdException
 from glustercli.cli.georep import create
 
+DOCUMENTATION = """
+    module: create
+    short_description: Custom plugin to create gluster geo replication sessions
+    description: Custom plugin to create gluster geo replication sessions
+    options:
+        primary_volume:
+            description: Name of the primary volume
+            required: false
+            type: str
+        secondary_volume:
+            description: Name of the secondary volume
+            required: false
+            type: str
+        secondary_host:
+            description: Name of the secondary host
+            required: false
+            type: str
+        secondary_user:
+            description: Name of the secondary user
+            required: true
+            type: str
+        force:
+            description: Force gluster geo replication session stop
+            required: false
+            type: bool
+        push_pem:
+            description: Enable push pem for session
+            required: false
+            type: bool
+        no_verify:
+            description: Disable verify session
+            required: false
+            type: bool
+        ssh_port:
+            description: SSH port connection for session
+            required: false
+            type: str
+"""
+
 def run_module():
 
     module_args = {
