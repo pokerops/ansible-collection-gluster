@@ -27,7 +27,7 @@
                   - c
                 state: absent
 
-      always:
+      rescue:
         - name: Destroy virtualenv
           ansible.builtin.file:
             path: "{{ _virtualenv_tmpdir.path }}"
