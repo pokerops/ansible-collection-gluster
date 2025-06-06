@@ -54,6 +54,6 @@
 
     - name: Destroy virtualenv
       ansible.builtin.file:
-      path: "{{ _virtualenv_tmpdir.path }}"
-      state: absent
+        path: "{{ _virtualenv_tmpdir.path }}"
+        state: absent
       when: gluster_virtualenv_destroy | default('true') | bool
