@@ -2,85 +2,109 @@
 - name: Manage gluster geo replication credentials
   hosts: "{{ _gluster_server_hostgroup_name }}"
   become: true
+  any_errors_fatal: true
   vars_files:
     - ../../vars/main.yml
   tasks:
-    - name: End play when gluster georeplication is not required
-      ansible.builtin.meta: end_play
-      vars:
-        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
-      when: _replicas | length == 0
+    - name: Manage tasks within virtualenv
+      block:
+        - name: End play when gluster georeplication is not required
+          ansible.builtin.meta: end_play
+          vars:
+            _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
+          when: _replicas | length == 0
 
-    - name: Create geo replication group
-      ansible.builtin.group:
-        name: "{{ _group.name }}"
-        gid: "{{ _group.gid | default(omit) }}"
-        state: "{{ _state }}"
-      vars:
-        _group: "{{ _gluster_georeplica_group }}"
-        _state: "{{ _group.state | default('present') }}"
-      no_log: "{{ _gluster_nolog }}"
-      when: _state != 'absent'
+        - name: Create geo replication group
+          ansible.builtin.group:
+            name: "{{ _group.name }}"
+            gid: "{{ _group.gid | default(omit) }}"
+            state: "{{ _state }}"
+          vars:
+            _group: "{{ _gluster_georeplica_group }}"
+            _state: "{{ _group.state | default('present') }}"
+          no_log: "{{ _gluster_nolog }}"
+          when: _state != 'absent'
 
-    - name: Manage geo replication user
-      ansible.builtin.user:
-        name: "{{ _user.name }}"
-        group: "{{ _user.group }}"
-        uid: "{{ _user.gid | default(omit) }}"
-        state: "{{ _user.state | default('present') }}"
-        shell: "{{ _user.shell | default('/bin/bash') }}"
-        home: "{{ _user.home | default(omit) }}"
-      vars:
-        _user: "{{ _gluster_georeplica_user }}"
-      no_log: "{{ _gluster_nolog }}"
+        - name: Manage geo replication user
+          ansible.builtin.user:
+            name: "{{ _user.name }}"
+            group: "{{ _user.group }}"
+            uid: "{{ _user.gid | default(omit) }}"
+            state: "{{ _user.state | default('present') }}"
+            shell: "{{ _user.shell | default('/bin/bash') }}"
+            home: "{{ _user.home | default(omit) }}"
+          vars:
+            _user: "{{ _gluster_georeplica_user }}"
+          no_log: "{{ _gluster_nolog }}"
 
-    - name: Delete geo replication group
-      ansible.builtin.group:
-        name: "{{ _group.name }}"
-        gid: "{{ _group.gid | default(omit) }}"
-        state: "{{ _group_state }}"
-      vars:
-        _group: "{{ _gluster_georeplica_group }}"
-        _group_state: "{{ _group.state | default('present') }}"
-        _user: "{{ _gluster_georeplica_user }}"
-        _user_state: "{{ _user.state | default('present') }}"
-      no_log: "{{ _gluster_nolog }}"
-      when:
-        - _user_state == 'absent'
-        - _group_state == 'absent'
+        - name: Delete geo replication group
+          ansible.builtin.group:
+            name: "{{ _group.name }}"
+            gid: "{{ _group.gid | default(omit) }}"
+            state: "{{ _group_state }}"
+          vars:
+            _group: "{{ _gluster_georeplica_group }}"
+            _group_state: "{{ _group.state | default('present') }}"
+            _user: "{{ _gluster_georeplica_user }}"
+            _user_state: "{{ _user.state | default('present') }}"
+          no_log: "{{ _gluster_nolog }}"
+          when:
+            - _user_state == 'absent'
+            - _group_state == 'absent'
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Configure cluster SSH access
   hosts: "{{ _gluster_server_hostgroup_name }}"
   become: true
+  any_errors_fatal: true
   serial: 1
   vars_files:
     - ../../vars/main.yml
   tasks:
-    - name: End play when gluster georeplication is not required
-      ansible.builtin.meta: end_play
-      vars:
-        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
-      when: _replicas | length == 0
+    - name: Manage tasks within virtualenv
+      block:
+        - name: End play when gluster georeplication is not required
+          ansible.builtin.meta: end_play
+          vars:
+            _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
+          when: _replicas | length == 0
 
-    - name: Create SSH directory
-      ansible.builtin.file:
-        path: "{{ gluster_ssh_key | dirname }}"
-        state: directory
-        mode: "0700"
+        - name: Create SSH directory
+          ansible.builtin.file:
+            path: "{{ gluster_ssh_key | dirname }}"
+            state: directory
+            mode: "0700"
 
-    - name: Create SSH keypair
-      community.crypto.openssh_keypair:
-        path: "{{ gluster_ssh_key }}"
-      register: gluster_publickey
+        - name: Create SSH keypair
+          community.crypto.openssh_keypair:
+            path: "{{ gluster_ssh_key }}"
+          register: gluster_publickey
 
-    - name: Distribute SSH public keys to nodes
-      ansible.posix.authorized_key:
-        comment: "{{ item }}"
-        user: "{{ _user.name }}"
-        key: "{{ gluster_publickey.public_key }}"
-      vars:
-        _user: "{{ _gluster_georeplica_user }}"
-      loop_control:
-        label: "{{ item }}"
-      loop: "{{ groups[_gluster_server_hostgroup_name] }}"
-      delegate_to: "{{ item }}"
+        - name: Distribute SSH public keys to nodes
+          ansible.posix.authorized_key:
+            comment: "{{ item }}"
+            user: "{{ _user.name }}"
+            key: "{{ gluster_publickey.public_key }}"
+          vars:
+            _user: "{{ _gluster_georeplica_user }}"
+          loop_control:
+            label: "{{ item }}"
+          loop: "{{ groups[_gluster_server_hostgroup_name] }}"
+          delegate_to: "{{ item }}"
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:

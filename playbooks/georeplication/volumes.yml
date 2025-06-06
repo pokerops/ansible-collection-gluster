@@ -1,6 +1,7 @@
 ---
 - name: Group gluster server georeplication slaves
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_{{ gluster_server_groupset | default('cluster') }}_slave_all"
+  become: true
   vars:
     _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
     _gluster_server_prefix: "{{ gluster_server_prefix | default('gluster_server') }}"
@@ -8,58 +9,81 @@
   vars_files:
     - ../../vars/main.yml
   tasks:
-    - name: End play when gluster georeplication is not required
-      ansible.builtin.meta: end_play
-      vars:
-        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
-      when: _replicas | length == 0
+    - name: Manage tasks within virtualenv
+      block:
+        - name: End play when gluster georeplication is not required
+          ansible.builtin.meta: end_play
+          vars:
+            _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
+          when: _replicas | length == 0
 
-    - name: End play for unrequired gluster geo replication nodes
-      ansible.builtin.meta: end_host
-      when: (not inventory_hostname == (gluster_target_members | first))
+        - name: End play for unrequired gluster geo replication nodes
+          ansible.builtin.meta: end_host
+          when: (not inventory_hostname == (gluster_target_members | first))
 
-    - name: Group gluster server slave target members
-      ansible.builtin.group_by:
-        key: "{{ _gluster_name }}_slave_targets"
-      changed_when: false
+        - name: Group gluster server slave target members
+          ansible.builtin.group_by:
+            key: "{{ _gluster_name }}_slave_targets"
+          changed_when: false
 
-    - name: Set gluster slave target fact
-      ansible.builtin.set_fact:
-        _gluster_server_slave_targets: "{{ groups[_targets] }}"
-      vars:
-        _targets: "{{ _gluster_name }}_slave_targets"
-      delegate_to: localhost
-      delegate_facts: true
+        - name: Set gluster slave target fact
+          ansible.builtin.set_fact:
+            _gluster_server_slave_targets: "{{ groups[_targets] }}"
+          vars:
+            _targets: "{{ _gluster_name }}_slave_targets"
+          delegate_to: localhost
+          delegate_facts: true
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Get geo replication volume facts
   hosts: "{{ _gluster_server_hostgroup_name }}"
+  become: true
   vars_files:
     - ../../vars/main.yml
   tasks:
-    - name: End play when gluster georeplication is not required
-      ansible.builtin.meta: end_play
-      vars:
-        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
-      when: _replicas | length == 0
+    - name: Manage tasks within virtualenv
+      block:
+        - name: End play when gluster georeplication is not required
+          ansible.builtin.meta: end_play
+          vars:
+            _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
+          when: _replicas | length == 0
 
-    - name: Set gluster geo replication volume facts
-      ansible.builtin.set_fact:
-        _gluster_server_slave_targets: "{{ _targets }}"
-        _gluster_target_volumes: []
-        _gluster_volumes_filter: "{{ _gluster_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
-        _gluster_user: "{{ _gluster_georeplica_user.name }}"
-        _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
-      vars:
-        _meta_volume: "{{ gluster_meta_volume.name }}"
-        _targets: "{{ hostvars['localhost']['_gluster_server_slave_targets'] }}"
+        - name: Set gluster geo replication volume facts
+          ansible.builtin.set_fact:
+            _gluster_server_slave_targets: "{{ _targets }}"
+            _gluster_target_volumes: []
+            _gluster_volumes_filter: "{{ _gluster_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
+            _gluster_user: "{{ _gluster_georeplica_user.name }}"
+            _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
+          vars:
+            _meta_volume: "{{ gluster_meta_volume.name }}"
+            _targets: "{{ hostvars['localhost']['_gluster_server_slave_targets'] }}"
 
-    - name: Set gluster geo replication volume facts
-      ansible.builtin.set_fact:
-        _gluster_target_volumes: "{{ _gluster_target_volumes + [_volume | combine({'replica_name': _slave})] }}"
-      vars:
-        _volume: "{{ item.0 }}"
-        _volume_name: "{{ _volume.name }}"
-        _slave: "{{ item.1 }}"
-      loop_control:
-        label: "Volume: {{ _volume_name }} - Replica: {{ _slave }}"
-      loop: "{{ _gluster_volumes_filter | product(_gluster_server_slave_targets) }}"
+        - name: Set gluster geo replication volume facts
+          ansible.builtin.set_fact:
+            _gluster_target_volumes: "{{ _gluster_target_volumes + [_volume | combine({'replica_name': _slave})] }}"
+          vars:
+            _volume: "{{ item.0 }}"
+            _volume_name: "{{ _volume.name }}"
+            _slave: "{{ item.1 }}"
+          loop_control:
+            label: "Volume: {{ _volume_name }} - Replica: {{ _slave }}"
+          loop: "{{ _gluster_volumes_filter | product(_gluster_server_slave_targets) }}"
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:

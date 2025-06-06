@@ -12,199 +12,204 @@
     - ../vars/main.yml
   any_errors_fatal: true
   tasks:
-    - name: Group gluster members
-      ansible.builtin.group_by:
-        key: "{{ _gluster_name }}"
-      changed_when: false
-
-    - name: Gather service facts
-      ansible.builtin.service_facts:
-
-    - name: Install python pip3
-      ansible.builtin.package:
-        name: "python3-pip"
-
-    - name: Install glustercli python module
-      ansible.builtin.pip:
-        name: "glustercli"
-
-    - name: Manage gluster status check tasks
-      when: gluster_service_name in services
+    - name: Manage tasks within virtualenv
       block:
-        - name: Verify gluster service status
+        - name: Group gluster members
+          ansible.builtin.group_by:
+            key: "{{ _gluster_name }}"
+          changed_when: false
+
+        - name: Gather service facts
+          ansible.builtin.service_facts:
+
+        - name: Manage gluster status check tasks
+          when: gluster_service_name in services
+          block:
+            - name: Verify gluster service status
+              ansible.builtin.assert:
+                that: services[gluster_service_name].state | lower == 'running'
+
+            - name: Query pool list
+              pokerops.gluster.pool_list:
+              register: _peer_query
+              changed_when: false
+
+            - name: Verify gluster node status
+              ansible.builtin.assert:
+                that: _query | length == 0
+              vars:
+                _to_dict: "nephelaiio.plugins.to_dict"
+                _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
+                _members: "{{ _output | map(attribute='hostname') }}"
+                _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+                _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
+                _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
+                _query: "{{ _members_overwritten | rejectattr('connected', 'equalto', 'Connected') }}"
+
+        - name: Group gluster server geo replication members
+          ansible.builtin.group_by:
+            key: "{{ _gluster_name }}_{{ _slave if _replica_manage else _master }}"
+          vars:
+            _slave: "{{ _gluster_server_slave_groupset }}"
+            _master: "{{ _gluster_server_master_groupset }}"
+            _replica_manage: "{{ _gluster_georeplica_manage }}"
+          changed_when: false
+
+        - name: Group gluster server geo replication by member type
+          ansible.builtin.group_by:
+            key: "{{ _gluster_name }}_{{ 'slave' if _replica_manage else 'master' }}_all"
+          vars:
+            _replica_manage: "{{ _gluster_georeplica_manage }}"
+          changed_when: false
+
+        - name: Set gluster geo replication member facts
+          ansible.builtin.set_fact:
+            _gluster_server_masters: "{{ groups[_master_group] | default([]) }}"
+            _gluster_server_slaves: "{{ groups[_slave_group] | default([]) }}"
+            _gluster_server_slaves_all: "{{ groups[_slave_all_group] | default([]) }}"
+            _gluster_server_masters_all: "{{ groups[_master_all_group] | default([]) }}"
+          vars:
+            _slave: "{{ _gluster_server_slave_groupset }}"
+            _master: "{{ _gluster_server_master_groupset }}"
+            _master_group: "{{ _gluster_name }}_{{ _master }}"
+            _slave_group: "{{ _gluster_name }}_{{ _slave }}"
+            _master_all_group: "{{ _gluster_name }}_master_all"
+            _slave_all_group: "{{ _gluster_name }}_slave_all"
+
+        - name: Debug gluster geo replication slave members by group
+          ansible.builtin.debug:
+            msg: "Gluster server slave {{ _slave_group }} members: [{{ _members | join(', ') }}]"
+          vars:
+            _slave: "{{ _gluster_server_slave_groupset }}"
+            _members: "{{ _gluster_server_slaves }}"
+            _slave_group: "{{ _gluster_name }}_{{ _slave }}"
+
+        - name: Debug gluster geo replication master members by group
+          ansible.builtin.debug:
+            msg: "Gluster server master {{ _master_group }} members: [{{ _members | join(', ') }}]"
+          vars:
+            _master: "{{ _gluster_server_master_groupset }}"
+            _members: "{{ _gluster_server_masters }}"
+            _master_group: "{{ _gluster_name }}_{{ _master }}"
+
+        - name: Debug gluster geo replication all slave members
+          ansible.builtin.debug:
+            msg: "Gluster server all slave members: [{{ _members | join(', ') }}]"
+          vars:
+            _members: "{{ _gluster_server_slaves_all }}"
+
+        - name: Debug gluster geo replication all master members
+          ansible.builtin.debug:
+            msg: "Gluster server all master members: [{{ _members | join(', ') }}]"
+          vars:
+            _members: "{{ _gluster_server_masters_all }}"
+
+        - name: Verify gluster georeplication slave hosts
           ansible.builtin.assert:
-            that: services[gluster_service_name].state | lower == 'running'
+            that:
+              - _gluster_server_slaves_all | length > 0
+          when: _gluster_georeplica_manage
+
+        - name: Verify gluster georeplication master hosts
+          ansible.builtin.assert:
+            that:
+              - _gluster_server_masters_all | length > 0
+              - (_gluster_server_masters_all | length) == (_gluster_server_masters | length)
+          when: not _gluster_georeplica_manage
+
+        - name: Set gluster hosts fact
+          ansible.builtin.set_fact:
+            gluster_target_members: "{{ _gluster_target_members }}"
+          vars:
+            _master: "{{ _gluster_server_master_groupset }}"
+            _slave: "{{ _gluster_server_slave_groupset }}"
+            _replica_manage: "{{ _gluster_georeplica_manage }}"
+            _target_group: "{{ _gluster_name }}_{{ _slave if _replica_manage else _master }}"
+            _gluster_hosts: "{{ groups[_target_group] }}"
+            _gluster_addrs: "{{ _gluster_hosts | map('extract', hostvars, gluster_address_attrs) }}"
+            _gluster_target_members: "{{ _gluster_hosts if _gluster_hosts_manage else _gluster_addrs }}"
+
+        - name: Verify gluster membership count
+          ansible.builtin.assert:
+            that: _members_num | length > 1
+          vars:
+            _members_num: "{{ gluster_target_members }}"
 
         - name: Query pool list
           pokerops.gluster.pool_list:
-          register: _peer_query
+          register: _member_query
+          ignore_errors: true
           changed_when: false
 
-        - name: Verify gluster node status
-          ansible.builtin.assert:
-            that: _query | length == 0
+        - name: Set gluster member facts
+          ansible.builtin.set_fact:
+            _gluster_alien: "{{ _is_alien | bool }}"
+            _gluster_member: "{{ _is_member | bool }}"
+            _gluster_member_del: "{{ _delete_members }}"
           vars:
-            _to_dict: "nephelaiio.plugins.to_dict"
-            _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
-            _members: "{{ _output | map(attribute='hostname') }}"
-            _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
-            _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
-            _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
-            _query: "{{ _members_overwritten | rejectattr('connected', 'equalto', 'Connected') }}"
+            _status: "{{ _member_query }}"
+            _status_error: "{{ _status.stderr | default('') }}"
+            _has_failed: "{{ (_status_error is search('GlusterFS CLI not found')) | bool }}"
+            _members_output: "{{ _status.results | default([]) }}"
+            _members: "{{ _members_output | map(attribute='hostname') }}"
+            _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+            _target_members: "{{ gluster_target_members }}"
+            _is_alien: "{{ _has_failed or (_existing_members | length == 1) }}"
+            _is_member: "{{ not _is_alien }}"
+            _delete_members: "{{ _existing_members | reject('in', _target_members) }}"
 
-    - name: Group gluster server geo replication members
-      ansible.builtin.group_by:
-        key: "{{ _gluster_name }}_{{ _slave if _replica_manage else _master }}"
-      vars:
-        _slave: "{{ _gluster_server_slave_groupset }}"
-        _master: "{{ _gluster_server_master_groupset }}"
-        _replica_manage: "{{ _gluster_georeplica_manage }}"
-      changed_when: false
+        - name: Group gluster members
+          ansible.builtin.group_by:
+            key: "{{ _alien_group if _gluster_alien else _member_group }}"
+          vars:
+            _prefix: "{{ _gluster_name }}"
+            _alien_group: "{{ _prefix }}_alien"
+            _member_group: "{{ _prefix }}_member"
+          changed_when: false
 
-    - name: Group gluster server geo replication by member type
-      ansible.builtin.group_by:
-        key: "{{ _gluster_name }}_{{ 'slave' if _replica_manage else 'master' }}_all"
-      vars:
-        _replica_manage: "{{ _gluster_georeplica_manage }}"
-      changed_when: false
+        - name: Set gluster member facts
+          ansible.builtin.set_fact:
+            _gluster_aliens: "{{ _aliens }}"
+            _gluster_existing_members: "{{ _members }}"
+          vars:
+            _prefix: "{{ _gluster_name }}"
+            _alien_group_name: "{{ _prefix }}_alien"
+            _member_group_name: "{{ _prefix }}_member"
+            _alien_group: "{{ groups[_alien_group_name] | default([]) }}"
+            _members_group: "{{ groups[_member_group_name] | default([]) }}"
+            _targets: "{{ gluster_target_members }}"
+            _aliens: "{{ _alien_group | select('in', _targets) }}"
+            _members: "{{ _members_group | select('in', _targets) }}"
 
-    - name: Set gluster geo replication member facts
-      ansible.builtin.set_fact:
-        _gluster_server_masters: "{{ groups[_master_group] | default([]) }}"
-        _gluster_server_slaves: "{{ groups[_slave_group] | default([]) }}"
-        _gluster_server_slaves_all: "{{ groups[_slave_all_group] | default([]) }}"
-        _gluster_server_masters_all: "{{ groups[_master_all_group] | default([]) }}"
-      vars:
-        _slave: "{{ _gluster_server_slave_groupset }}"
-        _master: "{{ _gluster_server_master_groupset }}"
-        _master_group: "{{ _gluster_name }}_{{ _master }}"
-        _slave_group: "{{ _gluster_name }}_{{ _slave }}"
-        _master_all_group: "{{ _gluster_name }}_master_all"
-        _slave_all_group: "{{ _gluster_name }}_slave_all"
+        - name: Debug gluster target members
+          ansible.builtin.debug:
+            msg: "Target {{ _gluster_name }} gluster members: [{{ gluster_target_members | join(', ') }}]"
 
-    - name: Debug gluster geo replication slave members by group
-      ansible.builtin.debug:
-        msg: "Gluster server slave {{ _slave_group }} members: [{{ _members | join(', ') }}]"
-      vars:
-        _slave: "{{ _gluster_server_slave_groupset }}"
-        _members: "{{ _gluster_server_slaves }}"
-        _slave_group: "{{ _gluster_name }}_{{ _slave }}"
+        - name: Debug gluster existing members
+          ansible.builtin.debug:
+            msg: "Existing {{ _gluster_name }} gluster members: [{{ _gluster_existing_members | join(', ') }}]"
 
-    - name: Debug gluster geo replication master members by group
-      ansible.builtin.debug:
-        msg: "Gluster server master {{ _master_group }} members: [{{ _members | join(', ') }}]"
-      vars:
-        _master: "{{ _gluster_server_master_groupset }}"
-        _members: "{{ _gluster_server_masters }}"
-        _master_group: "{{ _gluster_name }}_{{ _master }}"
+        - name: Debug gluster member additions
+          ansible.builtin.debug:
+            msg: "New {{ _gluster_name }} gluster members: [{{ _gluster_aliens | join(', ') }}]"
 
-    - name: Debug gluster geo replication all slave members
-      ansible.builtin.debug:
-        msg: "Gluster server all slave members: [{{ _members | join(', ') }}]"
-      vars:
-        _members: "{{ _gluster_server_slaves_all }}"
+        - name: Debug gluster member removals
+          ansible.builtin.debug:
+            msg: "Removing {{ _gluster_name }} gluster members: [{{ _gluster_member_del | join(', ') }}]"
 
-    - name: Debug gluster geo replication all master members
-      ansible.builtin.debug:
-        msg: "Gluster server all master members: [{{ _members | join(', ') }}]"
-      vars:
-        _members: "{{ _gluster_server_masters_all }}"
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
 
-    - name: Verify gluster georeplication slave hosts
-      ansible.builtin.assert:
-        that:
-          - _gluster_server_slaves_all | length > 0
-      when: _gluster_georeplica_manage
-
-    - name: Verify gluster georeplication master hosts
-      ansible.builtin.assert:
-        that:
-          - _gluster_server_masters_all | length > 0
-          - (_gluster_server_masters_all | length) == (_gluster_server_masters | length)
-      when: not _gluster_georeplica_manage
-
-    - name: Set gluster hosts fact
-      ansible.builtin.set_fact:
-        gluster_target_members: "{{ _gluster_target_members }}"
-      vars:
-        _master: "{{ _gluster_server_master_groupset }}"
-        _slave: "{{ _gluster_server_slave_groupset }}"
-        _replica_manage: "{{ _gluster_georeplica_manage }}"
-        _target_group: "{{ _gluster_name }}_{{ _slave if _replica_manage else _master }}"
-        _gluster_hosts: "{{ groups[_target_group] }}"
-        _gluster_addrs: "{{ _gluster_hosts | map('extract', hostvars, gluster_address_attrs) }}"
-        _gluster_target_members: "{{ _gluster_hosts if _gluster_hosts_manage else _gluster_addrs }}"
-
-    - name: Verify gluster membership count
-      ansible.builtin.assert:
-        that: _members_num | length > 1
-      vars:
-        _members_num: "{{ gluster_target_members }}"
-
-    - name: Query pool list
-      pokerops.gluster.pool_list:
-      register: _member_query
-      ignore_errors: true
-      changed_when: false
-
-    - name: Set gluster member facts
-      ansible.builtin.set_fact:
-        _gluster_alien: "{{ _is_alien | bool }}"
-        _gluster_member: "{{ _is_member | bool }}"
-        _gluster_member_del: "{{ _delete_members }}"
-      vars:
-        _status: "{{ _member_query }}"
-        _status_error: "{{ _status.stderr | default('') }}"
-        _has_failed: "{{ (_status_error is search('GlusterFS CLI not found')) | bool }}"
-        _members_output: "{{ _status.results | default([]) }}"
-        _members: "{{ _members_output | map(attribute='hostname') }}"
-        _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _target_members: "{{ gluster_target_members }}"
-        _is_alien: "{{ _has_failed or (_existing_members | length == 1) }}"
-        _is_member: "{{ not _is_alien }}"
-        _delete_members: "{{ _existing_members | reject('in', _target_members) }}"
-
-    - name: Group gluster members
-      ansible.builtin.group_by:
-        key: "{{ _alien_group if _gluster_alien else _member_group }}"
-      vars:
-        _prefix: "{{ _gluster_name }}"
-        _alien_group: "{{ _prefix }}_alien"
-        _member_group: "{{ _prefix }}_member"
-      changed_when: false
-
-    - name: Set gluster member facts
-      ansible.builtin.set_fact:
-        _gluster_aliens: "{{ _aliens }}"
-        _gluster_existing_members: "{{ _members }}"
-      vars:
-        _prefix: "{{ _gluster_name }}"
-        _alien_group_name: "{{ _prefix }}_alien"
-        _member_group_name: "{{ _prefix }}_member"
-        _alien_group: "{{ groups[_alien_group_name] | default([]) }}"
-        _members_group: "{{ groups[_member_group_name] | default([]) }}"
-        _targets: "{{ gluster_target_members }}"
-        _aliens: "{{ _alien_group | select('in', _targets) }}"
-        _members: "{{ _members_group | select('in', _targets) }}"
-
-    - name: Debug gluster target members
-      ansible.builtin.debug:
-        msg: "Target {{ _gluster_name }} gluster members: [{{ gluster_target_members | join(', ') }}]"
-
-    - name: Debug gluster existing members
-      ansible.builtin.debug:
-        msg: "Existing {{ _gluster_name }} gluster members: [{{ _gluster_existing_members | join(', ') }}]"
-
-    - name: Debug gluster member additions
-      ansible.builtin.debug:
-        msg: "New {{ _gluster_name }} gluster members: [{{ _gluster_aliens | join(', ') }}]"
-
-    - name: Debug gluster member removals
-      ansible.builtin.debug:
-        msg: "Removing {{ _gluster_name }} gluster members: [{{ _gluster_member_del | join(', ') }}]"
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Set gluster volumes
   hosts: "{{ _gluster_server_hostgroup_name }}:{{ _gluster_client_hostgroup_name }}"
+  become: true
+  any_errors_fatal: true
   vars:
     _gluster_server_groupset: "{{ gluster_server_groupset | default('cluster') }}"
     _gluster_server_slave_groupset: "{{ gluster_server_slave_groupset | default('slave') }}"
@@ -214,60 +219,74 @@
   vars_files:
     - ../vars/main.yml
   tasks:
-    - name: Set volume facts
-      ansible.builtin.set_fact:
-        _gluster_volumes: "{{ _target_volumes_overwritten }}"
-        _gluster_server_slaves: "{{ _slaves }}"
-        _gluster_server_masters: "{{ _masters }}"
-        _gluster_server_slaves_all: "{{ groups[_slave_group_all] | default([]) }}"
-        _gluster_server_masters_all: "{{ groups[_master_group_all] | default([]) }}"
-      vars:
-        _slave: "{{ _gluster_server_slave_groupset }}"
-        _master: "{{ _gluster_server_master_groupset }}"
-        _slave_group_all: "{{ _gluster_name }}_slave_all"
-        _master_group_all: "{{ _gluster_name }}_master_all"
-        _slave_group: "{{ _gluster_name }}_{{ _slave }}"
-        _master_group: "{{ _gluster_name }}_{{ _master }}"
-        _volume_defaults:
-          state: present
-        _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
-        _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
-        _masters: "{{ groups[_master_group] | default([]) }}"
-        _slaves: "{{ groups[_slave_group] | default([]) }}"
-        _replica_manage: "{{ inventory_hostname in _masters }}"
-        _target_volumes: "{{ _replica_manage | ternary(_meta_volumes, _volumes) }}"
-        _volumes_num: "{{ _target_volumes | length }}"
-        _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
-        _target_volumes_overwritten: "{{ _volumes_default | zip(_target_volumes) | map('combine') }}"
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Set volume facts
+          ansible.builtin.set_fact:
+            _gluster_volumes: "{{ _target_volumes_overwritten }}"
+            _gluster_server_slaves: "{{ _slaves }}"
+            _gluster_server_masters: "{{ _masters }}"
+            _gluster_server_slaves_all: "{{ groups[_slave_group_all] | default([]) }}"
+            _gluster_server_masters_all: "{{ groups[_master_group_all] | default([]) }}"
+          vars:
+            _slave: "{{ _gluster_server_slave_groupset }}"
+            _master: "{{ _gluster_server_master_groupset }}"
+            _slave_group_all: "{{ _gluster_name }}_slave_all"
+            _master_group_all: "{{ _gluster_name }}_master_all"
+            _slave_group: "{{ _gluster_name }}_{{ _slave }}"
+            _master_group: "{{ _gluster_name }}_{{ _master }}"
+            _volume_defaults:
+              state: present
+            _volumes: "{{ _gluster_volumes_list | sort(attribute='name') }}"
+            _meta_volumes: "{{ [gluster_meta_volume] + _volumes }}"
+            _masters: "{{ groups[_master_group] | default([]) }}"
+            _slaves: "{{ groups[_slave_group] | default([]) }}"
+            _replica_manage: "{{ (inventory_hostname in _masters) and (_slaves | length > 0) }}"
+            _target_volumes: "{{ _replica_manage | ternary(_meta_volumes, _volumes) }}"
+            _volumes_num: "{{ _target_volumes | length }}"
+            _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
+            _target_volumes_overwritten: "{{ _volumes_default | zip(_target_volumes) | map('combine') }}"
 
-    - name: Debug gluster volume
-      ansible.builtin.debug:
-        var: _gluster_volumes
+        - name: Debug gluster volume
+          ansible.builtin.debug:
+            var: _gluster_volumes_list
 
-    - name: Verify gluster volume facts
-      ansible.builtin.assert:
-        that: _gluster_volumes | length > 0
+        - name: Verify gluster volume facts
+          ansible.builtin.assert:
+            that: _gluster_volumes_list | length > 0
 
-    - name: Verify gluster meta volume facts
-      ansible.builtin.assert:
-        that:
-          - _volume_query | length == 0
-          - _brick_query | length == 0
-          - _mount_query | length == 0
-          - _meta_volume_state | length == 0
-        fail_msg: "Gluster volumes cannot use geo replication meta volume facts"
-      vars:
-        _volumes: "{{ _gluster_volumes_list }}"
-        _meta_volume: "{{ gluster_meta_volume }}"
-        _volume_query: "{{ _volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
-        _brick_query: "{{ _volumes | selectattr('brick', 'equalto', _meta_volume.brick) }}"
-        _mount_query: "{{ _volumes | selectattr('mount', 'equalto', _meta_volume.mount) }}"
-        _meta_volume_filter: "{{ _gluster_volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
-        _meta_volume_state: "{{ _meta_volume_filter | selectattr('state', 'equalto', 'absent') }}"
+        - name: Verify gluster meta volume facts
+          ansible.builtin.assert:
+            that:
+              - _volume_query | length == 0
+              - _brick_query | length == 0
+              - _mount_query | length == 0
+              - _meta_volume_state | length == 0
+            fail_msg: "Gluster volumes cannot use geo replication meta volume facts"
+          vars:
+            _volumes: "{{ _gluster_volumes_list }}"
+            _meta_volume: "{{ gluster_meta_volume }}"
+            _volume_query: "{{ _volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
+            _brick_query: "{{ _volumes | selectattr('brick', 'equalto', _meta_volume.brick) }}"
+            _mount_query: "{{ _volumes | selectattr('mount', 'equalto', _meta_volume.mount) }}"
+            _meta_volume_filter: "{{ _gluster_volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
+            _meta_volume_state: "{{ _meta_volume_filter | selectattr('state', 'equalto', 'absent') }}"
 
-    - name: Set gluster facts
-      ansible.builtin.set_fact:
-        _to_dict: "nephelaiio.plugins.to_dict"
-        _map_format: "nephelaiio.plugins.map_format"
-        _select_attrs: "nephelaiio.plugins.select_attributes"
-        _map_join: "nephelaiio.plugins.map_join"
+        - name: Set gluster facts
+          ansible.builtin.set_fact:
+            _to_dict: "nephelaiio.plugins.to_dict"
+            _map_format: "nephelaiio.plugins.map_format"
+            _select_attrs: "nephelaiio.plugins.select_attributes"
+            _map_join: "nephelaiio.plugins.map_join"
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
+          vars:
+            _clients: "{{ groups[_gluster_client_hostgroup_name] }}"
+          when: inventory_hostname not in _clients
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:

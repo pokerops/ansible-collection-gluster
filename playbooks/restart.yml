@@ -1,4 +1,7 @@
 ---
+- name: Run Gluster virtualenv
+  ansible.builtin.import_playbook: pokerops.gluster.virtualenv
+
 - name: Run Gluster facts
   ansible.builtin.import_playbook: pokerops.gluster.facts
 
@@ -11,7 +14,15 @@
   vars_files:
     - ../vars/main.yml
   tasks:
-    - name: Include service tasks
-      ansible.builtin.include_tasks: tasks/service.yml
-      vars:
-        gluster_service_state: restarted
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Include service tasks
+          ansible.builtin.include_tasks: tasks/service.yml
+          vars:
+            gluster_service_state: restarted
+
+      always:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent

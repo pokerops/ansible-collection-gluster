@@ -1,4 +1,7 @@
 ---
+- name: Run Gluster virtualenv
+  ansible.builtin.import_playbook: pokerops.gluster.virtualenv
+
 - name: Run Gluster facts
   ansible.builtin.import_playbook: pokerops.gluster.facts
 

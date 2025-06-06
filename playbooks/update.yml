@@ -1,4 +1,7 @@
 ---
+- name: Run Gluster virtualenv
+  ansible.builtin.import_playbook: pokerops.gluster.virtualenv
+
 - name: Load Gluster facts
   ansible.builtin.import_playbook: pokerops.gluster.facts
   vars:
@@ -17,54 +20,76 @@
   roles:
     - pokerops.gluster.update
   pre_tasks:
-    - name: Query pool list
-      pokerops.gluster.pool_list:
-      register: _member_query
-      changed_when: false
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Query pool list
+          pokerops.gluster.pool_list:
+          register: _member_query
+          changed_when: false
 
-    - name: Verify gluster status
-      ansible.builtin.assert:
-        that:
-          - _members_output | rejectattr('connected', 'equalto', 'Connected') | length == 0
-          - inventory_hostname in _existing_members
-        fail_msg: "Gluster is in an inconsistent state"
-      vars:
-        _members_output: "{{ _member_query.results | default([]) }}"
-        _members: "{{ _members_output | map(attribute='hostname') }}"
-        _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+        - name: Verify gluster status
+          ansible.builtin.assert:
+            that:
+              - _members_output | rejectattr('connected', 'equalto', 'Connected') | length == 0
+              - inventory_hostname in _existing_members
+            fail_msg: "Gluster is in an inconsistent state"
+          vars:
+            _members_output: "{{ _member_query.results | default([]) }}"
+            _members: "{{ _members_output | map(attribute='hostname') }}"
+            _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
 
-    - name: Query pool list
-      pokerops.gluster.pool_list:
-      register: _peer_query
-      changed_when: false
+        - name: Query pool list
+          pokerops.gluster.pool_list:
+          register: _peer_query
+          changed_when: false
 
-    - name: Verify gluster status
-      ansible.builtin.assert:
-        that: (_query | length) == (_group | length)
-        fail_msg: "Gluster node is in an inconsistent state"
-      vars:
-        _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
-        _members: "{{ _output | map(attribute='hostname') }}"
-        _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
-        _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
-        _query: "{{ _members_overwritten | selectattr('connected', 'equalto', 'Connected') }}"
-        _group: "{{ gluster_target_members }}"
+        - name: Verify gluster status
+          ansible.builtin.assert:
+            that: (_query | length) == (_group | length)
+            fail_msg: "Gluster node is in an inconsistent state"
+          vars:
+            _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
+            _members: "{{ _output | map(attribute='hostname') }}"
+            _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+            _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
+            _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
+            _query: "{{ _members_overwritten | selectattr('connected', 'equalto', 'Connected') }}"
+            _group: "{{ gluster_target_members }}"
 
-    - name: Stop gluster service
-      ansible.builtin.service:
-        name: "{{ gluster_service_name }}"
-        state: stopped
+        - name: Stop gluster service
+          ansible.builtin.service:
+            name: "{{ gluster_service_name }}"
+            state: stopped
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
   tasks:
-    - name: Reboot node
-      ansible.builtin.reboot:
-        reboot_timeout: "{{ gluster_reboot_timeout | default(300) }}"
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Reboot node
+          ansible.builtin.reboot:
+            reboot_timeout: "{{ gluster_reboot_timeout | default(300) }}"
 
-    - name: Include service tasks
-      ansible.builtin.include_tasks: tasks/service.yml
-      vars:
-        gluster_service_state: started
+        - name: Include service tasks
+          ansible.builtin.include_tasks: tasks/service.yml
+          vars:
+            gluster_service_state: started
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Update gluster server master members
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_update_master_all:!{{ _gluster_update_skip_hostgroup }}"
@@ -79,86 +104,105 @@
   roles:
     - pokerops.gluster.update
   pre_tasks:
-    - name: Query pool list
-      pokerops.gluster.pool_list:
-      register: _member_query
-      changed_when: false
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Query pool list
+          pokerops.gluster.pool_list:
+          register: _member_query
+          changed_when: false
 
-    - name: Verify gluster status
-      ansible.builtin.assert:
-        that:
-          - _members_output | rejectattr('connected', 'equalto', 'Connected') | length == 0
-          - inventory_hostname in _existing_members
-        fail_msg: "Gluster is in an inconsistent state"
-      vars:
-        _members_output: "{{ _member_query.results | default([]) }}"
-        _members: "{{ _members_output | map(attribute='hostname') }}"
-        _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+        - name: Verify gluster status
+          ansible.builtin.assert:
+            that:
+              - _members_output | rejectattr('connected', 'equalto', 'Connected') | length == 0
+              - inventory_hostname in _existing_members
+            fail_msg: "Gluster is in an inconsistent state"
+          vars:
+            _members_output: "{{ _member_query.results | default([]) }}"
+            _members: "{{ _members_output | map(attribute='hostname') }}"
+            _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
 
-    - name: Query pool list
-      pokerops.gluster.pool_list:
-      register: _peer_query
-      changed_when: false
+        - name: Query pool list
+          pokerops.gluster.pool_list:
+          register: _peer_query
+          changed_when: false
 
-    - name: Verify gluster status
-      ansible.builtin.assert:
-        that: (_query | length) == (_group | length)
-        fail_msg: "Gluster node is in an inconsistent state"
-      vars:
-        _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
-        _members: "{{ _output | map(attribute='hostname') }}"
-        _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
-        _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
-        _query: "{{ _members_overwritten | selectattr('connected', 'equalto', 'Connected') }}"
-        _group: "{{ gluster_target_members }}"
+        - name: Verify gluster status
+          ansible.builtin.assert:
+            that: (_query | length) == (_group | length)
+            fail_msg: "Gluster node is in an inconsistent state"
+          vars:
+            _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
+            _members: "{{ _output | map(attribute='hostname') }}"
+            _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+            _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
+            _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
+            _query: "{{ _members_overwritten | selectattr('connected', 'equalto', 'Connected') }}"
+            _group: "{{ gluster_target_members }}"
 
-    - name: Stop gluster service
-      ansible.builtin.service:
-        name: "{{ gluster_service_name }}"
-        state: stopped
+        - name: Stop gluster service
+          ansible.builtin.service:
+            name: "{{ gluster_service_name }}"
+            state: stopped
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
   tasks:
-    - name: Reboot node
-      ansible.builtin.reboot:
-        reboot_timeout: "{{ gluster_reboot_timeout | default(300) }}"
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Reboot node
+          ansible.builtin.reboot:
+            reboot_timeout: "{{ gluster_reboot_timeout | default(300) }}"
 
-    - name: Include service tasks
-      ansible.builtin.include_tasks: tasks/service.yml
-      vars:
-        gluster_service_state: started
+        - name: Include service tasks
+          ansible.builtin.include_tasks: tasks/service.yml
+          vars:
+            gluster_service_state: started
 
-    - name: End play when there are no gluster server slaves
-      ansible.builtin.meta: end_host
-      when: _gluster_server_slaves_all | length == 0
+        - name: End play when there are no gluster server slaves
+          ansible.builtin.meta: end_host
+          when: _gluster_server_slaves_all | length == 0
 
-    - name: Get gluster geo replication status
-      pokerops.gluster.georeplication.status:
-        secondary_user: "{{ _gluster_user }}"
-      vars:
-        _gluster_user: "{{ _gluster_georeplica_user.name }}"
-        _results: "{{ _georeplica_status.results | default([]) }}"
-        _status: "{{ _results | rejectattr('status', 'in', gluster_georeplica_volumes_status) }}"
-      register: _georeplica_status
-      retries: "{{ _gluster_retries }}"
-      delay: "{{ _gluster_delay }}"
-      until: _status | length == 0
-      changed_when: false
+        - name: Get gluster geo replication status
+          pokerops.gluster.georeplication.status:
+            secondary_user: "{{ _gluster_user }}"
+          vars:
+            _gluster_user: "{{ _gluster_georeplica_user.name }}"
+            _results: "{{ _georeplica_status.results | default([]) }}"
+            _status: "{{ _results | rejectattr('status', 'in', gluster_georeplica_volumes_status) }}"
+          register: _georeplica_status
+          retries: "{{ _gluster_retries }}"
+          delay: "{{ _gluster_delay }}"
+          until: _status | length == 0
+          changed_when: false
 
-    - name: Set georeplication session status
-      ansible.builtin.set_fact:
-        _gluster_georeplica_sessions: "{{ _georeplica_status.results | default([]) }}"
+        - name: Set georeplication session status
+          ansible.builtin.set_fact:
+            _gluster_georeplica_sessions: "{{ _georeplica_status.results | default([]) }}"
 
-    - name: Debug gluster geo replication status
-      ansible.builtin.debug:
-        msg: "{{ _gluster_georeplica_sessions }}"
+        - name: Debug gluster geo replication status
+          ansible.builtin.debug:
+            msg: "{{ _gluster_georeplica_sessions }}"
 
-    - name: Verify gluster geo replication session status
-      ansible.builtin.assert:
-        that: _failing | length == 0
-      vars:
-        _sessions: "{{ _gluster_georeplica_sessions }}"
-        _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
+        - name: Verify gluster geo replication session status
+          ansible.builtin.assert:
+            that: _failing | length == 0
+          vars:
+            _sessions: "{{ _gluster_georeplica_sessions }}"
+            _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
+
+      always:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
 
 - name: Update gluster client members
   hosts: "{{ _gluster_client_hostgroup_name }}:!{{ _gluster_update_skip_hostgroup }}"

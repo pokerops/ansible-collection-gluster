@@ -1,0 +1,38 @@
+---
+- name: Set python virtualenv
+  hosts: "{{ _gluster_server_hostgroup_name }}"
+  become: true
+  any_errors_fatal: true
+  vars_files:
+    - ../vars/main.yml
+  tasks:
+    - name: Install python virtualenv
+      ansible.builtin.package:
+        name:
+          - "python3-pip"
+          - "{{ _package }}"
+      vars:
+        _package: "{{ (ansible_os_family == 'Debian') | ternary('virtualenv', 'python-virtualenv') }}"
+
+    - name: Create virtualenv
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: virtualenv
+      register: _virtualenv_tmpdir
+
+    - name: Set virtualenv facts
+      ansible.builtin.set_fact:
+        _virtualenv_path: "{{ _path }}"
+        _virtualenv_python: "{{ _python }}"
+      vars:
+        _path: "{{ _virtualenv_tmpdir.path }}/venv"
+        _python: "{{ _path }}/bin/python"
+
+    - name: Initialize virtualenv
+      ansible.builtin.pip:
+        name: "glustercli"
+        virtualenv: "{{ _virtualenv_path }}"
+
+    - name: Change python interpreter
+      ansible.builtin.set_fact:
+        ansible_python_interpreter: "{{ _virtualenv_python }}"

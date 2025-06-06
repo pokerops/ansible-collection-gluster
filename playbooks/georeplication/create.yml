@@ -16,118 +16,129 @@
   vars_files:
     - ../../vars/main.yml
   tasks:
-    - name: End play when gluster georeplication is not required
-      ansible.builtin.meta: end_play
-      vars:
-        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
-      when: _replicas | length == 0
-
-    - name: End play for unrequired gluster geo replication nodes
-      ansible.builtin.meta: end_host
-      when: (not inventory_hostname == (gluster_target_members | first))
-
-    - name: Set georeplication facts
-      ansible.builtin.set_fact:
-        _gluster_user: "{{ _gluster_georeplica_user.name }}"
-        _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
-
-    - name: Verify existing gluster geo replication sessions
-      delegate_to: "{{ _gluster_server_masters | first }}"
-      run_once: true
-      tags: skip_ansible_lint
+    - name: Manage tasks within virtualenv
       block:
-        - name: Get gluster geo replication status
-          pokerops.gluster.georeplication.status:
-            secondary_user: "{{ _gluster_user }}"
-          register: _georeplica_status
-          changed_when: false
-
-        - name: Set georeplication session status
-          ansible.builtin.set_fact:
-            _gluster_georeplica_sessions: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
+        - name: End play when gluster georeplication is not required
+          ansible.builtin.meta: end_play
           vars:
-            _volumes: "{{ _gluster_target_volumes }}"
-            _target_volumes: "{{ _volumes | map(attribute='name') }}"
-            _sessions: "{{ _georeplica_status.results | default([]) }}"
+            _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
+          when: _replicas | length == 0
+
+        - name: End play for unrequired gluster geo replication nodes
+          ansible.builtin.meta: end_host
+          when: (not inventory_hostname == (gluster_target_members | first))
+
+        - name: Set georeplication facts
+          ansible.builtin.set_fact:
+            _gluster_user: "{{ _gluster_georeplica_user.name }}"
+            _gluster_usergroup: "{{ _gluster_georeplica_group.name }}"
+
+        - name: Verify existing gluster geo replication sessions
+          delegate_to: "{{ _gluster_server_masters | first }}"
+          run_once: true
+          tags: skip_ansible_lint
+          block:
+            - name: Get gluster geo replication status
+              pokerops.gluster.georeplication.status:
+                secondary_user: "{{ _gluster_user }}"
+              register: _georeplica_status
+              changed_when: false
+
+            - name: Set georeplication session status
+              ansible.builtin.set_fact:
+                _gluster_georeplica_sessions: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
+              vars:
+                _volumes: "{{ _gluster_target_volumes }}"
+                _target_volumes: "{{ _volumes | map(attribute='name') }}"
+                _sessions: "{{ _georeplica_status.results | default([]) }}"
+              delegate_facts: true
+              delegate_to: localhost
+
+            - name: Debug gluster geo replication status
+              ansible.builtin.debug:
+                msg: "{{ _sessions }}"
+              vars:
+                _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
+
+        - name: Set georeplication existing volumes fact
+          ansible.builtin.set_fact:
+            _gluster_georeplica_volumes_create: "{{ _missing_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
+          vars:
+            _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
+            _existing_volumes: "{{ _sessions | map(attribute='secondary_volume') | unique }}"
+            _volumes: "{{ _gluster_target_volumes | rejectattr('state', 'equalto', 'absent') }}"
+            _missing_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_volumes) }}"
+            _meta_volume: "{{ gluster_meta_volume.name }}"
+
+        - name: Set gluster replica volumes
+          ansible.builtin.set_fact:
+            _gluster_georeplica_volumes_create: "{{ _gluster_georeplica_volumes_create }}"
           delegate_facts: true
           delegate_to: localhost
 
-        - name: Debug gluster geo replication status
-          ansible.builtin.debug:
-            msg: "{{ _sessions }}"
+        - name: End play when there are no new geo replica volumes to create
+          ansible.builtin.meta: end_host
+          when: _gluster_georeplica_volumes_create | length == 0
+
+        - name: Setup gluster mountbroker
+          ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_usergroup }}"
+          args:
+            chdir: "/usr/sbin/"
           vars:
-            _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
+            _mount: "{{ gluster_georeplica_mountbroker }}"
+          register: _mount_broker_setup
+          changed_when: false
+          tags: skip_ansible_lint
 
-    - name: Set georeplication existing volumes fact
-      ansible.builtin.set_fact:
-        _gluster_georeplica_volumes_create: "{{ _missing_volumes | rejectattr('name', 'equalto', _meta_volume) }}"
-      vars:
-        _sessions: "{{ hostvars['localhost']['_gluster_georeplica_sessions'] }}"
-        _existing_volumes: "{{ _sessions | map(attribute='secondary_volume') | unique }}"
-        _volumes: "{{ _gluster_target_volumes | rejectattr('state', 'equalto', 'absent') }}"
-        _missing_volumes: "{{ _volumes | rejectattr('name', 'in', _existing_volumes) }}"
-        _meta_volume: "{{ gluster_meta_volume.name }}"
+        - name: Add gluster mountbroker volumes
+          ansible.builtin.shell: "gluster-mountbroker add {{ _name }} {{ _gluster_user }}"
+          args:
+            chdir: "/usr/sbin/"
+          vars:
+            _name: "{{ item.name }}"
+          loop: "{{ _gluster_georeplica_volumes_create }}"
+          loop_control:
+            label: "{{ _name }}"
+          register: _mount_broker_volumes
+          changed_when: false
+          tags: skip_ansible_lint
 
-    - name: Set gluster replica volumes
-      ansible.builtin.set_fact:
-        _gluster_georeplica_volumes_create: "{{ _gluster_georeplica_volumes_create }}"
-      delegate_facts: true
-      delegate_to: localhost
+        - name: Get gluster mountbroker volume status
+          ansible.builtin.shell: "gluster-mountbroker status | awk -F '|' '/{{ _broker_name }}/ {print $2 $4 $5}'"
+          args:
+            chdir: "/usr/sbin/"
+          vars:
+            _broker_path: "{{ gluster_georeplica_mountbroker }}"
+            _broker_name: "{{ _broker_path | split('/') | last }}"
+          register: _mount_broker_status
+          changed_when: false
+          tags: skip_ansible_lint
 
-    - name: End play when there are no new geo replica volumes to create
-      ansible.builtin.meta: end_host
-      when: _gluster_georeplica_volumes_create | length == 0
+        - name: Debug gluster mountbroker volume status
+          ansible.builtin.debug:
+            msg: "{{ _members_split }}"
+          vars:
+            _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
+            _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
+            _members_split: "{{ _members | map('split') | map('join', ' ') }}"
 
-    - name: Setup gluster mountbroker
-      ansible.builtin.shell: "gluster-mountbroker setup {{ _mount }} {{ _gluster_usergroup }}"
-      args:
-        chdir: "/usr/sbin/"
-      vars:
-        _mount: "{{ gluster_georeplica_mountbroker }}"
-      register: _mount_broker_setup
-      changed_when: false
-      tags: skip_ansible_lint
+        - name: Verify gluster mountbroker volume status
+          ansible.builtin.assert:
+            that:
+              - (_members | length) == (gluster_target_members | length)
+              - _members | reject('match', 'OK') | length > 0
+          vars:
+            _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
+            _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
 
-    - name: Add gluster mountbroker volumes
-      ansible.builtin.shell: "gluster-mountbroker add {{ _name }} {{ _gluster_user }}"
-      args:
-        chdir: "/usr/sbin/"
-      vars:
-        _name: "{{ item.name }}"
-      loop: "{{ _gluster_georeplica_volumes_create }}"
-      loop_control:
-        label: "{{ _name }}"
-      register: _mount_broker_volumes
-      changed_when: false
-      tags: skip_ansible_lint
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
 
-    - name: Get gluster mountbroker volume status
-      ansible.builtin.shell: "gluster-mountbroker status | awk -F '|' '/{{ _broker_name }}/ {print $2 $4 $5}'"
-      args:
-        chdir: "/usr/sbin/"
-      vars:
-        _broker_path: "{{ gluster_georeplica_mountbroker }}"
-        _broker_name: "{{ _broker_path | split('/') | last }}"
-      register: _mount_broker_status
-      changed_when: false
-      tags: skip_ansible_lint
-
-    - name: Debug gluster mountbroker volume status
-      ansible.builtin.debug:
-        msg: "{{ _members_split }}"
-      vars:
-        _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
-        _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _members_split: "{{ _members | map('split') | map('join', ' ') }}"
-
-    - name: Verify gluster mountbroker volume status
-      ansible.builtin.assert:
-        that:
-          - (_members | length) == (gluster_target_members | length)
-          - _members | reject('match', 'OK') | length > 0
-      vars:
-        _status: "{{ _mount_broker_status.stdout_lines | default([]) }}"
-        _members: "{{ _status | map('trim') | map('regex_replace', 'localhost', inventory_hostname) }}"
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Set gluster replica volume fact
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_slave_all"
@@ -137,20 +148,31 @@
   vars_files:
     - ../../vars/main.yml
   tasks:
-    - name: Set gluster replica volumes
-      ansible.builtin.set_fact:
-        _gluster_georeplica_volumes_create: "{{ _volumes }}"
-      vars:
-        _volumes: "{{ hostvars['localhost']['_gluster_georeplica_volumes_create'] }}"
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Set gluster replica volumes
+          ansible.builtin.set_fact:
+            _gluster_georeplica_volumes_create: "{{ _volumes }}"
+          vars:
+            _volumes: "{{ hostvars['localhost']['_gluster_georeplica_volumes_create'] }}"
 
-    - name: End play when there is no need to restart gluster service in slaves
-      ansible.builtin.meta: end_host
-      when: _gluster_georeplica_volumes_create | length == 0
+        - name: End play when there is no need to restart gluster service in slaves
+          ansible.builtin.meta: end_host
+          when: _gluster_georeplica_volumes_create | length == 0
 
-    - name: Include service tasks
-      ansible.builtin.include_tasks: ../tasks/service.yml
-      vars:
-        gluster_service_state: restarted
+        - name: Include service tasks
+          ansible.builtin.include_tasks: ../tasks/service.yml
+          vars:
+            gluster_service_state: restarted
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Create geo replication session tasks
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_create_master_all"
@@ -159,224 +181,235 @@
   vars_files:
     - ../../vars/main.yml
   tasks:
-    - name: End play when gluster georeplication is not required
-      ansible.builtin.meta: end_play
-      vars:
-        _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
-      when: _replicas | length == 0
+    - name: Manage tasks within virtualenv
+      block:
+        - name: End play when gluster georeplication is not required
+          ansible.builtin.meta: end_play
+          vars:
+            _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
+          when: _replicas | length == 0
 
-    - name: End play for unrequired gluster geo replication nodes
-      ansible.builtin.meta: end_host
-      when: (not inventory_hostname == (gluster_target_members | first))
+        - name: End play for unrequired gluster geo replication nodes
+          ansible.builtin.meta: end_host
+          when: (not inventory_hostname == (gluster_target_members | first))
 
-    - name: Manage gluster geo replication ssh keys
-      ansible.builtin.shell: |
-        gluster-georep-sshkey generate | awk 'NR>4 {print last} {last=$0}' | awk \
-        '{print "{\"server\": \"" $2 "\", \"node_status\": \"" $4 "\", \"keygen_status\": \"" $6"\"}"}'
-      args:
-        chdir: "/usr/sbin/"
-      register: _georeplica_sshkey
-      changed_when: false
-      tags: skip_ansible_lint
+        - name: Manage gluster geo replication ssh keys
+          ansible.builtin.shell: |
+            gluster-georep-sshkey generate | awk 'NR>4 {print last} {last=$0}' | awk \
+            '{print "{\"server\": \"" $2 "\", \"node_status\": \"" $4 "\", \"keygen_status\": \"" $6"\"}"}'
+          args:
+            chdir: "/usr/sbin/"
+          register: _georeplica_sshkey
+          changed_when: false
+          tags: skip_ansible_lint
 
-    - name: Set gluster geo replication ssh keys status fact
-      ansible.builtin.set_fact:
-        _gluster_georeplica_sshkeys: "{{ _nodes_list }}"
-      vars:
-        _output: "{{ _georeplica_sshkey.stdout_lines | default([]) | map('from_json') }}"
-        _nodes: "{{ _output | map(attribute='server') }}"
-        _nodes_replace: "{{ _nodes | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _nodes_dict: "{{ _nodes_replace | map(_to_dict, 'server') }}"
-        _nodes_list: "{{ _output | zip(_nodes_dict) | map('combine') }}"
+        - name: Set gluster geo replication ssh keys status fact
+          ansible.builtin.set_fact:
+            _gluster_georeplica_sshkeys: "{{ _nodes_list }}"
+          vars:
+            _output: "{{ _georeplica_sshkey.stdout_lines | default([]) | map('from_json') }}"
+            _nodes: "{{ _output | map(attribute='server') }}"
+            _nodes_replace: "{{ _nodes | map('regex_replace', 'localhost', inventory_hostname) }}"
+            _nodes_dict: "{{ _nodes_replace | map(_to_dict, 'server') }}"
+            _nodes_list: "{{ _output | zip(_nodes_dict) | map('combine') }}"
 
-    - name: Debug gluster geo replication ssh keys status
-      ansible.builtin.debug:
-        msg: "{{ _gluster_georeplica_sshkeys }}"
+        - name: Debug gluster geo replication ssh keys status
+          ansible.builtin.debug:
+            msg: "{{ _gluster_georeplica_sshkeys }}"
 
-    - name: Verify gluster geo replication ssh keys status
-      ansible.builtin.assert:
-        that:
-          - _node_status_failures | length == 0
-          - _keygen_status_failures | length == 0
-      vars:
-        _keys: "{{ _gluster_georeplica_sshkeys }}"
-        _node_status_failures: "{{ _keys | rejectattr('node_status', 'equalto', 'UP') }}"
-        _keygen_status_failures: "{{ _keys | rejectattr('keygen_status', 'equalto', 'OK') }}"
+        - name: Verify gluster geo replication ssh keys status
+          ansible.builtin.assert:
+            that:
+              - _node_status_failures | length == 0
+              - _keygen_status_failures | length == 0
+          vars:
+            _keys: "{{ _gluster_georeplica_sshkeys }}"
+            _node_status_failures: "{{ _keys | rejectattr('node_status', 'equalto', 'UP') }}"
+            _keygen_status_failures: "{{ _keys | rejectattr('keygen_status', 'equalto', 'OK') }}"
 
-    - name: Get gluster geo replication status
-      pokerops.gluster.georeplication.status:
-        secondary_user: "{{ _gluster_user }}"
-      register: _georeplica_status
-      changed_when: false
+        - name: Get gluster geo replication status
+          pokerops.gluster.georeplication.status:
+            secondary_user: "{{ _gluster_user }}"
+          register: _georeplica_status
+          changed_when: false
 
-    - name: Set georeplication session status
-      ansible.builtin.set_fact:
-        _gluster_georeplica_sessions: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
-      vars:
-        _volumes: "{{ _gluster_volumes }}"
-        _target_volumes: "{{ _volumes | map(attribute='name') }}"
-        _sessions: "{{ _georeplica_status.results | default([]) }}"
+        - name: Set georeplication session status
+          ansible.builtin.set_fact:
+            _gluster_georeplica_sessions: "{{ _sessions | selectattr('primary_volume', 'in', _target_volumes) }}"
+          vars:
+            _volumes: "{{ _gluster_volumes }}"
+            _target_volumes: "{{ _volumes | map(attribute='name') }}"
+            _sessions: "{{ _georeplica_status.results | default([]) }}"
 
-    - name: Debug gluster geo replication status
-      ansible.builtin.debug:
-        msg: "{{ _gluster_georeplica_sessions }}"
+        - name: Debug gluster geo replication status
+          ansible.builtin.debug:
+            msg: "{{ _gluster_georeplica_sessions }}"
 
-    - name: Verify gluster geo replication session status
-      ansible.builtin.assert:
-        that: _failing | length == 0
-      vars:
-        _sessions: "{{ _gluster_georeplica_sessions }}"
-        _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
+        - name: Verify gluster geo replication session status
+          ansible.builtin.assert:
+            that: _failing | length == 0
+          vars:
+            _sessions: "{{ _gluster_georeplica_sessions }}"
+            _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
 
-    - name: Set georeplication facts
-      ansible.builtin.set_fact:
-        _gluster_sessions_create: "{{ _target_replicas | rejectattr('name', 'equalto', _meta_volume) }}"
-      vars:
-        _sessions: "{{ _gluster_georeplica_sessions }}"
-        _replicas: "{{ _sessions | map(attribute='secondary') | unique }}"
-        _replica_volumes: "{{ _replicas | map('regex_replace', '.*@', '') }}"
-        _existing_replicas: "{{ _replica_volumes | map('regex_replace', '::.*', '') }}"
-        _existing_volumes: "{{ _sessions | map(attribute='secondary_volume') | unique }}"
-        _target_volumes: "{{ _gluster_target_volumes | rejectattr('name', 'in', _existing_volumes) }}"
-        _target_replicas: "{{ _target_volumes | rejectattr('replica_name', 'in', _existing_replicas) }}"
-        _meta_volume: "{{ gluster_meta_volume.name }}"
+        - name: Set georeplication facts
+          ansible.builtin.set_fact:
+            _gluster_sessions_create: "{{ _target_replicas | rejectattr('name', 'equalto', _meta_volume) }}"
+          vars:
+            _sessions: "{{ _gluster_georeplica_sessions }}"
+            _replicas: "{{ _sessions | map(attribute='secondary') | unique }}"
+            _replica_volumes: "{{ _replicas | map('regex_replace', '.*@', '') }}"
+            _existing_replicas: "{{ _replica_volumes | map('regex_replace', '::.*', '') }}"
+            _existing_volumes: "{{ _sessions | map(attribute='secondary_volume') | unique }}"
+            _target_volumes: "{{ _gluster_target_volumes | rejectattr('name', 'in', _existing_volumes) }}"
+            _target_replicas: "{{ _target_volumes | rejectattr('replica_name', 'in', _existing_replicas) }}"
+            _meta_volume: "{{ gluster_meta_volume.name }}"
 
-    - name: Debug gluster geo replication volumes to create a session
-      ansible.builtin.debug:
-        msg: "{{ _gluster_sessions_create }}"
+        - name: Debug gluster geo replication volumes to create a session
+          ansible.builtin.debug:
+            msg: "{{ _gluster_sessions_create }}"
 
-    - name: End play when there are no geo replications to create
-      ansible.builtin.meta: end_host
-      when: _gluster_sessions_create | length == 0
+        - name: End play when there are no geo replications to create
+          ansible.builtin.meta: end_host
+          when: _gluster_sessions_create | length == 0
 
-    - name: Create geo replication session
-      pokerops.gluster.georeplication.create:
-        primary_volume: "{{ _volume }}"
-        secondary_volume: "{{ _volume }}"
-        secondary_host: "{{ _replica }}"
-        secondary_user: "{{ _gluster_user }}"
-        push_pem: "{{ item.push_pem | default('true') | bool }}"
-        force: "{{ item.force | default('true') | bool }}"
-      vars:
-        _volume: "{{ item.name }}"
-        _replica: "{{ item.replica_name }}"
-      loop_control:
-        label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
-      loop: "{{ _gluster_sessions_create }}"
-      register: _georeplica_create
-      changed_when: false
+        - name: Create geo replication session
+          pokerops.gluster.georeplication.create:
+            primary_volume: "{{ _volume }}"
+            secondary_volume: "{{ _volume }}"
+            secondary_host: "{{ _replica }}"
+            secondary_user: "{{ _gluster_user }}"
+            push_pem: "{{ item.push_pem | default('true') | bool }}"
+            force: "{{ item.force | default('true') | bool }}"
+          vars:
+            _volume: "{{ item.name }}"
+            _replica: "{{ item.replica_name }}"
+          loop_control:
+            label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
+          loop: "{{ _gluster_sessions_create }}"
+          register: _georeplica_create
+          changed_when: false
 
-    - name: Verify gluster geo replication session status
-      ansible.builtin.assert:
-        that: _status | rejectattr('result', 'match', '.*has been successful.*') | length == 0
-      vars:
-        _status: "{{ _georeplica_create.results | default([]) }}"
+        - name: Verify gluster geo replication session status
+          ansible.builtin.assert:
+            that: _status | rejectattr('result', 'match', '.*has been successful.*') | length == 0
+          vars:
+            _status: "{{ _georeplica_create.results | default([]) }}"
 
-    - name: Get gluster geo replication status
-      pokerops.gluster.georeplication.status:
-        secondary_user: "{{ _gluster_user }}"
-      vars:
-        _results: "{{ _georeplica_status.results | default([]) }}"
-        _volumes: "{{ _gluster_sessions_create | map(attribute='name') }}"
-        _query_volumes: "{{ _results | selectattr('secondary_volume', 'in', _volumes) }}"
-        _status: "{{ _query_volumes | rejectattr('status', 'equalto', 'Created') }}"
-      register: _georeplica_status
-      retries: "{{ _gluster_retries }}"
-      delay: "{{ _gluster_delay }}"
-      until: _status | length == 0
-      changed_when: false
+        - name: Get gluster geo replication status
+          pokerops.gluster.georeplication.status:
+            secondary_user: "{{ _gluster_user }}"
+          vars:
+            _results: "{{ _georeplica_status.results | default([]) }}"
+            _volumes: "{{ _gluster_sessions_create | map(attribute='name') }}"
+            _query_volumes: "{{ _results | selectattr('secondary_volume', 'in', _volumes) }}"
+            _status: "{{ _query_volumes | rejectattr('status', 'equalto', 'Created') }}"
+          register: _georeplica_status
+          retries: "{{ _gluster_retries }}"
+          delay: "{{ _gluster_delay }}"
+          until: _status | length == 0
+          changed_when: false
 
-    - name: Set georeplication session status
-      ansible.builtin.set_fact:
-        _gluster_georeplica_sessions: "{{ _georeplica_status.results | default([]) }}"
+        - name: Set georeplication session status
+          ansible.builtin.set_fact:
+            _gluster_georeplica_sessions: "{{ _georeplica_status.results | default([]) }}"
 
-    - name: Debug gluster geo replication status
-      ansible.builtin.debug:
-        msg: "{{ _gluster_georeplica_sessions }}"
+        - name: Debug gluster geo replication status
+          ansible.builtin.debug:
+            msg: "{{ _gluster_georeplica_sessions }}"
 
-    - name: Verify gluster geo replication session status
-      ansible.builtin.assert:
-        that: _failing | length == 0
-      vars:
-        _sessions: "{{ _gluster_georeplica_sessions }}"
-        _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
+        - name: Verify gluster geo replication session status
+          ansible.builtin.assert:
+            that: _failing | length == 0
+          vars:
+            _sessions: "{{ _gluster_georeplica_sessions }}"
+            _failing: "{{ _sessions | selectattr('status', 'equalto', 'Faulty') }}"
 
-    - name: Configure geo replication meta volume
-      pokerops.gluster.georeplication.config_set:
-        primary_volume: "{{ _volume }}"
-        secondary_volume: "{{ _volume }}"
-        secondary_host: "{{ _replica }}"
-        secondary_user: "{{ _gluster_user }}"
-        key: "use-meta-volume"
-        value: "true"
-      vars:
-        _volume: "{{ item.name }}"
-        _replica: "{{ item.replica_name }}"
-      loop_control:
-        label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
-      loop: "{{ _gluster_sessions_create }}"
-      register: _georeplica_meta
-      changed_when: false
+        - name: Configure geo replication meta volume
+          pokerops.gluster.georeplication.config_set:
+            primary_volume: "{{ _volume }}"
+            secondary_volume: "{{ _volume }}"
+            secondary_host: "{{ _replica }}"
+            secondary_user: "{{ _gluster_user }}"
+            key: "use-meta-volume"
+            value: "true"
+          vars:
+            _volume: "{{ item.name }}"
+            _replica: "{{ item.replica_name }}"
+          loop_control:
+            label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
+          loop: "{{ _gluster_sessions_create }}"
+          register: _georeplica_meta
+          changed_when: false
 
-    - name: Verify gluster geo replication meta volume configuration
-      ansible.builtin.assert:
-        that: _status | rejectattr('result', 'match', '.*config updated successfully.*') | length == 0
-      vars:
-        _status: "{{ _georeplica_meta.results | default([]) }}"
+        - name: Verify gluster geo replication meta volume configuration
+          ansible.builtin.assert:
+            that: _status | rejectattr('result', 'match', '.*config updated successfully.*') | length == 0
+          vars:
+            _status: "{{ _georeplica_meta.results | default([]) }}"
 
-    - name: Wait for gluster common key replication
-      ansible.builtin.stat:
-        path: "{{ _path }}"
-      vars:
-        _home: "/home/{{ _gluster_user }}"
-        _path: "{{ _home }}/{{ _volume }}_{{ _volume }}_common_secret.pem.pub"
-        _volume: "{{ item.name }}"
-        _slave: "{{ item.replica_name }}"
-        _results: "{{ _georeplica_common_key.results | default([]) | map(attribute='stat') }}"
-        _status: "{{ _results | map(attribute='stat') }}"
-        _query: "{{ _status | rejectattr('exists') }}"
-      loop_control:
-        label: "Volume: {{ _volume }} - Replica: {{ _slave }}"
-      loop: "{{ _gluster_sessions_create }}"
-      retries: "{{ _gluster_retries }}"
-      delay: "{{ _gluster_delay }}"
-      until: _query | length == 0
-      register: _georeplica_common_key
-      delegate_to: "{{ _slave }}"
+        - name: Wait for gluster common key replication
+          ansible.builtin.stat:
+            path: "{{ _path }}"
+          vars:
+            _home: "/home/{{ _gluster_user }}"
+            _path: "{{ _home }}/{{ _volume }}_{{ _volume }}_common_secret.pem.pub"
+            _volume: "{{ item.name }}"
+            _slave: "{{ item.replica_name }}"
+            _results: "{{ _georeplica_common_key.results | default([]) | map(attribute='stat') }}"
+            _status: "{{ _results | map(attribute='stat') }}"
+            _query: "{{ _status | rejectattr('exists') }}"
+          loop_control:
+            label: "Volume: {{ _volume }} - Replica: {{ _slave }}"
+          loop: "{{ _gluster_sessions_create }}"
+          retries: "{{ _gluster_retries }}"
+          delay: "{{ _gluster_delay }}"
+          until: _query | length == 0
+          register: _georeplica_common_key
+          delegate_to: "{{ _slave }}"
 
-    - name: Execute gluster geo replication pem keys script
-      ansible.builtin.shell: |
-        {{ _script }} {{ _gluster_user }} {{ _volume }} {{ _volume }}
-      vars:
-        _slave: "{{ item.replica_name }}"
-        _script: "{{ gluster_georeplication_keys_script }}"
-        _volume: "{{ item.name }}"
-      loop_control:
-        label: "Volume: {{ _volume }} - Replica: {{ _slave }}"
-      loop: "{{ _gluster_sessions_create }}"
-      register: _georeplica_sshkeys_script
-      changed_when: false
-      delegate_to: "{{ _slave }}"
-      tags: skip_ansible_lint
+        - name: Execute gluster geo replication pem keys script
+          ansible.builtin.shell: |
+            {{ _script }} {{ _gluster_user }} {{ _volume }} {{ _volume }}
+          vars:
+            _slave: "{{ item.replica_name }}"
+            _script: "{{ gluster_georeplication_keys_script }}"
+            _volume: "{{ item.name }}"
+          loop_control:
+            label: "Volume: {{ _volume }} - Replica: {{ _slave }}"
+          loop: "{{ _gluster_sessions_create }}"
+          register: _georeplica_sshkeys_script
+          changed_when: false
+          delegate_to: "{{ _slave }}"
+          tags: skip_ansible_lint
 
-    - name: Start gluster geo replication sessions
-      pokerops.gluster.georeplication.start:
-        primary_volume: "{{ _volume }}"
-        secondary_volume: "{{ _volume }}"
-        secondary_host: "{{ _replica }}"
-        secondary_user: "{{ _gluster_user }}"
-        force: "{{ item.force | default('false') | bool }}"
-      vars:
-        _volume: "{{ item.name }}"
-        _replica: "{{ item.replica_name }}"
-      loop_control:
-        label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
-      loop: "{{ _gluster_sessions_create }}"
-      register: _georeplica_start
-      changed_when: false
+        - name: Start gluster geo replication sessions
+          pokerops.gluster.georeplication.start:
+            primary_volume: "{{ _volume }}"
+            secondary_volume: "{{ _volume }}"
+            secondary_host: "{{ _replica }}"
+            secondary_user: "{{ _gluster_user }}"
+            force: "{{ item.force | default('false') | bool }}"
+          vars:
+            _volume: "{{ item.name }}"
+            _replica: "{{ item.replica_name }}"
+          loop_control:
+            label: "Volume: {{ _volume }} - Replica: {{ _replica }}"
+          loop: "{{ _gluster_sessions_create }}"
+          register: _georeplica_start
+          changed_when: false
 
-    - name: Verify gluster geo replication session start
-      ansible.builtin.assert:
-        that: _status | rejectattr('result', 'match', '.*has been successful.*') | length == 0
-      vars:
-        _status: "{{ _georeplica_start.results | default([]) }}"
+        - name: Verify gluster geo replication session start
+          ansible.builtin.assert:
+            that: _status | rejectattr('result', 'match', '.*has been successful.*') | length == 0
+          vars:
+            _status: "{{ _georeplica_start.results | default([]) }}"
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
