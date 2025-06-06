@@ -27,7 +27,7 @@
             path: "{{ _virtualenv_tmpdir.path }}"
             state: absent
           vars:
-            _clients: "{{ groups[_gluster_client_hostgroup_name] }}"
+            _clients: "{{ groups['gluster_client'] }}"
           when: inventory_hostname not in _clients
 
         - name: Exit playbook execution
@@ -102,7 +102,7 @@
             path: "{{ _virtualenv_tmpdir.path }}"
             state: absent
           vars:
-            _clients: "{{ groups[_gluster_client_hostgroup_name] }}"
+            _clients: "{{ groups['gluster_client'] }}"
           when: inventory_hostname not in _clients
 
         - name: Exit playbook execution
