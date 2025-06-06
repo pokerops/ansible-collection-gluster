@@ -29,6 +29,9 @@
             _clients: "{{ groups[_gluster_client_hostgroup_name] }}"
           when: inventory_hostname not in _clients
 
+        - name: Exit playbook execution
+          ansible.builtin.fail:
+
 - name: Import geo replication playbook
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.stop
 
@@ -92,6 +95,9 @@
             path: "{{ _virtualenv_tmpdir.path }}"
             state: absent
 
+        - name: Exit playbook execution
+          ansible.builtin.fail:
+
 - name: Override gluster volumes state to present
   hosts: "gluster_server:gluster_client"
   gather_facts: false
@@ -118,6 +124,9 @@
           vars:
             _clients: "{{ groups[_gluster_client_hostgroup_name] }}"
           when: inventory_hostname not in _clients
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Import geo replication playbook
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.start
@@ -187,6 +196,9 @@
             path: "{{ _virtualenv_tmpdir.path }}"
             state: absent
 
+        - name: Exit playbook execution
+          ansible.builtin.fail:
+
 - name: Override gluster volumes state to absent
   hosts: "gluster_server:gluster_client"
   gather_facts: false
@@ -213,6 +225,9 @@
           vars:
             _clients: "{{ groups[_gluster_client_hostgroup_name] }}"
           when: inventory_hostname not in _clients
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Import geo replication playbook
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.delete
@@ -274,6 +289,9 @@
             path: "{{ _virtualenv_tmpdir.path }}"
             state: absent
 
+        - name: Exit playbook execution
+          ansible.builtin.fail:
+
 - name: Override gluster volumes facts
   hosts: "gluster_server:gluster_client"
   gather_facts: false
@@ -306,6 +324,9 @@
           vars:
             _clients: "{{ groups[_gluster_client_hostgroup_name] }}"
           when: inventory_hostname not in _clients
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Import geo replication playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
@@ -348,6 +369,9 @@
           vars:
             _clients: "{{ groups[_gluster_client_hostgroup_name] }}"
           when: inventory_hostname not in _clients
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
@@ -418,6 +442,9 @@
           ansible.builtin.file:
             path: "{{ _virtualenv_tmpdir.path }}"
             state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Import geo replication install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
@@ -496,6 +523,9 @@
           ansible.builtin.file:
             path: "{{ _virtualenv_tmpdir.path }}"
             state: absent
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Import verify playbook
   ansible.builtin.import_playbook: ./verify.yml

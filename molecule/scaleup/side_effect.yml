@@ -51,6 +51,9 @@
             path: "{{ _virtualenv_tmpdir.path }}"
             state: absent
 
+        - name: Exit playbook execution
+          ansible.builtin.fail:
+
 - name: Import verification playbook
   ansible.builtin.import_playbook: ../common/verify.yml
   vars:

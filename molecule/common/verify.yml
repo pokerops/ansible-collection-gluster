@@ -29,6 +29,9 @@
             _clients: "{{ groups[_gluster_client_hostgroup_name] }}"
           when: inventory_hostname not in _clients
 
+        - name: Exit playbook execution
+          ansible.builtin.fail:
+
 - name: Query cluster state
   hosts: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
   become: true
@@ -100,6 +103,9 @@
           vars:
             _clients: "{{ groups[_gluster_client_hostgroup_name] }}"
           when: inventory_hostname not in _clients
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Test gluster client connection
   hosts: "{{ gluster_client_hostgroup_name | default('gluster_client') }}"
