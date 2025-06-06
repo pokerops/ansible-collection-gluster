@@ -491,7 +491,7 @@
             _volume_names: "{{ _start_volumes | map(attribute='name') }}"
             _query_volumes: "{{ _start_existing | rejectattr('secondary_volume', 'in', _volume_names) }}"
 
-      always:
+      rescue:
         - name: Destroy virtualenv
           ansible.builtin.file:
             path: "{{ _virtualenv_tmpdir.path }}"

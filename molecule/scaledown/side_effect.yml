@@ -45,7 +45,7 @@
               - _gluster_members | difference(_gluster_scaledown) | length == 0
               - _gluster_scaledown | difference(_gluster_members) | length == 0
 
-      always:
+      rescue:
         - name: Destroy virtualenv
           ansible.builtin.file:
             path: "{{ _virtualenv_tmpdir.path }}"
