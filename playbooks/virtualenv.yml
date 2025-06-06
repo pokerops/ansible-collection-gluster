@@ -7,7 +7,7 @@
     - ../vars/main.yml
   tasks:
     - name: End play when a virtualenv is not required
-      ansible.built.meta: end_play
+      ansible.builtin.meta: end_play
       when: not gluster_virtualenv_manage | default('true') | bool
 
     - name: Install python virtualenv
@@ -49,7 +49,7 @@
     - ../vars/main.yml
   tasks:
     - name: End play when destroying virtualenv is not required
-      ansible.built.meta: end_play
+      ansible.builtin.meta: end_play
       when: gluster_virtualenv_manage | default('true') | bool
 
     - name: Destroy virtualenv
