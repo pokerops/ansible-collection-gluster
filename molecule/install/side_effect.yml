@@ -3,6 +3,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.virtualenv
 
 - name: Override gluster volume facts
+  become: true
   hosts: all
   tasks:
     - name: Manage tasks within virtualenv
