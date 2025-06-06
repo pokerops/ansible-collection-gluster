@@ -4,6 +4,8 @@
 
 - name: Import restart playbook
   ansible.builtin.import_playbook: pokerops.gluster.restart
+  vars:
+    gluster_virtualenv_destroy: false
 
 - name: Verify gluster service
   hosts: gluster_server

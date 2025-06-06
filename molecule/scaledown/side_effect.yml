@@ -3,6 +3,10 @@
   ansible.builtin.import_playbook: pokerops.gluster.install
   vars:
     gluster_server_hostgroup_name: gluster_server_down
+    gluster_virtualenv_destroy: false
+
+- name: Run Gluster virtualenv
+  ansible.builtin.import_playbook: pokerops.gluster.virtualenv
 
 - name: Query cluster state
   hosts: gluster_down

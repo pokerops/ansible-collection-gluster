@@ -39,3 +39,8 @@
   ansible.builtin.import_playbook: pokerops.gluster.client
   vars:
     _gluster_client_volumes: "{{ _gluster_volumes | rejectattr('state', 'equalto', 'absent') }}"
+
+- name: Run Gluster virtualenv
+  ansible.builtin.import_playbook: pokerops.gluster.virtualenv
+  vars:
+    gluster_virtualenv_manage: false

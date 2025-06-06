@@ -330,6 +330,8 @@
 
 - name: Import geo replication playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
+  vars:
+    gluster_virtualenv_destroy: false
 
 - name: Test gluster failover to a different site
   hosts: "gluster_server:gluster_client"
@@ -377,6 +379,7 @@
   ansible.builtin.import_playbook: pokerops.gluster.install
   vars:
     gluster_server_prefix: gluster_server_georeplication
+    gluster_virtualenv_destroy: false
 
 - name: Verify gluster volumes status
   hosts: "gluster_server"
@@ -452,6 +455,7 @@
     gluster_server_prefix: gluster_server_scaledown
     gluster_server_hostgroup_name: gluster_server_scaledown
     gluster_client_hostgroup_name: gluster_client_scaledown
+    gluster_virtualenv_destroy: false
 
 - name: Verify gluster volumes status
   hosts: "gluster_server_scaledown"
