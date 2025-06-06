@@ -1,4 +1,7 @@
 ---
+- name: Run Gluster virtualenv
+  ansible.builtin.import_playbook: pokerops.gluster.virtualenv
+
 - name: Import stop playbook
   ansible.builtin.import_playbook: pokerops.gluster.stop
 
@@ -7,14 +10,22 @@
   vars:
     gluster_service_name: "glusterd.service"
   tasks:
-    - name: Collect service facts
-      ansible.builtin.service_facts:
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Collect service facts
+          ansible.builtin.service_facts:
 
-    - name: Debug gluster service status
-      ansible.builtin.debug:
-        msg: "{{ services[gluster_service_name] }}"
+        - name: Debug gluster service status
+          ansible.builtin.debug:
+            msg: "{{ services[gluster_service_name] }}"
 
-    - name: Verify service run status
-      ansible.builtin.fail:
-        msg: "gluster service is running"
-      when: services[gluster_service_name].state not in ["inactive", "stopped"]
+        - name: Verify service run status
+          ansible.builtin.fail:
+            msg: "gluster service is running"
+          when: services[gluster_service_name].state not in ["inactive", "stopped"]
+
+      always:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ _virtualenv_tmpdir.path }}"
+            state: absent
