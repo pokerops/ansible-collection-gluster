@@ -19,17 +19,16 @@
         _package: "{{ (ansible_os_family == 'Debian') | ternary('virtualenv', 'python-virtualenv') }}"
 
     - name: Create virtualenv
-      ansible.builtin.tempfile:
+      ansible.builtin.file:
         state: directory
-        suffix: virtualenv
-      register: _virtualenv_tmpdir
+        path: "{{ gluster_virtualenv_dir }}"
 
     - name: Set virtualenv facts
       ansible.builtin.set_fact:
         _virtualenv_path: "{{ _path }}"
         _virtualenv_python: "{{ _python }}"
       vars:
-        _path: "{{ _virtualenv_tmpdir.path }}/venv"
+        _path: "{{ gluster_virtualenv_dir }}/venv"
         _python: "{{ _path }}/bin/python"
 
     - name: Initialize virtualenv
@@ -54,6 +53,6 @@
 
     - name: Destroy virtualenv
       ansible.builtin.file:
-        path: "{{ _virtualenv_tmpdir.path }}"
+        path: "{{ gluster_virtualenv_dir }}"
         state: absent
       when: gluster_virtualenv_destroy | default('true') | bool
