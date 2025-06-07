@@ -1,30 +1,48 @@
 ---
+- name: Run Gluster virtualenv
+  ansible.builtin.import_playbook: pokerops.gluster.virtualenv
+
 - name: Override gluster volume facts
+  become: true
   hosts: all
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
-    - name: Set gluster volume fact
-      ansible.builtin.set_fact:
-        gluster_volumes:
-          - name: test
-            brick: /data/test
-            mount: /mnt/test
-            paths:
-              - a
-              - b
-              - c
-          - name: bla
-            brick: /data/bla
-            mount: /mnt/bla
-            paths:
-              - a
-              - b
-              - c
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Set gluster volume fact
+          ansible.builtin.set_fact:
+            gluster_volumes:
+              - name: test
+                brick: /data/test
+                mount: /mnt/test
+                paths:
+                  - a
+                  - b
+                  - c
+              - name: bla
+                brick: /data/bla
+                mount: /mnt/bla
+                paths:
+                  - a
+                  - b
+                  - c
+                state: absent
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ gluster_virtualenv_dir }}"
             state: absent
+          vars:
+            _clients: "{{ groups['gluster_client'] }}"
+          when: inventory_hostname not in _clients
 
 - name: Import install playbook
   ansible.builtin.import_playbook: pokerops.gluster.install
   vars:
     gluster_server_prefix: gluster_server_install
+    gluster_virtualenv_destroy: false
 
 - name: Import verify playbook
   ansible.builtin.import_playbook: ../common/verify.yml

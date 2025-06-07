@@ -1,20 +1,35 @@
 ---
+- name: Run Gluster virtualenv
+  ansible.builtin.import_playbook: pokerops.gluster.virtualenv
+
 - name: Import restart playbook
   ansible.builtin.import_playbook: pokerops.gluster.restart
+  vars:
+    gluster_virtualenv_destroy: false
 
 - name: Verify gluster service
   hosts: gluster_server
+  become: true
   vars:
     gluster_service_name: "glusterd.service"
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
-    - name: Collect service facts
-      ansible.builtin.service_facts:
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Collect service facts
+          ansible.builtin.service_facts:
 
-    - name: Debug gluster service status
-      ansible.builtin.debug:
-        msg: "{{ services[gluster_service_name] }}"
+        - name: Debug gluster service status
+          ansible.builtin.debug:
+            msg: "{{ services[gluster_service_name] }}"
 
-    - name: Verify service run status
-      ansible.builtin.fail:
-        msg: "gluster service is not running"
-      when: services[gluster_service_name].state not in ["running"]
+        - name: Verify service run status
+          ansible.builtin.fail:
+            msg: "gluster service is not running"
+          when: services[gluster_service_name].state not in ["running"]
+
+      always:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ gluster_virtualenv_dir }}"
+            state: absent

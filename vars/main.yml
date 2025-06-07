@@ -21,6 +21,7 @@ gluster_meta_volume:
 gluster_georeplica_volumes_status:
   - "Active"
   - "Passive"
+gluster_virtualenv_dir: "/root/ansible/virtualenv"
 
 # Overridable values
 _gluster_server_hostgroup_name: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"

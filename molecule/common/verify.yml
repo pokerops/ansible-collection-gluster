@@ -1,80 +1,115 @@
 ---
+- name: Run Gluster virtualenv
+  ansible.builtin.import_playbook: pokerops.gluster.virtualenv
+
 - name: Set gluster volume fact
   hosts: "all"
+  become: true
   gather_facts: false
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
-    - name: Set volume facts
-      ansible.builtin.set_fact:
-        _gluster_volumes: "{{ _volumes_filter }}"
-      vars:
-        _volume_defaults:
-          state: present
-        _volumes: "{{ gluster_volumes | sort(attribute='name') }}"
-        _volumes_num: "{{ _volumes | length }}"
-        _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
-        _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
-        _volumes_filter: "{{ _volumes_overwritten | rejectattr('state', 'equalto', 'absent') }}"
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Set volume facts
+          ansible.builtin.set_fact:
+            _gluster_volumes: "{{ _volumes_filter }}"
+          vars:
+            _volume_defaults:
+              state: present
+            _volumes: "{{ gluster_volumes | sort(attribute='name') }}"
+            _volumes_num: "{{ _volumes | length }}"
+            _volumes_default: "{{ [_volume_defaults] * _volumes_num | int }}"
+            _volumes_overwritten: "{{ _volumes_default | zip(_volumes) | map('combine') }}"
+            _volumes_filter: "{{ _volumes_overwritten | rejectattr('state', 'equalto', 'absent') }}"
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ gluster_virtualenv_dir }}"
+            state: absent
+          vars:
+            _clients: "{{ groups['gluster_client'] }}"
+          when: inventory_hostname not in _clients
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Query cluster state
   hosts: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
   become: true
   vars:
     gluster_service_name: "glusterd.service"
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
-    - name: Gather service facts
-      ansible.builtin.service_facts:
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Gather service facts
+          ansible.builtin.service_facts:
 
-    - name: Verify gluster service status
-      ansible.builtin.assert:
-        that:
-          - gluster_service_name in services
-          - services[gluster_service_name].state | lower == 'running'
+        - name: Verify gluster service status
+          ansible.builtin.assert:
+            that:
+              - gluster_service_name in services
+              - services[gluster_service_name].state | lower == 'running'
 
-    - name: Query pool list
-      pokerops.gluster.pool_list:
-      register: _member_query
-      changed_when: false
+        - name: Query pool list
+          pokerops.gluster.pool_list:
+          register: _member_query
+          changed_when: false
 
-    - name: Query pool list
-      pokerops.gluster.pool_list:
-      register: _peer_query
-      changed_when: false
+        - name: Query pool list
+          pokerops.gluster.pool_list:
+          register: _peer_query
+          changed_when: false
 
-    - name: Verify gluster node membership
-      ansible.builtin.assert:
-        that:
-          - inventory_hostname in _existing_members
-          - (_group | length) == (_existing_members | length)
-      vars:
-        _members_output: "{{ _member_query.results | default([]) }}"
-        _members: "{{ _members_output | map(attribute='hostname') }}"
-        _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _gluster_group_name: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
-        _group: "{{ groups[_gluster_group_name] }}"
+        - name: Verify gluster node membership
+          ansible.builtin.assert:
+            that:
+              - inventory_hostname in _existing_members
+              - (_group | length) == (_existing_members | length)
+          vars:
+            _members_output: "{{ _member_query.results | default([]) }}"
+            _members: "{{ _members_output | map(attribute='hostname') }}"
+            _existing_members: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+            _gluster_group_name: "{{ gluster_server_hostgroup_name | default('gluster_server') }}"
+            _group: "{{ groups[_gluster_group_name] }}"
 
-    - name: Verify gluster node status
-      ansible.builtin.assert:
-        that: _query | length == 0
-      vars:
-        _to_dict: "nephelaiio.plugins.to_dict"
-        _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
-        _members: "{{ _output | map(attribute='hostname') }}"
-        _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
-        _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
-        _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
-        _query: "{{ _members_overwritten | rejectattr('connected', 'equalto', 'Connected') }}"
+        - name: Verify gluster node status
+          ansible.builtin.assert:
+            that: _query | length == 0
+          vars:
+            _to_dict: "nephelaiio.plugins.to_dict"
+            _output: "{{ _peer_query.results | default([]) | sort(attribute='hostname') }}"
+            _members: "{{ _output | map(attribute='hostname') }}"
+            _members_regex: "{{ _members | map('regex_replace', 'localhost', inventory_hostname) }}"
+            _members_dict: "{{ _members_regex | map(_to_dict, 'hostname') }}"
+            _members_overwritten: "{{ _output | zip(_members_dict) | map('combine') }}"
+            _query: "{{ _members_overwritten | rejectattr('connected', 'equalto', 'Connected') }}"
 
-    - name: Get volume statuses
-      pokerops.gluster.volume.info:
-      register: _member_query
-      changed_when: false
+        - name: Get volume statuses
+          pokerops.gluster.volume.info:
+          register: _member_query
+          changed_when: false
 
-    - name: Verify volume statuses
-      ansible.builtin.assert:
-        that: _query | length == 0
-      vars:
-        _output: "{{ _member_query.results | default([]) }}"
-        _query: "{{ _output | rejectattr('status', 'equalto', 'Started') }}"
+        - name: Verify volume statuses
+          ansible.builtin.assert:
+            that: _query | length == 0
+          vars:
+            _output: "{{ _member_query.results | default([]) }}"
+            _query: "{{ _output | rejectattr('status', 'equalto', 'Started') }}"
+
+      rescue:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ gluster_virtualenv_dir }}"
+            state: absent
+          vars:
+            _clients: "{{ groups['gluster_client'] }}"
+          when: inventory_hostname not in _clients
+
+        - name: Exit playbook execution
+          ansible.builtin.fail:
 
 - name: Test gluster client connection
   hosts: "{{ gluster_client_hostgroup_name | default('gluster_client') }}"
@@ -103,29 +138,38 @@
   become: true
   vars:
     _log_file: "{{ gluster_log_file | default('test.log') }}"
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
-    - name: Get gluster file status
-      ansible.builtin.stat:
-        path: "{{ _file }}"
-      vars:
-        _file: "{{ item.mount }}/{{ _log_file }}"
-      loop_control:
-        label: "{{ _file }}"
-      loop: "{{ _gluster_volumes }}"
-      register: _gluster_paths
+    - name: Manage tasks within virtualenv
+      block:
+        - name: Get gluster file status
+          ansible.builtin.stat:
+            path: "{{ _file }}"
+          vars:
+            _file: "{{ item.mount }}/{{ _log_file }}"
+          loop_control:
+            label: "{{ _file }}"
+          loop: "{{ _gluster_volumes }}"
+          register: _gluster_paths
 
-    - name: Verify gluster mount paths
-      ansible.builtin.assert:
-        that: _query | length == 0
-      vars:
-        _results: "{{ _gluster_paths.results | default([]) }}"
-        _paths: "{{ _results | map(attribute='stat') }}"
-        _query: "{{ _paths | rejectattr('exists') }}"
+        - name: Verify gluster mount paths
+          ansible.builtin.assert:
+            that: _query | length == 0
+          vars:
+            _results: "{{ _gluster_paths.results | default([]) }}"
+            _paths: "{{ _results | map(attribute='stat') }}"
+            _query: "{{ _paths | rejectattr('exists') }}"
 
-    - name: Verify gluster mount paths
-      ansible.builtin.assert:
-        that: _query | length == _defined_mounts | length
-      vars:
-        _defined_mounts: "{{ _gluster_volumes | map(attribute='mount') }}"
-        _existing_mounts: "{{ ansible_mounts | map(attribute='mount') }}"
-        _query: "{{ _defined_mounts | select('in', _existing_mounts) }}"
+        - name: Verify gluster mount paths
+          ansible.builtin.assert:
+            that: _query | length == _defined_mounts | length
+          vars:
+            _defined_mounts: "{{ _gluster_volumes | map(attribute='mount') }}"
+            _existing_mounts: "{{ ansible_mounts | map(attribute='mount') }}"
+            _query: "{{ _defined_mounts | select('in', _existing_mounts) }}"
+
+      always:
+        - name: Destroy virtualenv
+          ansible.builtin.file:
+            path: "{{ gluster_virtualenv_dir }}"
+            state: absent
