@@ -5,6 +5,8 @@
 - name: Override gluster volumes state to stopped
   hosts: "gluster_server:gluster_client"
   gather_facts: false
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -40,6 +42,8 @@
   become: true
   gather_facts: false
   any_errors_fatal: true
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -102,6 +106,8 @@
   hosts: "gluster_server:gluster_client"
   gather_facts: false
   any_errors_fatal: true
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -136,6 +142,8 @@
   become: true
   gather_facts: false
   any_errors_fatal: true
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -202,6 +210,8 @@
 - name: Override gluster volumes state to absent
   hosts: "gluster_server:gluster_client"
   gather_facts: false
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -237,6 +247,8 @@
   become: true
   gather_facts: false
   any_errors_fatal: true
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -295,6 +307,8 @@
 - name: Override gluster volumes facts
   hosts: "gluster_server:gluster_client"
   gather_facts: false
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -337,6 +351,8 @@
   hosts: "gluster_server:gluster_client"
   gather_facts: false
   any_errors_fatal: true
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -386,6 +402,8 @@
   become: true
   gather_facts: false
   any_errors_fatal: true
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -461,6 +479,8 @@
   hosts: "gluster_server_scaledown"
   become: true
   any_errors_fatal: true
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:

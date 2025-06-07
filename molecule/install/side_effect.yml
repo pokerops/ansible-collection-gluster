@@ -5,6 +5,8 @@
 - name: Override gluster volume facts
   become: true
   hosts: all
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:

@@ -12,6 +12,7 @@
   become: true
   vars:
     gluster_service_name: "glusterd.service"
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:

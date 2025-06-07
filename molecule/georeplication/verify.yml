@@ -6,6 +6,8 @@
   hosts: "all"
   become: true
   gather_facts: false
+  vars:
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -38,6 +40,7 @@
   any_errors_fatal: true
   vars:
     gluster_service_name: "glusterd.service"
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
@@ -135,6 +138,7 @@
   any_errors_fatal: true
   vars:
     _log_file: "{{ gluster_log_file | default('test.log') }}"
+    gluster_virtualenv_dir: "/root/ansible/virtualenv"
   tasks:
     - name: Manage tasks within virtualenv
       block:
