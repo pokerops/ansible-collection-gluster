@@ -64,7 +64,7 @@
       rescue:
         - name: Destroy virtualenv
           ansible.builtin.file:
-            path: "{{ _virtualenv_tmpdir.path }}"
+            path: "{{ gluster_virtualenv_dir }}"
             state: absent
 
         - name: Exit playbook execution
@@ -85,7 +85,7 @@
       rescue:
         - name: Destroy virtualenv
           ansible.builtin.file:
-            path: "{{ _virtualenv_tmpdir.path }}"
+            path: "{{ gluster_virtualenv_dir }}"
             state: absent
 
         - name: Exit playbook execution
@@ -148,7 +148,7 @@
       rescue:
         - name: Destroy virtualenv
           ansible.builtin.file:
-            path: "{{ _virtualenv_tmpdir.path }}"
+            path: "{{ gluster_virtualenv_dir }}"
             state: absent
 
         - name: Exit playbook execution
@@ -201,7 +201,7 @@
       always:
         - name: Destroy virtualenv
           ansible.builtin.file:
-            path: "{{ _virtualenv_tmpdir.path }}"
+            path: "{{ gluster_virtualenv_dir }}"
             state: absent
 
 - name: Update gluster client members
