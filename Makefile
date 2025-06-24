@@ -28,30 +28,30 @@ test: requirements
 	MOLECULE_KVM_IMAGE=${MOLECULE_KVM_IMAGE} \
 	MOLECULE_DOCKER_COMMAND=${MOLECULE_DOCKER_COMMAND} \
 	MOLECULE_DOCKER_IMAGE=${MOLECULE_DOCKER_IMAGE} \
-	poetry run molecule $@ -s ${MOLECULE_SCENARIO}
+	uv run molecule $@ -s ${MOLECULE_SCENARIO}
 
 install:
-	@poetry install --no-root
+	@uv sync
 
 lint: requirements
-	poetry run yamllint .
+	uv run yamllint .
 	ANSIBLE_COLLECTIONS_PATH=$(MAKEFILE_DIR) \
-	poetry run ansible-lint -- playbooks/ --exclude roles --exclude .ansible/
+	uv run ansible-lint -- playbooks/ --exclude roles --exclude .ansible/
 
 requirements: install
 	@yq '.roles[].name' -r < roles.yml | xargs -I {} rm -rf roles/{}
 	@python --version
-	@poetry run ansible-galaxy role install \
+	@uv run ansible-galaxy role install \
 		--force --no-deps \
 		--roles-path ${ROLE_DIR} \
 		--role-file ${ROLE_FILE}
 	ANSIBLE_COLLECTIONS_PATH=$(MAKEFILE_DIR) \
-	poetry run ansible-galaxy collection install \
+	uv run ansible-galaxy collection install \
 		--force-with-deps .
 	@\find ./ -name "*.ymle*" -delete
 
 build: requirements
-	@poetry run ansible-galaxy collection build --force
+	@uv run ansible-galaxy collection build --force
 
 ifeq (login,$(firstword $(MAKECMDGOALS)))
     LOGIN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
@@ -63,17 +63,17 @@ dependency create prepare converge idempotence side-effect verify destroy cleanu
 	MOLECULE_KVM_IMAGE=${MOLECULE_KVM_IMAGE} \
 	MOLECULE_DOCKER_COMMAND=${MOLECULE_DOCKER_COMMAND} \
 	MOLECULE_DOCKER_IMAGE=${MOLECULE_DOCKER_IMAGE} \
-	poetry run molecule $@ -s ${MOLECULE_SCENARIO} ${LOGIN_ARGS}
+	uv run molecule $@ -s ${MOLECULE_SCENARIO} ${LOGIN_ARGS}
 
 ignore:
-	@poetry run ansible-lint --generate-ignore
+	@uv run ansible-lint --generate-ignore
 
 clean: destroy reset
-	@poetry env remove $$(which python) >/dev/null 2>&1 || exit 0
+	@uv env remove $$(which python) >/dev/null 2>&1 || exit 0
 
 publish: build
-	poetry run ansible-galaxy collection publish --api-key ${GALAXY_API_KEY} \
+	uv run ansible-galaxy collection publish --api-key ${GALAXY_API_KEY} \
 		"${COLLECTION_NAMESPACE}-${COLLECTION_NAME}-${COLLECTION_VERSION}.tar.gz"
 
 version:
-	@poetry run molecule --version
+	@uv run molecule --version
