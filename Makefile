@@ -36,7 +36,7 @@ install:
 lint: requirements
 	uv run yamllint .
 	ANSIBLE_COLLECTIONS_PATH=$(MAKEFILE_DIR) \
-	uv run ansible-lint -- playbooks/ --exclude roles --exclude .ansible/
+	uv run ansible-lint playbooks/
 
 requirements: install
 	@yq '.roles[].name' -r < roles.yml | xargs -I {} rm -rf roles/{}
