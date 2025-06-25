@@ -7,8 +7,8 @@ An [ansible collection](https://galaxy.ansible.com/ui/repo/published/pokerops/gl
 
 ## ToDo
 
-- Collection supports geo-replication from one site to multiple sites (only one master and multiple slaves).
-- Add support for RockyLinux / AlmaLinux
+- Add support for Debian 12
+- Add support RockyLinux / AlmaLinux
 
 ## Collection hostgroups
 
@@ -50,15 +50,17 @@ Cluster wide parameters
 
 ## Testing
 
-Please make sure your environment has [docker](https://www.docker.com) installed in order to run role validation tests. Additional python dependencies are listed in the [requirements file](https://github.com/nephelaiio/ansible-role-requirements/blob/master/requirements.txt)
+Please make sure your environment has [docker](https://www.docker.com) installed in order to run role validation tests.
+System test dependencies are managed with [DevBox](https://www.jetify.com/devbox)
+Python test dependencies are managed with [UV](https://docs.astral.sh/uv/)
 
 Role is tested against the following distributions (docker images):
 
-- Ubuntu Focal
+- Ubuntu Noble
 - Ubuntu Jammy
-- Debian Bullseye
+- Ubuntu Focal
 
-You can test the role directly from sources using command `molecule test`
+You can test the role directly from sources using command `molecule test` inside a DevBox shell
 
 ## License
 
