@@ -1,4 +1,5 @@
----name: molecule
+---
+name: molecule
 
 on:
   pull_request:
