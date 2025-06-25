@@ -1,9 +1,6 @@
 ---
 name: release
 
-env:
-  DEVBOX_VERSION: ${{ vars.DEVBOX_VERSION }}
-
 on:
   push:
     tags:
@@ -20,7 +17,7 @@ jobs:
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.12.0
         with:
-          devbox-version: ${{ vars.DEVBOX_VERSION }}
+          enable-cache: true
 
       - name: Release collection
         run: devbox run -- make publish

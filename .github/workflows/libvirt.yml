@@ -1,8 +1,4 @@
----
-name: molecule
-
-env:
-  DEVBOX_VERSION: ${{ vars.DEVBOX_VERSION }}
+---name: molecule
 
 on:
   pull_request:
@@ -56,7 +52,7 @@ jobs:
         uses: jetify-com/devbox-install-action@v0.12.0
         with:
           project-path: "pokerops.gluster"
-          devbox-version: ${{ vars.DEVBOX_VERSION }}
+          enable-cache: true
 
       - name: Run molecule tests.
         run: devbox run make test
