@@ -17,10 +17,17 @@
 
         - name: Create brick paths
           ansible.builtin.file:
-            path: "{{ item.brick }}"
+            path: "{{ _brick }}"
             state: directory
+            owner: "{{ omit if (_name == _meta_volume) else _gluster_owner_user }}"
+            group: "{{ omit if (_name == _meta_volume) else _gluster_owner_group }}"
+            mode: "{{ omit if (_name == _meta_volume) else ( _gluster_directory_mode | int ) }}"
+          vars:
+            _meta_volume: "{{ gluster_meta_volume.name }}"
+            _name: "{{ item.name }}"
+            _brick: "{{ item.brick }}"
           loop_control:
-            label: "{{ item.brick }}"
+            label: "{{ _brick }}"
           loop: "{{ _gluster_volumes_present }}"
           tags: skip_ansible_lint
 
@@ -67,8 +74,14 @@
           ansible.builtin.file:
             path: "{{ item.mount }}"
             state: directory
+            owner: "{{ omit if (_name == _meta_volume) else _gluster_owner_user }}"
+            group: "{{ omit if (_name == _meta_volume) else _gluster_owner_group }}"
+            mode: "{{ omit if (_name == _meta_volume) else ( _gluster_directory_mode | int ) }}"
+          vars:
+            _meta_volume: "{{ gluster_meta_volume.name }}"
+            _name: "{{ item.name }}"
           loop_control:
-            label: "{{ item.name }} - {{ item.mount }}"
+            label: "{{ _name }} - {{ item.mount }}"
           loop: "{{ _gluster_volumes_present }}"
           tags: skip_ansible_lint
 
@@ -83,8 +96,10 @@
             _name: "{{ item.name }}"
             _path: "{{ item.mount }}"
             _replica_manage: "{{ _gluster_georeplica_manage }}"
-            _option_default: "{{ item.opts | default('defaults,rw') }}"
-            _options: "{{ 'defaults,ro' if _replica_manage else _option_default }}"
+            _defaults: "_netdev,x-systemd.requires=glusterd.service"
+            _defaults_read: "defaults,ro,{{ _defaults }}"
+            _option_default: "{{ item.opts | default('defaults,rw') }},{{ _defaults }}"
+            _options: "{{ _defaults_read if _replica_manage else _option_default }}"
           loop_control:
             label: "{{ _name }} - {{ _path }}"
           loop: "{{ _gluster_volumes_present }}"
@@ -92,11 +107,12 @@
         - name: Manage subdirectories
           ansible.builtin.file:
             dest: "{{ volume.mount }}/{{ path }}"
-            owner: "{{ _gluster_owner_user }}"
-            group: "{{ _gluster_owner_group }}"
-            mode: "{{ _gluster_directory_mode | int }}"
             state: directory
+            owner: "{{ omit if (volume.name == _meta_volume) else _gluster_owner_user }}"
+            group: "{{ omit if (volume.name == _meta_volume) else _gluster_owner_group }}"
+            mode: "{{ omit if (volume.name == _meta_volume) else ( _gluster_directory_mode | int ) }}"
           vars:
+            _meta_volume: "{{ gluster_meta_volume.name }}"
             volume: "{{ item.0 }}"
             path: "{{ item.1 }}"
           loop_control:
