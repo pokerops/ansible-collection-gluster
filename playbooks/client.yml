@@ -29,7 +29,7 @@
         _server_group: "{{ _slaves if _replica_manage else _masters }}"
         _server: "{{ _server_group | first }}"
         _replica_manage: "{{ _gluster_georeplica_manage }}"
-        _options: "{{ item.opts | default('defaults,rw') }}"
+        _options: "{{ item.opts | default('defaults,rw,_netdev') }}"
         _state_defaults:
           - "present"
           - "stopped"
