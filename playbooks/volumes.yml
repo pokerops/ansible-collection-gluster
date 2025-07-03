@@ -108,12 +108,11 @@
           ansible.builtin.file:
             dest: "{{ volume.mount }}/{{ path }}"
             state: directory
-            owner: "{{ omit if (_name == _meta_volume) else _gluster_owner_user }}"
-            group: "{{ omit if (_name == _meta_volume) else _gluster_owner_group }}"
-            mode: "{{ omit if (_name == _meta_volume) else ( _gluster_directory_mode | int ) }}"
+            owner: "{{ omit if (volume.name == _meta_volume) else _gluster_owner_user }}"
+            group: "{{ omit if (volume.name == _meta_volume) else _gluster_owner_group }}"
+            mode: "{{ omit if (volume.name == _meta_volume) else ( _gluster_directory_mode | int ) }}"
           vars:
             _meta_volume: "{{ gluster_meta_volume.name }}"
-            _name: "{{ item.name }}"
             volume: "{{ item.0 }}"
             path: "{{ item.1 }}"
           loop_control:
