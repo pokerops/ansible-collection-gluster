@@ -58,7 +58,7 @@
     - name: Manage tasks within virtualenv
       block:
         - name: Manage gluster peer members
-          gluster.gluster.gluster_peer:
+          pokerops.gluster.gluster_peer:
             state: present
             nodes: "{{ _targets }}"
           vars:
@@ -101,25 +101,25 @@
           pokerops.gluster.version:
           register: _gluster_version
           changed_when: false
-          loop: "{{ play_hosts }}"
-          delegate_to: "{{ item }}"
-          delegate_facts: true
           tags: skip_ansible_lint
+
+        - name: Set gluster version fact
+          ansible.builtin.set_fact:
+            _gluster_version_installed: "{{ _version }}"
+          vars:
+            _version: "{{ _gluster_version.result | default('') }}"
 
         - name: Debug gluster version
           ansible.builtin.debug:
-            msg: "{{ _versions }}"
-          vars:
-            _output: "{{ _gluster_version.results | default([]) }}"
-            _versions: "{{ _output | map(attribute='result') | unique }}"
+            msg: "{{ _gluster_version_installed }}"
 
         - name: Verify gluster version across geo replication members
           ansible.builtin.assert:
-            that: _versions | length == 1
+            that: _versions | unique | length == 1
             fail_msg: "Gluster version must be the same across members"
           vars:
-            _output: "{{ _gluster_version.results | default([]) }}"
-            _versions: "{{ _output | map(attribute='result') | unique }}"
+            _hosts: "{{ ansible_play_hosts }}"
+            _versions: "{{ _hosts | map('extract', hostvars) | map(attribute='_gluster_version_installed') }}"
 
       rescue:
         - name: Destroy virtualenv
