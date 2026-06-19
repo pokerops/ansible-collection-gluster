@@ -3,7 +3,7 @@ import socket
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.validation import safe_eval
-from glustercli.cli.peer import detach_all, pool, probe
+from glustercli.cli.peer import detach, pool, probe
 from glustercli.cli.utils import GlusterCmdException
 
 DOCUMENTATION = """
@@ -39,7 +39,7 @@ def manage_nodes(**params):
             output = probe(node)
             msg = "Nodes were added successfully"
         else:
-            output = detach_all()
+            output = detach(node)
             msg = "Nodes were removed successfully"
 
         if "already in peer" in output or "localhost not needed" in output:
