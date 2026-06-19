@@ -12,4 +12,5 @@ pokerops-gluster-*.tar.gz
 .ansible/
 .devbox/
 .pyre/
+libvirt/
 ansible_collections/
