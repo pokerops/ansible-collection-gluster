@@ -103,7 +103,7 @@
         - name: Accept gluster host key
           ansible.builtin.command: ssh {{ _user }}@{{ _server }} -o StrictHostKeyChecking=accept-new hostname
           vars:
-            _user: "{{ _gluster_georeplica_user }}"
+            _user: "{{ _gluster_georeplica_user['name'] }}"
             _server: "{{ item }}"
           loop_control:
             label: "{{ _server }}"
