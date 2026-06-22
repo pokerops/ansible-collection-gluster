@@ -100,6 +100,17 @@
           loop: "{{ groups[_gluster_server_hostgroup_name] }}"
           delegate_to: "{{ item }}"
 
+        - name: Accept gluster host key
+          ansible.builtin.command: ssh {{ _user }}@{{ _server }} -o StrictHostKeyChecking=accept-new hostname
+          vars:
+            _user: "{{ _gluster_georeplica_user }}"
+            _server: "{{ item }}"
+          loop_control:
+            label: "{{ _server }}"
+          loop: "{{ groups[_gluster_server_hostgroup_name] }}"
+          delegate_to: "{{ _server }}"
+          tags: skip_ansible_lint
+
       rescue:
         - name: Destroy virtualenv
           ansible.builtin.file:
