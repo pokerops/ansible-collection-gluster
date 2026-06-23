@@ -114,7 +114,6 @@
             label: "{{ _server }}"
           loop: "{{ groups[_gluster_server_hostgroup_name] }}"
           delegate_to: "{{ _server }}"
-          become_user: "{{ _user }}"
 
       rescue:
         - name: Destroy virtualenv
