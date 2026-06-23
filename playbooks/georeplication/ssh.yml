@@ -102,18 +102,13 @@
 
         - name: Accept gluster host key
           community.general.ssh_config:
-            host: "{{ _server }}"
+            host: "{{ _servers | join(' ') }}"
             user: "{{ _user }}"
-            option: "StrictHostKeyChecking"
-            value: "accept-new"
+            strict_host_key_checking: "accept-new"
             state: present
           vars:
             _user: "{{ _gluster_georeplica_user['name'] }}"
-            _server: "{{ item }}"
-          loop_control:
-            label: "{{ _server }}"
-          loop: "{{ groups[_gluster_server_hostgroup_name] }}"
-          delegate_to: "{{ _server }}"
+            _servers: "{{ groups[_gluster_server_hostgroup_name] | reject('equalto', inventory_hostname) }}"
 
       rescue:
         - name: Destroy virtualenv
