@@ -18,6 +18,12 @@
         fail_msg: "Gluster georeplication slave servers are unreachable"
       when: _gluster_georeplica_manage | bool
 
+    - name: Verify gluster server masters status
+      ansible.builtin.assert:
+        that: _gluster_server_masters | length > 0
+        fail_msg: "Gluster georeplication master servers are unreachable"
+      when: not _gluster_georeplica_manage | bool
+
     - name: Install gluster client
       ansible.builtin.package:
         name: "{{ gluster_client_package_name }}"
