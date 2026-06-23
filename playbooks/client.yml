@@ -12,6 +12,12 @@
   vars_files:
     - ../vars/main.yml
   tasks:
+    - name: Verify gluster server slaves status
+      ansible.builtin.assert:
+        that: _gluster_server_slaves | length > 0
+        fail_msg: "Gluster georeplication slave servers are unreachable"
+      when: _gluster_georeplica_manage | bool
+
     - name: Install gluster client
       ansible.builtin.package:
         name: "{{ gluster_client_package_name }}"
