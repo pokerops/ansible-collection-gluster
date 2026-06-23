@@ -1,7 +1,7 @@
 ---
 namespace: pokerops
 name: gluster
-version: 0.1.0
+version: 0.1.1
 readme: README.md
 authors:
   - Carlos Gonzalez <43476850+carlosgo13@users.noreply.github.com>

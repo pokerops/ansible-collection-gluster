@@ -93,12 +93,12 @@
               "default": true
             },
             {
-              "name": "doc",
-              "path": "/nix/store/klwr4n2snj7ldlpkhwarwlif80myx0vj-git-2.54.0-doc"
-            },
-            {
               "name": "debug",
               "path": "/nix/store/c7mafmqf28l7898rpbqqkd0p3m42hc03-git-2.54.0-debug"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/klwr4n2snj7ldlpkhwarwlif80myx0vj-git-2.54.0-doc"
             }
           ],
           "store_path": "/nix/store/ixp98f9avf8ikpdrmp40cj33g0dazyp9-git-2.54.0"
@@ -160,12 +160,12 @@
               "default": true
             },
             {
-              "name": "doc",
-              "path": "/nix/store/sl2ygvgjg4ml8dhyfxj5kh84x2bs1mhc-gnumake-4.4.1-doc"
-            },
-            {
               "name": "info",
               "path": "/nix/store/6dbp1ysgxsrrn7xgjgf523faqrm605a5-gnumake-4.4.1-info"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/sl2ygvgjg4ml8dhyfxj5kh84x2bs1mhc-gnumake-4.4.1-doc"
             }
           ],
           "store_path": "/nix/store/8wwiw8pwyhrkzyq28hqzxfl4z84lks81-gnumake-4.4.1"
@@ -452,16 +452,16 @@
               "default": true
             },
             {
-              "name": "lib",
-              "path": "/nix/store/6qlxbdkrpjfhp4rxv7qc1z9ysapcli5k-libisoburn-1.5.8.pl02-lib"
-            },
-            {
               "name": "dev",
               "path": "/nix/store/nk23xdcls20jc9fiyj0i8ky0h38yhr4v-libisoburn-1.5.8.pl02-dev"
             },
             {
               "name": "info",
               "path": "/nix/store/jbnyyl7h2k2vqnbpsz4672lfmyipk5ap-libisoburn-1.5.8.pl02-info"
+            },
+            {
+              "name": "lib",
+              "path": "/nix/store/6qlxbdkrpjfhp4rxv7qc1z9ysapcli5k-libisoburn-1.5.8.pl02-lib"
             }
           ],
           "store_path": "/nix/store/zbimzn4k0i25i06fm1nh6181npcfxkan-libisoburn-1.5.8.pl02"

@@ -100,6 +100,16 @@
           loop: "{{ groups[_gluster_server_hostgroup_name] }}"
           delegate_to: "{{ item }}"
 
+        - name: Accept gluster host key
+          community.general.ssh_config:
+            host: "{{ _servers | join(' ') }}"
+            user: "{{ _user }}"
+            strict_host_key_checking: "accept-new"
+            state: present
+          vars:
+            _user: "{{ _gluster_georeplica_user['name'] }}"
+            _servers: "{{ groups[_gluster_server_hostgroup_name] | reject('equalto', inventory_hostname) }}"
+
       rescue:
         - name: Destroy virtualenv
           ansible.builtin.file:
