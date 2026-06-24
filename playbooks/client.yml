@@ -39,12 +39,13 @@
 
     - name: Prune stale gluster client volume mounts
       ansible.posix.mount:
-        src: "{{ _server }}:/{{ item.name }}"
+        src: "{{ item.device }}"
         path: "{{ item.mount }}"
         state: "absent"
       loop_control:
         label: "{{ item.device }}"
       loop: "{{ _gluster_client_mounts_orphaned }}"
+      when: _gluster_client_mounts_destroy
 
     - name: End play when there are no gluster volumes to manage
       ansible.builtin.meta: end_host
