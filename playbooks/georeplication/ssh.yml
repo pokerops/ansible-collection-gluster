@@ -102,8 +102,8 @@
 
         - name: Accept gluster host key
           community.general.ssh_config:
-            host: "{{ _servers | join(' ') }}"
-            user: "{{ _user }}"
+            host: "{{ _servers | sort | join(' ') }}"
+            user: "root"
             strict_host_key_checking: "accept-new"
             state: present
           vars:

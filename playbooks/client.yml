@@ -16,6 +16,43 @@
       ansible.builtin.package:
         name: "{{ gluster_client_package_name }}"
 
+    - name: Set gluster client mounts
+      ansible.builtin.set_fact:
+        _gluster_client_mounts_orphaned: "{{ _orphaned_mounts }}"
+        _gluster_client_mount_targets: "{{ _target_mounts }}"
+      vars:
+        _to_dict: "nephelaiio.plugins.to_dict"
+        _cons: "nephelaiio.plugins.cons"
+        _replica_manage: "{{ _gluster_georeplica_manage }}"
+        _slaves: "{{ _gluster_server_slaves }}"
+        _masters: "{{ _gluster_server_masters }}"
+        _servers: "{{ _slaves if _replica_manage else _masters }}"
+        _mounts: "{{ ansible_facts.mounts }}"
+        _gluster_mounts: "{{ _mounts | selectattr('fstype', 'regex', 'glusterfs') | sort(attribute='device') }}"
+        _gluster_devices: "{{ _gluster_mounts | map(attribute='device') | map('split', ':') | map('first') }}"
+        _gluster_servers: "{{ _gluster_devices | map(_to_dict, 'server') }}"
+        _client_mounts: "{{ _gluster_mounts | zip(_gluster_servers) | map('combine') }}"
+        _orphaned_mounts: "{{ _client_mounts | rejectattr('server', 'in', _servers) }}"
+        _servers_dict:
+          servers: "{{ _servers }}"
+        _target_mounts: "{{ [_servers_dict] | product(_gluster_client_volumes) | map('combine') }}"
+
+    - name: Prune stale gluster client volume mounts
+      ansible.posix.mount:
+        src: "{{ _server }}:/{{ item.name }}"
+        path: "{{ item.mount }}"
+        state: "absent"
+      loop_control:
+        label: "{{ item.device }}"
+      loop: "{{ _gluster_client_mounts_orphaned }}"
+
+    - name: End play when there are no gluster volumes to manage
+      ansible.builtin.meta: end_host
+      vars:
+        _volumes: "{{ _gluster_client_mount_targets }}"
+        _servers: "{{ _volumes | map(attribute='servers') | flatten }}"
+      when: _servers | length == 0
+
     - name: Manage gluster client volume mounts
       ansible.posix.mount:
         src: "{{ _server }}:/{{ item.name }}"
@@ -26,9 +63,7 @@
       vars:
         _slaves: "{{ _gluster_server_slaves }}"
         _masters: "{{ _gluster_server_masters }}"
-        _server_group: "{{ _slaves if _replica_manage else _masters }}"
-        _server: "{{ _server_group | first }}"
-        _replica_manage: "{{ _gluster_georeplica_manage }}"
+        _server: "{{ item.servers | first }}"
         _options: "{{ item.opts | default('defaults,rw,_netdev') }}"
         _state_defaults:
           - "present"
@@ -37,4 +72,4 @@
         _state: "{{ 'mounted' if item.state in _state_defaults else item.state }}"
       loop_control:
         label: "{{ item.name }} - {{ item.mount }}"
-      loop: "{{ _gluster_client_volumes }}"
+      loop: "{{ _gluster_client_mount_targets }}"
