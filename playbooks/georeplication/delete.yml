@@ -18,6 +18,12 @@
   tasks:
     - name: Manage tasks within virtualenv
       block:
+        - name: End play when gluster georeplication is not required
+          ansible.builtin.meta: end_play
+          vars:
+            _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
+          when: _replicas | length == 0
+
         - name: End play for unrequired gluster geo replication nodes
           ansible.builtin.meta: end_host
           when: (not inventory_hostname == (gluster_target_members | first))
