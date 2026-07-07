@@ -22,7 +22,8 @@
           ansible.builtin.meta: end_play
           vars:
             _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
-          when: _replicas | length == 0
+            _existing_sessions: "{{ _gluster_georeplica_existing_sessions }}"
+          when: (_replicas | length == 0) and (_existing_sessions | length == 0)
 
         - name: End play for unrequired gluster geo replication nodes
           ansible.builtin.meta: end_host
@@ -33,14 +34,6 @@
             secondary_user: "{{ _gluster_user }}"
           register: _georeplica_status
           changed_when: false
-
-        - name: Debug gluster geo replication status
-          ansible.builtin.debug:
-            msg: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
-          vars:
-            _volumes: "{{ _gluster_target_volumes }}"
-            _target_volumes: "{{ _volumes | map(attribute='name') }}"
-            _sessions: "{{ _georeplica_status.results | default([]) }}"
 
         - name: Set georeplication session status
           ansible.builtin.set_fact:
@@ -73,6 +66,14 @@
             _orphan_list: "{{ _orphan_masters + _orphan_slaves }}"
             _orphan_sessions: "{{ _orphan_list | map(_select_attrs, _attrs) | unique }}"
             _delete_volumes: "{{ _replicas_list | selectattr('state', 'equalto', 'absent') }}"
+
+        - name: Debug gluster geo replication status
+          ansible.builtin.debug:
+            msg: "{{ _sessions | selectattr('secondary_volume', 'in', _target_volumes) }}"
+          vars:
+            _volumes: "{{ _gluster_target_volumes }}"
+            _target_volumes: "{{ _volumes | map(attribute='name') }}"
+            _sessions: "{{ _georeplica_status.results | default([]) }}"
 
         - name: Debug gluster geo replication volumes to delete a session
           ansible.builtin.debug:

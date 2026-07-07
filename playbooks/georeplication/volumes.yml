@@ -15,7 +15,8 @@
           ansible.builtin.meta: end_play
           vars:
             _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
-          when: _replicas | length == 0
+            _existing_sessions: "{{ _gluster_georeplica_existing_sessions }}"
+          when: (_replicas | length == 0) and (_existing_sessions | length == 0)
 
         - name: End play for unrequired gluster geo replication nodes
           ansible.builtin.meta: end_host
@@ -55,7 +56,8 @@
           ansible.builtin.meta: end_play
           vars:
             _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
-          when: _replicas | length == 0
+            _existing_sessions: "{{ _gluster_georeplica_existing_sessions }}"
+          when: (_replicas | length == 0) and (_existing_sessions | length == 0)
 
         - name: Set gluster geo replication volume facts
           ansible.builtin.set_fact:

@@ -274,12 +274,30 @@
             _meta_volume_filter: "{{ _gluster_volumes | selectattr('name', 'equalto', _meta_volume.name) }}"
             _meta_volume_state: "{{ _meta_volume_filter | selectattr('state', 'equalto', 'absent') }}"
 
-        - name: Set gluster facts
+        - name: Set default gluster facts
           ansible.builtin.set_fact:
             _to_dict: "nephelaiio.plugins.to_dict"
             _map_format: "nephelaiio.plugins.map_format"
             _select_attrs: "nephelaiio.plugins.select_attributes"
             _map_join: "nephelaiio.plugins.map_join"
+
+        - name: Get gluster geo replication status
+          pokerops.gluster.georeplication.status:
+            secondary_user: "{{ _gluster_georeplica_user.name }}"
+          vars:
+            _slaves: "{{ _gluster_server_slaves_all }}"
+            _masters: "{{ _gluster_server_masters_all }}"
+            _servers: "{{ _slaves + _masters }}"
+          register: _georeplica_status
+          ignore_errors: true
+          changed_when: false
+          when: inventory_hostname in _servers
+
+        - name: Set existing gluster geo replication sessions
+          ansible.builtin.set_fact:
+            _gluster_georeplica_existing_sessions: "{{ _sessions }}"
+          vars:
+            _sessions: "{{ _georeplica_status.results | default([]) }}"
 
       rescue:
         - name: Destroy virtualenv
