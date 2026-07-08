@@ -6,6 +6,8 @@
 
 - name: Get existing gluster geo replication volumes
   ansible.builtin.import_playbook: pokerops.gluster.georeplication.volumes
+  vars:
+    gluster_server_groupset: replica_start
 
 - name: Start geo replication session tasks
   hosts: "{{ gluster_server_prefix | default('gluster_server') }}_replica_start_master_all"
