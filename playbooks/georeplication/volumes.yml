@@ -23,7 +23,7 @@
             key: "{{ _gluster_name }}_slave_targets"
           vars:
             _slaves: "{{ _gluster_name }}_slave_all"
-            _slaves_group: "{{ groups[_slaves] }}"
+            _slaves_group: "{{ groups[_slaves] | default([]) }}"
           changed_when: false
           when:
             - inventory_hostname in _slaves_group
