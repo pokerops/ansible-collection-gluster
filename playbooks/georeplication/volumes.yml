@@ -27,7 +27,9 @@
             _slaves: "{{ _prefix }}_{{ _group_set }}_slave_all"
             _slaves_group: "{{ groups[_slaves] }}"
           changed_when: false
-          when: inventory_hostname in _slaves_group
+          when:
+            - inventory_hostname in _slaves_group
+            - inventory_hostname == (gluster_target_members | first)
 
         - name: Set gluster slave target fact
           ansible.builtin.set_fact:
