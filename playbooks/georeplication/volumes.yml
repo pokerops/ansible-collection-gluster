@@ -14,7 +14,8 @@
         - name: End play when gluster georeplication is not required
           ansible.builtin.meta: end_play
           vars:
-            _replicas: "{{ _gluster_server_slaves_all | default([]) }}"
+            _slaves: "{{ _gluster_name }}_slave_all"
+            _replicas: "{{ groups[_slaves] | default([]) }}"
             _existing_sessions: "{{ _gluster_georeplica_existing_sessions }}"
           when: (_replicas | length == 0) and (_existing_sessions | length == 0)
 
