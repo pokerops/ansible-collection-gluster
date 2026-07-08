@@ -57,7 +57,6 @@
             _replica_overwritten: "{{ _replica_nodes_overwritten | zip(_replica_names_dict) | map('combine') }}"
             _target_volumes: "{{ _gluster_target_volumes | sort(attribute='name') }}"
             _target_volume_names: "{{ _target_volumes | map(attribute='name') }}"
-            _target_replicas: "{{ _target_volumes | map(attribute='replica_name') }}"
             _volumes: "{{ _target_volumes | selectattr('name', 'in', _existing_names) }}"
             _replicas_list: "{{ _volumes | selectattr('replica_name', 'in', _existing_replicas) }}"
             _orphan_masters: "{{ _replica_overwritten | rejectattr('primary_node', 'in', _gluster_server_masters) }}"
